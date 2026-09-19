@@ -29,7 +29,8 @@ version a build was actually tested at and must not be rewritten. Update the
 release notes by hand.
 
 The release-candidate workflow builds, tests and scans the exact image, exports
-a CycloneDX SBOM, image archive and SHA256 checksums.
+a CycloneDX SBOM, image archive, copyright notices, runtime evidence and SHA256
+checksums.
 
 **Pushing a `v*` tag publishes.** Once CI, security, conformance and the
 stamped-image acceptance and scan have all passed for that tag, the workflow
@@ -63,7 +64,7 @@ Any failed, cancelled, or skipped prerequisite blocks export. The stamped image
 also runs non-root smoke, live WFS integrity/durable-cache checks, and the live
 console/OIDC suite before scanning and export. `qualification.json` records the
 source SHA, version, Linux amd64 image ID, workflow evidence URL, prerequisite
-results, exact-image checks, and SHA256 digests of the image archive and SBOM.
+results, exact-image checks, and SHA256 digests of the exported artifacts.
 Review that manifest with `SHA256SUMS`; local smoke results or another SHA's CI
 run are not substitute release qualifications.
 
@@ -72,16 +73,26 @@ available OS package updates. The image-security gate retains `image-security.js
 as a separate 30-day artifact even when the scan fails. That failure still blocks
 candidate export; retaining diagnostics is not a vulnerability exception.
 
-The native builder/runtime share the pinned full GDAL 3.13.3 Ubuntu 26.04 base.
-The smaller GDAL image is not interchangeable: it lacks required NetCDF support.
-The runtime keeps the documented raster/vector drivers, drops the unused Pebble
-supervisor, and does not preload the upstream CLI allocator. Retain the native
-driver/package inventory alongside the scanner SBOM; a clean scan is not proof
-that every dependency has no vulnerabilities. Extract the image's own copyright
-texts (`/usr/share/doc/*/copyright`, see
-[third-party licenses and notices](../THIRD-PARTY-LICENSES.md)) into the
-release artifacts: they are authoritative for the exact package versions
-shipped, and the Go dependency table alone does not cover them.
+The native builder uses the pinned full GDAL 3.13.3 image. The runtime uses
+digest-pinned Ubuntu 26.04 with a matching glibc, installing its shared-library
+package closure and copying only the non-package libraries, required data,
+three plugins and four documented tools. It omits datum grids and does not
+preload the upstream allocator. Both build stages check for unresolved libraries.
+
+The build downloads signed spatial/httpfs extensions through the compiled
+server's own DuckDB engine as UID 65532. It checks their engine, platform and
+source revisions before packaging the binaries and notices. Extension sources
+are not included in release artifacts.
+
+The release workflow records capability parity against digest-pinned 0.1.0,
+decoded format responses, offline startup and queries, all three grid methods,
+and the image size budget in `runtime-evidence.tar.gz`. It verifies every
+installed Ubuntu package against the scanner SBOM and exports the native-library
+inventory and `image-copyright.txt`. Libraries built outside dpkg and statically
+linked extension dependencies remain outside the package scanner's coverage;
+see [third-party notices](../THIRD-PARTY-LICENSES.md). The image size ceiling in
+`scripts/container/image-budget.json` is fixed at 10% above the initial measured
+minimal image; increases require deliberate review.
 
 Container compilation defaults to two Go compiler workers. On small or
 emulated builders, `--build-arg GO_BUILD_PARALLELISM=1` lowers build concurrency
@@ -118,22 +129,29 @@ the complete backed-up data into the named volume and preserve UID/GID 65532.
 Do not merge a live old catalog into a newly initialized one. Test restore in a
 separate volume and keep the backup until the upgraded service is verified.
 
-The current catalog schema is 25: schema 24 adds the managed import source-relative path, and schema 25 adds the bounded previous-token/CSRF refresh grace state. A binary now refuses to open a catalog newer than its supported schema, including `serve` and administration commands. Use a compatible newer binary or restore a consistent pre-upgrade backup; never edit `schema_info` to bypass the check. No schema bump is needed for this guard.
+Each state database records its schema version: the catalog is at 25, the
+persistent-cache index at 2, the mosaic index at 1 and the audit log at 1. These
+are the baselines; a database at an older version is refused rather than
+upgraded, and so is one newer than the binary, including by `serve` and the
+administration commands. A future schema change adds an upgrade step from the
+current version. Use a compatible binary or restore a consistent backup; never
+edit a version table to bypass the check.
 
-Catalog schema 23 adds durable WFS data revisions and pending-write barriers;
-schema 22 introduced retired role IDs. An assigned role cannot be deleted;
-inspect `/api/v1/roles/{roleId}/deletion-plan` and remove assignments first.
-Successful deletion removes policies and permanently retires the ID, so old
-credentials cannot gain access through a recreated role. Restore pre-upgrade
-backups only with a current binary, review integrity, and reapply revocations
-made after the backup; backups are not a revocation history.
+Released 0.1.0 catalogs, cache indexes and mosaics are already at these baselines.
+The unversioned 0.1.0 audit schema is validated and stamped as version 1. Encrypted
+DuckDB files can change storage format on write with DuckDB 1.5.5; restore the
+pre-upgrade consistency set when rolling back to 0.1.0.
 
-Back up the full consistency set before upgrading. Cache metadata migrates from
-schema 1 to 2, adding an independent logical style selector while retaining
-payloads and job history. A pending WFS write barrier bypasses cached tiles;
-startup recovery advances its durable data generation before clearing it.
-This covers the crash window between source commit and catalog bookkeeping.
-Do not downgrade an upgraded catalog/cache with an older binary.
+An assigned role cannot be deleted; inspect
+`/api/v1/roles/{roleId}/deletion-plan` and remove assignments first. Successful
+deletion removes policies and permanently retires the ID, so old credentials
+cannot gain access through a recreated role. Restore backups only with a
+current binary, review integrity, and reapply revocations made after the
+backup; backups are not a revocation history.
+
+A pending WFS write barrier bypasses cached tiles; startup recovery advances its
+durable data generation before clearing it. This covers the crash window between
+source commit and catalog bookkeeping.
 
 Vector input support is now explicitly limited to GeoJSON, GeoPackage,
 Shapefile, and FlatGeobuf. Review existing GDAL sources and convert unsupported

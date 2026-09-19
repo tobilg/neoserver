@@ -13,10 +13,14 @@ import (
 	"time"
 
 	duckdb "github.com/duckdb/duckdb-go/v2"
+	"github.com/tobilg/neoserver/internal/dbschema"
 	"github.com/tobilg/neoserver/internal/store"
 )
 
+const cacheBaselineVersion = 2
 const cacheSchemaVersion = 2
+
+var cacheMigrations []dbschema.Migration
 
 type metadataIndex struct {
 	db      *sql.DB
@@ -50,7 +54,21 @@ func openMetadataIndex(path, encryptionKey string) (*metadataIndex, error) {
 	db := sql.OpenDB(connector)
 	db.SetMaxOpenConns(4)
 	db.SetMaxIdleConns(4)
-	const schema = `
+
+	if err := initializeCacheSchema(db, cacheSchemaSQL); err != nil {
+		db.Close()
+		// The connector's ATTACH runs lazily on the first connection, so a
+		// lock conflict with another live process surfaces here.
+		return nil, store.WrapAttachError(fmt.Errorf("create tile cache index: %w", err), abs)
+	}
+	if err := os.Chmod(abs, 0o600); err != nil {
+		db.Close()
+		return nil, err
+	}
+	return &metadataIndex{db: db}, nil
+}
+
+const cacheSchemaSQL = `
 CREATE TABLE IF NOT EXISTS cache_schema (
  version INTEGER PRIMARY KEY,
  applied_at TIMESTAMP DEFAULT current_timestamp
@@ -124,18 +142,6 @@ CREATE TABLE IF NOT EXISTS tile_cache_job_chunks (
  last_error VARCHAR DEFAULT '',
  updated_at TIMESTAMP DEFAULT current_timestamp
 );`
-	if err := initializeCacheSchema(db, schema); err != nil {
-		db.Close()
-		// The connector's ATTACH runs lazily on the first connection, so a
-		// lock conflict with another live process surfaces here.
-		return nil, store.WrapAttachError(fmt.Errorf("create tile cache index: %w", err), abs)
-	}
-	if err := os.Chmod(abs, 0o600); err != nil {
-		db.Close()
-		return nil, err
-	}
-	return &metadataIndex{db: db}, nil
-}
 
 func initializeCacheSchema(db *sql.DB, schema string) error {
 	tx, err := db.Begin()
@@ -143,26 +149,27 @@ func initializeCacheSchema(db *sql.DB, schema string) error {
 		return err
 	}
 	defer tx.Rollback()
-	if _, err := tx.Exec(schema); err != nil {
+	version, err := dbschema.Version(tx, "cache_schema")
+	if err != nil {
 		return err
 	}
-	var version sql.NullInt64
-	if err := tx.QueryRow("SELECT max(version) FROM cache_schema").Scan(&version); err != nil {
-		return err
-	}
-	if version.Valid && version.Int64 > cacheSchemaVersion {
-		return fmt.Errorf("tile cache schema version %d is newer than supported version %d", version.Int64, cacheSchemaVersion)
-	}
-	if !version.Valid {
-		if _, err := tx.Exec("INSERT INTO cache_schema(version) VALUES (?)", cacheSchemaVersion); err != nil {
+	if version.Valid {
+		if err := dbschema.Apply(tx, "tile cache", "cache_schema", cacheBaselineVersion, cacheSchemaVersion, int(version.Int64), cacheMigrations,
+			"delete the cache index and its tile payloads, then restart"); err != nil {
 			return err
 		}
-	} else if version.Int64 < cacheSchemaVersion {
-		// V1 names allow neither '#' nor '@'; decode its documented fingerprint
-		// once during migration, then query the independent logical column.
-		if _, err := tx.Exec(`ALTER TABLE tile_entries ADD COLUMN style_name TEXT DEFAULT '';
- UPDATE tile_entries SET style_name=CASE WHEN tile_type='map' THEN split_part(split_part(style_digest,'#',1),'@',1) ELSE '' END;
- INSERT INTO cache_schema(version) VALUES (2);`); err != nil {
+	} else {
+		var tables int
+		if err := tx.QueryRow("SELECT count(*) FROM duckdb_tables() WHERE database_name=current_database() AND schema_name='main'").Scan(&tables); err != nil {
+			return err
+		}
+		if tables != 0 {
+			return fmt.Errorf("unversioned tile cache index; delete the cache index and its tile payloads, then restart")
+		}
+		if _, err := tx.Exec(schema); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("INSERT INTO cache_schema(version) VALUES (?)", cacheSchemaVersion); err != nil {
 			return err
 		}
 	}

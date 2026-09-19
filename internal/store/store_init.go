@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/tobilg/neoserver/internal/dbschema"
 )
 
 // escapeSQLLiteral escapes single quotes for safe interpolation inside a DuckDB
@@ -69,138 +71,20 @@ func Open(cfg Config) (*DuckDBStore, error) {
 	return store, nil
 }
 
-// runMigrations runs any pending schema migrations.
+// catalogMigrations contains only upgrades after the released 0.1.0 baseline.
+var catalogMigrations []dbschema.Migration
+
 func (s *DuckDBStore) runMigrations(currentVersion int) error {
-	if currentVersion > schemaVersion {
-		return fmt.Errorf("catalog schema version %d is newer than this binary supports (%d); use a compatible newer binary or restore a pre-upgrade backup, do not downgrade this catalog", currentVersion, schemaVersion)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
 	}
-	if currentVersion == schemaVersion {
-		return nil // No migrations needed
+	defer tx.Rollback()
+	if err := dbschema.Apply(tx, "catalog", "schema_info", catalogBaselineVersion, schemaVersion, currentVersion, catalogMigrations,
+		"open it once with neoserver 0.1.0 to migrate it, or initialise a new catalog"); err != nil {
+		return err
 	}
-
-	// Run migrations in order
-	if currentVersion < 2 {
-		if _, err := s.db.Exec(migrationV2SQL); err != nil {
-			return fmt.Errorf("migration V2 failed: %w", err)
-		}
-	}
-	if currentVersion < 3 {
-		if _, err := s.db.Exec(migrationV3SQL); err != nil {
-			return fmt.Errorf("migration V3 failed: %w", err)
-		}
-	}
-	if currentVersion < 4 {
-		if _, err := s.db.Exec(migrationV4SQL); err != nil {
-			return fmt.Errorf("migration V4 failed: %w", err)
-		}
-	}
-	if currentVersion < 5 {
-		if _, err := s.db.Exec(migrationV5SQL); err != nil {
-			return fmt.Errorf("migration V5 failed: %w", err)
-		}
-	}
-	if currentVersion < 6 {
-		if _, err := s.db.Exec(migrationV6SQL); err != nil {
-			return fmt.Errorf("migration V6 failed: %w", err)
-		}
-	}
-	if currentVersion < 7 {
-		if _, err := s.db.Exec(migrationV7SQL); err != nil {
-			return fmt.Errorf("migration V7 failed: %w", err)
-		}
-	}
-	if currentVersion < 8 {
-		if _, err := s.db.Exec(migrationV8SQL); err != nil {
-			return fmt.Errorf("migration V8 failed: %w", err)
-		}
-	}
-	if currentVersion < 9 {
-		if _, err := s.db.Exec(migrationV9SQL); err != nil {
-			return fmt.Errorf("migration V9 failed: %w", err)
-		}
-	}
-	if currentVersion < 10 {
-		if _, err := s.db.Exec(migrationV10SQL); err != nil {
-			return fmt.Errorf("migration V10 failed: %w", err)
-		}
-	}
-	if currentVersion < 11 {
-		if _, err := s.db.Exec(migrationV11SQL); err != nil {
-			return fmt.Errorf("migration V11 failed: %w", err)
-		}
-	}
-	if currentVersion < 12 {
-		if _, err := s.db.Exec(migrationV12SQL); err != nil {
-			return fmt.Errorf("migration V12 failed: %w", err)
-		}
-	}
-	if currentVersion < 13 {
-		if _, err := s.db.Exec(migrationV13SQL); err != nil {
-			return fmt.Errorf("migration V13 failed: %w", err)
-		}
-	}
-	if currentVersion < 14 {
-		if _, err := s.db.Exec(migrationV14SQL); err != nil {
-			return fmt.Errorf("migration V14 failed: %w", err)
-		}
-	}
-	if currentVersion < 15 {
-		if _, err := s.db.Exec(migrationV15SQL); err != nil {
-			return fmt.Errorf("migration V15 failed: %w", err)
-		}
-	}
-	if currentVersion < 16 {
-		if _, err := s.db.Exec(migrationV16SQL); err != nil {
-			return fmt.Errorf("migration V16 failed: %w", err)
-		}
-	}
-	if currentVersion < 17 {
-		if _, err := s.db.Exec(migrationV17SQL); err != nil {
-			return fmt.Errorf("migration V17 failed: %w", err)
-		}
-	}
-	if currentVersion < 18 {
-		if _, err := s.db.Exec(migrationV18SQL); err != nil {
-			return fmt.Errorf("migration V18 failed: %w", err)
-		}
-	}
-	if currentVersion < 19 {
-		if _, err := s.db.Exec(migrationV19SQL); err != nil {
-			return fmt.Errorf("migration V19 failed: %w", err)
-		}
-	}
-	if currentVersion < 20 {
-		if _, err := s.db.Exec(migrationV20SQL); err != nil {
-			return fmt.Errorf("migration V20 failed: %w", err)
-		}
-	}
-	if currentVersion < 21 {
-		if _, err := s.db.Exec(migrationV21SQL); err != nil {
-			return fmt.Errorf("migration V21 failed: %w", err)
-		}
-	}
-	if currentVersion < 22 {
-		if _, err := s.db.Exec(migrationV22SQL); err != nil {
-			return fmt.Errorf("migration v22: %w", err)
-		}
-	}
-	if currentVersion < 23 {
-		if _, err := s.db.Exec(dataRevisionSchema + `INSERT OR REPLACE INTO schema_info (version, applied_at) VALUES (23, current_timestamp);`); err != nil {
-			return fmt.Errorf("migration v23: %w", err)
-		}
-	}
-	if currentVersion < 24 {
-		if _, err := s.db.Exec(migrationV24SQL); err != nil {
-			return fmt.Errorf("migration v24: %w", err)
-		}
-	}
-	if currentVersion < 25 {
-		if _, err := s.db.Exec(migrationV25SQL); err != nil {
-			return fmt.Errorf("migration v25: %w", err)
-		}
-	}
-
-	return nil
+	return tx.Commit()
 }
 
 // Init creates a new encrypted DuckDB store and returns a bootstrap JWT.

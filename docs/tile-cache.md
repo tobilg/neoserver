@@ -116,7 +116,7 @@ curl -X POST \
 
 `seed` skips existing durable entries. `reseed` renders and replaces matching entries. `truncate` removes matching entries; `{"operation":"truncate","all_resources":true}` clears the workspace's durable tile entries. A bounded truncate resolves exact current-generation tile identities, while an unbounded truncate removes all matching resource generations.
 
-Unbounded style-scoped truncation uses the logical style name (including `default`), not the full rendering fingerprint. It covers matching matrix-set, dimension, and group-dependency variants subject to the other supplied filters; unrelated styles remain cached. Cache schema 2 migrates this selector from existing schema 1 fingerprints automatically.
+Unbounded style-scoped truncation uses the logical style name (including `default`), not the full rendering fingerprint. It covers matching matrix-set, dimension, and group-dependency variants subject to the other supplied filters; unrelated styles remain cached.
 
 List, inspect, and cancel jobs:
 

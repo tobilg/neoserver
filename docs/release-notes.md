@@ -1,5 +1,38 @@
 # Release notes
 
+## 0.1.1 — unreleased
+
+The container runtime now uses a minimal Ubuntu 26.04 image with the GDAL
+libraries and plugins neoserver needs. It bundles matching DuckDB 1.5.5 spatial
+and httpfs extensions, so initialization and local-data queries work offline.
+The image keeps netCDF, JPEG 2000 and PDF support, and the `projsync`, `projinfo`,
+`gdalinfo` and `ogrinfo` tools. Other GDAL tools, Python and Java are omitted.
+
+PROJ datum grids are no longer included. Grid-dependent raster reprojection
+can be less accurate until grids are provided through a mount, network fetching,
+or a derived image. See [deployment](deployment.md#datum-shift-grids) for all
+three methods. Default DuckDB vector transformations use the spatial extension's
+own PROJ database; PostGIS vector transformations run in PostgreSQL.
+
+**Upgrading from 0.1.0:** the database schemas are already at the supported
+baseline, so no schema upgrade is needed. The existing audit log gains version
+metadata. Back up the complete consistency set before upgrading: DuckDB 1.5.5
+can change encrypted-file storage on write, and DuckDB 1.4.3 cannot reopen those
+rewritten files. To roll back, restore the pre-upgrade catalog and audit files.
+
+**Upgrading from pre-release builds:** open older catalogs once with 0.1.0,
+which contains the historical upgrades, or initialize a new catalog. Older
+tile-cache indexes can be discarded together with their cached payloads. The
+new baseline guards refuse unsupported files without modifying them.
+
+`neoserver install-extensions` is also available for native deployments. It
+installs and loads the embedded engine's required extensions, reporting their
+versions and paths as JSON without opening a catalog.
+
+The image includes extension license notices and upstream source references
+alongside the pre-downloaded binaries. See
+[third-party licenses](../THIRD-PARTY-LICENSES.md).
+
 ## 0.1.0 — 19 September 2026
 
 The first public release of neoserver: a multi-workspace geospatial server,

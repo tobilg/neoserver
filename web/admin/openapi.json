@@ -5411,7 +5411,7 @@
   "info": {
     "description": "REST API for managing workspaces, services, layers, API keys, roles, and OIDC claim mappings.",
     "title": "neoserver Management API",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "openapi": "3.0.3",
   "paths": {

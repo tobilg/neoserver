@@ -43,6 +43,11 @@ export function qualification({
       "live-console-oidc",
       "trivy-high-critical",
       "cyclonedx-sbom",
+      "released-schema-and-format-parity",
+      "offline-init-and-spatial-queries",
+      "datum-grids-mounted-network-derived",
+      "image-size-budget",
+      "sbom-package-coverage",
     ],
     artifacts,
   };
@@ -61,7 +66,12 @@ if (
   const run = (...args) =>
     execFileSync(args[0], args.slice(1), { encoding: "utf8" }).trim();
   const artifacts = {};
-  for (const path of ["neoserver-linux-amd64.tar.gz", "sbom.cdx.json"])
+  for (const path of [
+    "neoserver-linux-amd64.tar.gz",
+    "sbom.cdx.json",
+    "image-copyright.txt",
+    "runtime-evidence.tar.gz",
+  ])
     artifacts[path] = await digest(path);
   const evidence = qualification({
     sha: process.env.GITHUB_SHA,

@@ -2,7 +2,7 @@
 # Disposable resources only. Never uses the developer's Compose project/data.
 set -eu
 image=${1:-neoserver:candidate}
-version=${2:-0.1.0}
+version=${2:-0.1.1}
 fixture="neoserver-release-smoke-$$"
 container="$fixture-server"
 volume="$fixture-data"
@@ -13,10 +13,11 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 docker volume create "$volume" >/dev/null
 docker run --rm "$image" version | grep -F "$version"
-docker run --rm --entrypoint sh "$image" -c 'test "$(id -u)" = 65532 && test "$PWD" = /data'
+docker run --rm --entrypoint sh "$image" -c 'test "$(id -u)" = 65532 && test "$(id -g)" = 65532 && test "$PWD" = /data'
 docker run --rm --entrypoint sh "$image" -ec '
   test ! -e /usr/bin/pebble
-  for driver in GTiff COG netCDF GRIB PNG JPEG WEBP GPKG; do
+  neoserver-check-runtime
+  for driver in GTiff COG netCDF GRIB JP2OpenJPEG PDF GPKG; do
     gdalinfo --format "$driver" >/dev/null
   done
   for driver in GeoJSON GPKG "ESRI Shapefile" FlatGeobuf; do

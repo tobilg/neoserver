@@ -16,6 +16,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tobilg/neoserver/internal/conf"
+	"github.com/tobilg/neoserver/internal/datasource"
 	"github.com/tobilg/neoserver/internal/mgmt"
 	"github.com/tobilg/neoserver/internal/observability"
 	"github.com/tobilg/neoserver/internal/server"
@@ -42,6 +43,8 @@ func main() {
 		cmdAddClaimMapping(os.Args[2:])
 	case "openapi-dump":
 		cmdOpenAPIDump(os.Args[2:])
+	case "install-extensions":
+		cmdInstallExtensions(os.Args[2:])
 	case "version", "-version", "--version":
 		fmt.Printf("%s %s (%s)\n", conf.App.Name, conf.App.Version, conf.App.Commit)
 	case "help", "-h", "--help":
@@ -65,11 +68,35 @@ Commands:
   rotate-signing-key Rotate the internal signing key (invalidates all tokens)
   add-claim-mapping  Add an OIDC/JWT claim to role mapping
   openapi-dump       Write the management OpenAPI document to stdout
+  install-extensions Install and verify the bundled DuckDB extensions
   version            Print version and exit
   help               Show this help message
 
 Run '%s <command> -h' for more information on a specific command.
 `, conf.App.Name, conf.App.Name, conf.App.Name)
+}
+
+func cmdInstallExtensions(args []string) {
+	fs := flag.NewFlagSet("install-extensions", flag.ExitOnError)
+	_ = fs.Parse(args)
+	if fs.NArg() != 0 {
+		fmt.Fprintln(os.Stderr, "install-extensions takes no positional arguments")
+		os.Exit(2)
+	}
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	version, platform, installed, err := datasource.InstallExtensions(ctx)
+	if err == nil {
+		err = json.NewEncoder(os.Stdout).Encode(struct {
+			DuckDBVersion string                          `json:"duckdb_version"`
+			Platform      string                          `json:"platform"`
+			Extensions    []datasource.InstalledExtension `json:"extensions"`
+		}{version, platform, installed})
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Install extensions:", err)
+		os.Exit(1)
+	}
 }
 
 func cmdOpenAPIDump(args []string) {

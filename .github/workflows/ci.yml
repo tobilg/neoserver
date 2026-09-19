@@ -159,7 +159,7 @@ jobs:
   release-container:
     name: Non-root image and durable paths
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -167,9 +167,21 @@ jobs:
           node-version: 24
       - run: node --test scripts/release-evidence.test.mjs
       - run: docker build -t neoserver:candidate .
-      - run: ./scripts/test-release-container.sh neoserver:candidate 0.1.0
+      - run: ./scripts/test-release-container.sh neoserver:candidate 0.1.1
+      - name: Offline queries, released schema and format parity
+        run: node scripts/test-runtime-container.mjs neoserver:candidate
+      - name: Datum grids and image size budget
+        run: |
+          node scripts/test-proj-grids.mjs neoserver:candidate
+          node scripts/check-runtime-image.mjs neoserver:candidate
       - name: Live WFS integrity and durable-cache regression
         run: node scripts/test-wfs-cache-container.mjs neoserver:candidate
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: runtime-container-evidence
+          path: test-results/runtime-container
+          if-no-files-found: ignore
 
   recovery:
     name: Restore and durable-state recovery

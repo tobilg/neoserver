@@ -126,9 +126,8 @@ func TestWFSLockWorkspaceScopedDelete(t *testing.T) {
 	}
 }
 
-// TestMigrationV17OnExistingStore simulates a version-16 store file and
-// verifies reopening applies migration V17 (wfs_locks + wfs_feature_versions).
-func TestMigrationV17OnExistingStore(t *testing.T) {
+// Reopening a released baseline preserves the WFS runtime tables.
+func TestBaselineWFSRuntimeTablesSurviveReopen(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := dir + "/catalog.db"
 	s, _, err := Init(Config{Path: dbPath})
@@ -136,17 +135,6 @@ func TestMigrationV17OnExistingStore(t *testing.T) {
 		t.Fatalf("init store: %v", err)
 	}
 
-	// Downgrade the file to the pre-V17 state.
-	for _, stmt := range []string{
-		"DROP TABLE wfs_locks",
-		"DROP TABLE wfs_feature_versions",
-		"DELETE FROM schema_info",
-		"INSERT INTO schema_info (version, applied_at) VALUES (16, current_timestamp)",
-	} {
-		if _, err := s.db.Exec(stmt); err != nil {
-			t.Fatalf("downgrade %q: %v", stmt, err)
-		}
-	}
 	s.Close()
 
 	reopened, err := Open(Config{Path: dbPath})

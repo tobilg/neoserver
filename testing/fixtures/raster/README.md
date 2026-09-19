@@ -1,4 +1,15 @@
-# Raster test fixture
+# Raster test fixtures
+
+## Synthetic runtime fixtures
+
+`runtime-grid.tif`, `runtime-grid.nc`, and `runtime-grid.grib2` contain a 3×2
+grid with values 1 through 6, EPSG:4326, and geotransform `(7,1,0,52,0,-1)`.
+`runtime-nad27.tif` has the same values in EPSG:4267 with geotransform
+`(-100,0.3,0,31,0,-0.5)`, for datum-grid acceptance checks in Texas.
+They were generated for this project under its MIT license; regenerate with
+`make fixture-formats`. No external datasets are required.
+
+## OGC fixture
 
 `rectified-grid-coverage.tif` is a 40×30 single-band GeoTIFF in EPSG:32611. Go
 tests for the raster file source, raster mosaics, the mosaic catalog and durable

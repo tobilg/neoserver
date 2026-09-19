@@ -130,6 +130,10 @@ test-wfs-cache-container:
 test-recovery:
 	go test -ldflags='$(GO_APP_LINK_FLAGS)' ./internal/server -run '^TestRestoreConsistencySetRecoversDurableState$$' -count=1 -v
 
+.PHONY: fixture-formats
+fixture-formats:
+	go run -ldflags='$(GO_APP_LINK_FLAGS)' ./testing/fixtures/generate
+
 .PHONY: docker
 docker:
 	docker build -t $(APP_NAME):dev .

@@ -47,6 +47,7 @@ export NEOSRV_STORE_KEY="$(openssl rand -hex 32)"
 ./neoserver rotate-signing-key
 ./neoserver add-claim-mapping
 ./neoserver openapi-dump --output web/admin/openapi.json
+./neoserver install-extensions   # download/load matching DuckDB extensions; no catalog needed
 ./neoserver version
 
 # Docker compose (PostGIS + sample data + server)

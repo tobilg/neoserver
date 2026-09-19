@@ -1,0 +1,10 @@
+{
+  "platform": "linux/amd64",
+  "baseline_version": "0.1.1",
+  "baseline_image_id": "sha256:53ee7d4f3c79a431c42040b84f0945ee346de1466434184043321f4095c4ea1e",
+  "measured_uncompressed_bytes": 634464311,
+  "max_uncompressed_bytes": 697910743,
+  "headroom_percent": 10,
+  "measured_archive_gzip_bytes": 230294178,
+  "reference_uncompressed_bytes": 2567371969
+}

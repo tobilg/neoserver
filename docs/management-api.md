@@ -122,7 +122,7 @@ curl -H "Authorization: Bearer $TOKEN" \
   http://localhost:9000/api/v1/catalog/integrity
 ~~~
 
-The report covers primary-catalog rows, persistent tile owners, mosaic owners, and managed asset directories. Repair is never implicit during schema migration. After reviewing the report, run `POST /api/v1/catalog/integrity/repair?confirm=true`. Repair is idempotent and removes only state whose owning workspace/service/resource no longer exists; it refuses unsafe managed-asset paths and never deletes source data.
+The report covers primary-catalog rows, persistent tile owners, mosaic owners, and managed asset directories. Repair never runs implicitly, including at startup. After reviewing the report, run `POST /api/v1/catalog/integrity/repair?confirm=true`. Repair is idempotent and removes only state whose owning workspace/service/resource no longer exists; it refuses unsafe managed-asset paths and never deletes source data.
 
 ## Typical publication workflow
 

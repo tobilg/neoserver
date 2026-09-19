@@ -48,7 +48,7 @@ The server stores its configuration and security state in an encrypted DuckDB fi
 Released images are published to Docker Hub for Linux amd64:
 
 ~~~bash
-docker pull tobilg/neoserver:latest     # or a pinned version, e.g. :0.1.0
+docker pull tobilg/neoserver:latest     # or a pinned released version
 ~~~
 
 Each [GitHub release](https://github.com/tobilg/neoserver/releases) also carries
@@ -56,6 +56,11 @@ the image archive, a CycloneDX SBOM, `SHA256SUMS` and a `qualification.json`
 recording the gates that build passed.
 
 ## Quickstart with Docker Compose
+
+The 0.1.1 runtime measures 634 MB uncompressed (230 MB as a compressed Docker
+archive), about 75% smaller than 0.1.0. It bundles DuckDB extensions for offline
+startup and omits PROJ datum grids. For precise grid-dependent raster
+reprojection, add the required grids using the [deployment instructions](docs/deployment.md#datum-shift-grids).
 
 Choose your path:
 

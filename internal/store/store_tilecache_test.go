@@ -72,7 +72,7 @@ func TestLegacyWMTSSettingsReceiveNewDefaults(t *testing.T) {
 	}
 }
 
-func TestMigrationV12MovesPersistentTileCacheStateOutOfCatalog(t *testing.T) {
+func TestBaselineKeepsPersistentTileCacheStateOutOfCatalog(t *testing.T) {
 	ctx := context.Background()
 	cfg := Config{Path: filepath.Join(t.TempDir(), "migration-v11.db")}
 	s, _, err := Init(cfg)
@@ -82,24 +82,6 @@ func TestMigrationV12MovesPersistentTileCacheStateOutOfCatalog(t *testing.T) {
 	ws, err := s.CreateWorkspace(ctx, CreateWorkspaceInput{Name: "pre-v11"})
 	if err != nil {
 		t.Fatal(err)
-	}
-	_, err = s.db.Exec(`
-		DROP TABLE IF EXISTS tile_cache_job_chunks;
-		DROP TABLE IF EXISTS tile_cache_jobs;
-		ALTER TABLE workspaces DROP COLUMN wmts_settings;
-		ALTER TABLE workspaces DROP COLUMN tile_revision;
-		ALTER TABLE layers DROP COLUMN native_extent;
-		ALTER TABLE layers DROP COLUMN tile_cache_quota_bytes;
-		ALTER TABLE layers DROP COLUMN tile_cache_generation;
-		ALTER TABLE coverages DROP COLUMN native_extent;
-		ALTER TABLE coverages DROP COLUMN tile_cache_quota_bytes;
-		ALTER TABLE coverages DROP COLUMN tile_cache_generation;
-		DELETE FROM schema_info;
-		INSERT INTO schema_info (version) VALUES (10);
-	`)
-	if err != nil {
-		s.Close()
-		t.Fatalf("construct v10 schema: %v", err)
 	}
 	if err := s.Close(); err != nil {
 		t.Fatal(err)

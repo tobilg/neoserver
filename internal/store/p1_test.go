@@ -139,19 +139,11 @@ func TestAuditOutboxRoundTrip(t *testing.T) {
 	}
 }
 
-func TestMigrationV19AddsAuditOutboxAndRollbackLink(t *testing.T) {
+func TestBaselineContainsAuditOutboxAndRollbackLink(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "catalog.duckdb")
 	catalog, _, err := Init(Config{Path: path, EncryptionKey: "abc123"})
 	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err = catalog.db.Exec(`DROP TABLE audit_outbox;
-		DROP INDEX import_jobs_workspace; DROP INDEX import_jobs_status;
-		ALTER TABLE import_jobs DROP COLUMN rollback_operation_id;
-		CREATE INDEX import_jobs_workspace ON import_jobs(workspace_id, created_at);
-		CREATE INDEX import_jobs_status ON import_jobs(status, updated_at);
-		DELETE FROM schema_info WHERE version>18; INSERT OR REPLACE INTO schema_info(version) VALUES(18)`); err != nil {
 		t.Fatal(err)
 	}
 	if err = catalog.Close(); err != nil {

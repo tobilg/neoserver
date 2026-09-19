@@ -8,8 +8,8 @@ Two artifacts carry third-party code:
 
 - **The `neoserver` binary** statically links its Go dependencies and a prebuilt
   DuckDB library.
-- **The container image** adds the GDAL runtime and the operating-system
-  packages it depends on, dynamically linked.
+- **The container image** adds the GDAL runtime, its operating-system packages,
+  and pre-downloaded DuckDB spatial/httpfs extensions.
 
 ## Required attributions
 
@@ -84,7 +84,7 @@ Consortium, Apache License 2.0. See
 
 ## Container image
 
-The runtime image builds on the official GDAL image, pinned by digest in the
+The native builder uses the official GDAL image, pinned by digest in the
 [Dockerfile](Dockerfile):
 
 ```
@@ -92,11 +92,27 @@ ghcr.io/osgeo/gdal:ubuntu-full-3.13.3
 sha256:2dd0f81ef927ff4c3d4dbe4f73c029dc86d4073974c0564f8e196f6e1412e2e0
 ```
 
-That image supplies GDAL and the native libraries it links, among them PROJ,
-GEOS, NetCDF, HDF5, libtiff, SQLite, cURL, expat and zlib, on top of an Ubuntu
-base. Their terms vary and are not all permissive: GEOS, for example, is
-distributed under the LGPL, which neoserver satisfies by linking against the
-unmodified shared library the base image provides and modifying none of it.
+The runtime is digest-pinned Ubuntu 26.04 with the packages required by those
+libraries, including GEOS, NetCDF, HDF5, libtiff, SQLite, cURL, expat and zlib.
+It dynamically links those libraries and preserves their package metadata and
+copyright files. Their licenses include LGPL and other terms beyond neoserver's
+MIT license.
+
+Five libraries copied from OSGeo are built outside dpkg: `libgdal.so.39`,
+`libinternalproj.so.25`, `libjxl.so.0.13`, `libjxl_cms.so.0.13` and `libQB3.so`.
+Their file checksums and ownership records appear in
+`/usr/share/neoserver/runtime-libraries.json`; their notices are under
+`/usr/share/doc/neoserver/native/`. Package-based vulnerability scans do not
+inventory these builds.
+
+The build downloads unmodified signed DuckDB 1.5.5 `spatial` and `httpfs`
+extensions. The spatial extension statically includes GEOS 3.14.1 (LGPL 2.1),
+GDAL 3.8.5 and PROJ 9.1.1; httpfs includes its own HTTP/TLS dependencies.
+[Extension notices and upstream references](third_party/duckdb/README.md) record
+their exact revisions and dependency licenses. Full notices accompany the
+binaries at `/usr/share/doc/neoserver/duckdb/`. The scanner does not identify
+these statically linked dependencies through dpkg. No extension source archive
+is packaged or published by neoserver.
 
 **The authoritative texts are the ones inside the image**, under
 `/usr/share/doc/<package>/copyright`, because they match the exact package
@@ -109,9 +125,9 @@ docker run --rm --entrypoint sh <image> -c \
   > image-copyright.txt
 ```
 
-The release-candidate workflow exports a CycloneDX SBOM listing the exact
-component versions. Attach that SBOM and the extracted copyright texts to the
-release, and review them before publishing, as
+The release-candidate workflow exports a CycloneDX SBOM, checks its coverage of
+installed packages, and attaches it with the extracted copyright texts. Review
+those artifacts before publishing, as
 [Releasing](docs/releasing.md) requires.
 
 ## Go dependencies

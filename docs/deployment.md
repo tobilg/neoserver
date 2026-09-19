@@ -12,7 +12,68 @@ make build
 
 Output capabilities are runtime-accurate. WMS GeoTIFF/PDF and WFS GeoPackage/SHAPE-ZIP are registered and probed once through the linked GDAL library. A missing optional driver disables and removes only its corresponding format from service capabilities; it does not trigger a request-time driver installation or a DuckDB Spatial fallback. Verify the target image's advertised capabilities after changing its GDAL package set.
 
-The container image uses a multi-stage Debian build and runs as the non-root UID 65532. Mount writable data directories with permissions that allow this user to create the store and remote-file cache.
+The container image uses Ubuntu 26.04 and runs as UID/GID 65532. The native build uses pinned GDAL 3.13.3; the runtime installs the packages its libraries require and keeps the netCDF, JP2OpenJPEG and PDF plugins. Mount writable data directories with permissions that allow this user to create the store and remote-file cache.
+
+DuckDB 1.5.5 spatial and httpfs extensions are bundled in the runtime user's
+home. Initialization, startup and local DuckDB/GeoParquet queries work without
+network access. Remote sources and identity providers still need their own
+network connections. For native installations, `neoserver install-extensions`
+installs and loads the matching extensions in the invoking user's home and
+prints their version, platform and paths as JSON; no catalog or encryption key
+is required.
+
+### Datum-shift grids
+
+The base image omits PROJ datum grids. GDAL raster reprojection continues to
+work, but transformations that need these grids (such as NAD27 to NAD83) may
+use a less accurate fallback. Install the grids for your data's area of use
+when precise datum conversion is required. PostGIS vector transformations use
+the database server's PROJ installation. DuckDB spatial has its own embedded
+PROJ database; its default vector transformations do not use the image's
+system grid directory.
+
+The image keeps `projsync`, `projinfo`, `gdalinfo` and `ogrinfo`. Choose one of
+these three grid installation methods:
+
+1. **Mount a grid directory.** Prepare a writable directory for UID 65532,
+   then download the needed grids. For example, for the contiguous US:
+
+   ```sh
+   mkdir -p proj-grids
+   sudo chown 65532:65532 proj-grids
+   docker run --rm --entrypoint projsync \
+     -v "$PWD/proj-grids:/proj-grids" tobilg/neoserver:0.1.1 \
+     --file us_noaa_conus.tif --target-dir /proj-grids
+   ```
+
+   Mount it read-only in the server container with
+   `-v "$PWD/proj-grids:/proj-grids:ro"` and set
+   `PROJ_DATA=/usr/local/gdal-internal/share/proj:/proj-grids`.
+   Keep the first path: it contains the required `proj.db`.
+
+2. **Download on demand.** Set `PROJ_NETWORK=ON` and
+   `PROJ_USER_WRITABLE_DIRECTORY=/data/proj-cache`. Allow outbound HTTPS to
+   `cdn.proj.org` and keep `/data` writable. This method needs network access
+   when a required grid is not cached.
+
+3. **Build an image with your grids.** Download the grids first, then build:
+
+   ```dockerfile
+   FROM tobilg/neoserver:0.1.1
+   COPY proj-grids/ /usr/local/gdal-internal/share/proj/
+   ```
+
+Verify the active operation inside your configured container:
+
+```sh
+projinfo -s EPSG:4267 -t EPSG:4269 --bbox -100,30,-99,31 \
+  --spatial-test intersects --grid-check discard_missing --hide-ballpark -o PROJ
+```
+
+A grid-based operation names a file in `+grids=...`. Choose a source/target
+pair and area matching your data when checking other transformations.
+With `PROJ_NETWORK=ON`, omit `--grid-check discard_missing` to include grids
+available from the CDN; that flag explicitly restricts the check to local files.
 
 ## Initialization lifecycle
 
@@ -196,9 +257,15 @@ Before upgrading:
 4. Replace the binary or image, then start against the existing persistent store.
 5. Verify `/health`, `/ready`, the management workspace list, and representative OGC endpoints.
 
-Store schema migrations are applied by the application. Avoid rolling back to an older binary without a compatible backup.
+A binary refuses a state database whose schema is older than its baseline or newer than it supports; it never modifies a database it refuses. Avoid rolling back to an older binary without a compatible backup.
 
-After upgrading from a release that predates referentially complete deletion, inspect `GET /api/v1/catalog/integrity`. No orphan is removed automatically by migration. Review the super-admin report before invoking the explicitly confirmed repair endpoint described in the [Management API](management-api.md).
+Version 0.1.0 already uses the supported catalog (25), tile-cache (2), and
+mosaic (1) schemas. No schema upgrade is required for 0.1.1. Its unversioned
+audit log is recognized and stamped at baseline 1. DuckDB 1.5.5 can update
+the storage format of encrypted files on write, however: rolling back to
+0.1.0 requires restoring the pre-upgrade catalog and audit backup.
+
+After upgrading from a release that predates referentially complete deletion, inspect `GET /api/v1/catalog/integrity`. No orphan is removed automatically. Review the super-admin report before invoking the explicitly confirmed repair endpoint described in the [Management API](management-api.md).
 
 ## Production checklist
 

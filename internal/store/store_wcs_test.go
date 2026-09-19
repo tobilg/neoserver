@@ -63,7 +63,7 @@ func TestCoverageCRUDAndWorkspacePublicIDUniqueness(t *testing.T) {
 	}
 }
 
-func TestMigrationV15DefaultsExistingCoveragesToRectifiedGrid(t *testing.T) {
+func TestBaselineDefaultsCoveragesToRectifiedGrid(t *testing.T) {
 	ctx := context.Background()
 	cfg := Config{Path: filepath.Join(t.TempDir(), "migration-v14.db")}
 	s, _, err := Init(cfg)
@@ -81,14 +81,6 @@ func TestMigrationV15DefaultsExistingCoveragesToRectifiedGrid(t *testing.T) {
 	coverage, err := s.CreateCoverage(ctx, CreateCoverageInput{ServiceID: service.ID, SourceCoverage: "raster", PublicID: "legacy", Enabled: true})
 	if err != nil {
 		t.Fatal(err)
-	}
-	if _, err := s.db.Exec(`
-		ALTER TABLE coverages DROP COLUMN wcs20_coverage_subtype;
-		DELETE FROM schema_info;
-		INSERT INTO schema_info (version) VALUES (14);
-	`); err != nil {
-		s.Close()
-		t.Fatalf("construct v14 schema: %v", err)
 	}
 	if err := s.Close(); err != nil {
 		t.Fatal(err)

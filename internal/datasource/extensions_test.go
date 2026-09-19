@@ -9,8 +9,45 @@ import (
 	"io"
 	"log/slog"
 	"slices"
+	"strings"
 	"testing"
 )
+
+func TestInstalledExtensionVersionAndPlatform(t *testing.T) {
+	for _, tc := range []struct {
+		path  string
+		valid bool
+	}{
+		{"/home/nonroot/.duckdb/extensions/v1.5.5/linux_amd64/spatial.duckdb_extension", true},
+		{"/home/nonroot/.duckdb/extensions/v1.4.3/linux_amd64/spatial.duckdb_extension", false},
+		{"/home/nonroot/.duckdb/extensions/v1.5.5/linux_arm64/spatial.duckdb_extension", false},
+		{"", false},
+	} {
+		if err := checkExtensionPath(tc.path, "v1.5.5", "linux_amd64"); (err == nil) != tc.valid {
+			t.Errorf("%q: %v", tc.path, err)
+		}
+	}
+}
+
+func TestInstallerFailsWhenExtensionInstallationIsDisabled(t *testing.T) {
+	db, err := sql.Open("duckdb", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	conn, err := db.Conn(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	if _, err := conn.ExecContext(t.Context(), "SET enable_external_access=false"); err != nil {
+		t.Fatal(err)
+	}
+	_, _, installed, err := installExtensions(t.Context(), conn)
+	if err == nil || !strings.Contains(err.Error(), "install extension spatial") || len(installed) != 0 {
+		t.Fatalf("installed=%v error=%v", installed, err)
+	}
+}
 
 func TestPreloadExtensionsLogging(t *testing.T) {
 	const start = "preloading DuckDB extension"

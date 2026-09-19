@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"github.com/tobilg/neoserver/internal/testutil/schematest"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -17,6 +18,7 @@ func TestOpenRejectsFutureCatalogAndReleasesConnection(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.Close()
+	assertUnchanged := schematest.Unchanged(t, cfg.Path)
 	for i := 0; i < 2; i++ {
 		opened, err := Open(cfg)
 		if opened != nil {
@@ -27,6 +29,8 @@ func TestOpenRejectsFutureCatalogAndReleasesConnection(t *testing.T) {
 			t.Fatalf("error=%v", err)
 		}
 	}
+
+	assertUnchanged()
 	// Reattach using the low-level connection only to inspect the untouched fixture.
 	db, attached, err := newCatalogConnection()
 	if err != nil {

@@ -37,6 +37,11 @@ const targets = [
     pattern: /(?<="version": ")[^"]+(?=")/,
   },
   {
+    file: "web/admin/package-lock.json",
+    what: "console lockfile package version",
+    pattern: /(?<="name": "neoserver-admin",\n\s+"version": ")[^"]+(?=")/g,
+  },
+  {
     file: ".github/workflows/ci.yml",
     what: "release-container smoke test",
     pattern: /(?<=test-release-container\.sh neoserver:candidate )\S+/,

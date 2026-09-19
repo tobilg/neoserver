@@ -1,0 +1,142 @@
+{
+  "duckdb_version": "v1.5.5",
+  "extensions": {
+    "spatial": "eb1e57c",
+    "httpfs": "827222f"
+  },
+  "upstream_sources": [
+    {
+      "name": "duckdb-spatial",
+      "version": "eb1e57c9d92c0f3f76eb03eaa52c315090f328cc",
+      "url": "https://codeload.github.com/duckdb/duckdb-spatial/tar.gz/eb1e57c9d92c0f3f76eb03eaa52c315090f328cc",
+      "license": "MIT"
+    },
+    {
+      "name": "duckdb-httpfs",
+      "version": "827222fb45a043a7a852d1f7aae46901492a3cda",
+      "url": "https://codeload.github.com/duckdb/duckdb-httpfs/tar.gz/827222fb45a043a7a852d1f7aae46901492a3cda",
+      "license": "MIT"
+    },
+    {
+      "name": "duckdb",
+      "version": "v1.5.5",
+      "url": "https://codeload.github.com/duckdb/duckdb/tar.gz/v1.5.5",
+      "license": "MIT and vendored dependency licenses"
+    },
+    {
+      "name": "spatial-build-tools",
+      "version": "b777c70d30942cca5bef62d6d4fa23a13362f398",
+      "url": "https://codeload.github.com/duckdb/extension-ci-tools/tar.gz/b777c70d30942cca5bef62d6d4fa23a13362f398",
+      "license": "MIT"
+    },
+    {
+      "name": "httpfs-build-tools",
+      "version": "81e38c214e3c3f822ac06babc007896c63a8da1b",
+      "url": "https://codeload.github.com/duckdb/extension-ci-tools/tar.gz/81e38c214e3c3f822ac06babc007896c63a8da1b",
+      "license": "MIT"
+    },
+    {
+      "name": "vcpkg",
+      "version": "84bab45d415d22042bd0b9081aea57f362da3f35",
+      "url": "https://codeload.github.com/microsoft/vcpkg/tar.gz/84bab45d415d22042bd0b9081aea57f362da3f35",
+      "license": "MIT"
+    },
+    {
+      "name": "vcpkg-duckdb-ports",
+      "version": "3c7b96fa186c27eae2226a1b5b292f2b2dd3cf8f",
+      "url": "https://codeload.github.com/duckdb/vcpkg-duckdb-ports/tar.gz/3c7b96fa186c27eae2226a1b5b292f2b2dd3cf8f",
+      "license": "MIT"
+    },
+    {
+      "name": "geos",
+      "version": "3.14.1",
+      "url": "https://codeload.github.com/libgeos/geos/tar.gz/7db6f62d50221a7ccac91c329a9a4fe61d172a56",
+      "license": "LGPL-2.1-only",
+      "sha512": "989edcfd65b49f9c1e063b39ceb0bec0196dce4f3fbfebb935005a9137c918b37dd3a6e866129c2ac1bac8eacf8e1f67a9569693b98711e1d25f2096d4512518"
+    },
+    {
+      "name": "gdal",
+      "version": "3.8.5",
+      "url": "https://codeload.github.com/OSGeo/gdal/tar.gz/v3.8.5",
+      "license": "MIT and bundled driver notices",
+      "sha512": "5b155229225e904b3619628ec27efdd273d9f083c1ee4f6d94041897d5bc9c3133590b70885ad61fc8864da2f334a75cf32bafe7f776c40bbbc3673fe842c986"
+    },
+    {
+      "name": "proj",
+      "version": "9.1.1",
+      "url": "https://codeload.github.com/OSGeo/PROJ/tar.gz/9.1.1",
+      "license": "MIT",
+      "sha512": "bdc3cba27f330829b30290f563cb1cded75d3861909399177334a354662f4cb54e05baef40b8d267978c746f41543c3de1c119ca08919c87fd9460506c5c566e"
+    },
+    {
+      "name": "openssl",
+      "version": "3.6.0",
+      "url": "https://codeload.github.com/openssl/openssl/tar.gz/openssl-3.6.0",
+      "license": "Apache-2.0",
+      "sha512": "3e1796708155454c118550ba0964b42c0c1055b651fec00cfb55038e8a8abbf5f85df02449e62b50b99d2a4a2f7b47862067f8a965e9c8a72f71dee0153672d9"
+    },
+    {
+      "name": "curl",
+      "version": "8.17.0",
+      "url": "https://codeload.github.com/curl/curl/tar.gz/curl-8_17_0",
+      "license": "curl AND ISC AND BSD-3-Clause",
+      "sha512": "ec2fa6c47d52feed943421b00e98370971bcc73b82842a85426ea9e42d36eaab51258a8d00197fdaaf5ec39e19385280fe387765f27e3b3dc1086c46236dc0bf"
+    },
+    {
+      "name": "zlib",
+      "version": "1.3.1",
+      "url": "https://codeload.github.com/madler/zlib/tar.gz/v1.3.1",
+      "license": "Zlib",
+      "sha512": "8c9642495bafd6fad4ab9fb67f09b268c69ff9af0f4f20cf15dfc18852ff1f312bd8ca41de761b3f8d8e90e77d79f2ccacd3d4c5b19e475ecf09d021fdfe9088"
+    },
+    {
+      "name": "expat",
+      "version": "2.7.3",
+      "url": "https://codeload.github.com/libexpat/libexpat/tar.gz/R_2_7_3",
+      "license": "MIT",
+      "sha512": "34400f7dff0151a38c5ff7d73b65b57c7fdf648cf407ed94beddf2d11511b650c4ea16e417a15ebe1707456e7279210e929cc97a0caf7a1ff45bf1d07275e815"
+    },
+    {
+      "name": "json-c",
+      "version": "0.18-20240915",
+      "url": "https://codeload.github.com/json-c/json-c/tar.gz/json-c-0.18-20240915",
+      "license": "MIT",
+      "sha512": "219d8c0da9a4016b74af238cc15dbec1f369a07de160bcc548d80279028e1b5d8d928deb13fec09c96a085fc0ecf10090e309cbe72d0081aca864433c4ae01db"
+    },
+    {
+      "name": "libgeotiff",
+      "version": "1.7.4",
+      "url": "https://codeload.github.com/OSGeo/libgeotiff/tar.gz/1.7.4",
+      "license": "MIT",
+      "sha512": "03468e8eeaf97d82798bf341cf2e27753eb47af985fb08fc6176be799bd0e1e879c6d1701577f7568f269cbef0bb0a20ae460bb943f847daf49aa54601441683"
+    },
+    {
+      "name": "liblzma",
+      "version": "5.8.1",
+      "url": "https://codeload.github.com/tukaani-project/xz/tar.gz/v5.8.1",
+      "license": "0BSD and bundled notices",
+      "sha512": "2f51fb316adb2962e0f2ef6ccc8b544cdc45087b9ad26dcd33f2025784be56578ab937c618e5826b2220b49b79b8581dcb8c6d43cd50ded7ad9de9fe61610f46"
+    },
+    {
+      "name": "nlohmann-json",
+      "version": "3.12.0",
+      "url": "https://codeload.github.com/nlohmann/json/tar.gz/v3.12.0",
+      "license": "MIT",
+      "sha512": "6cc1e86261f8fac21cc17a33da3b6b3c3cd5c116755651642af3c9e99bb3538fd42c1bd50397a77c8fb6821bc62d90e6b91bcdde77a78f58f2416c62fc53b97d"
+    },
+    {
+      "name": "sqlite3",
+      "version": "3.49.1",
+      "url": "https://sqlite.org/2025/sqlite-autoconf-3490100.tar.gz",
+      "license": "blessing",
+      "sha512": "ace92f20fb13a28a8be0eb3560ebf79e71e882611108179b45abba6e77ec0964d75a96c1e187c0e5f883b83896fd44074ef244e1f589288b6354bc9db85223ca"
+    },
+    {
+      "name": "tiff",
+      "version": "4.7.1",
+      "url": "https://gitlab.com/libtiff/libtiff/-/archive/v4.7.1/libtiff-v4.7.1.tar.gz",
+      "license": "libtiff",
+      "sha512": "dcdabe2598db33a973d06f0009dd528aa1f38813bd6015e2595097b838a42240f9ccbe7524b5235ea2f4207a10d5d706339c7a6f4772b531e00a20281a00f67b"
+    }
+  ]
+}

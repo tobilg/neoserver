@@ -49,37 +49,21 @@ func TestAuditCanonicalOperationsAndCredentialAttribution(t *testing.T) {
 	}
 }
 
-func TestAuditCredentialMigrationPreservesHistoricalEvents(t *testing.T) {
-	ctx := context.Background()
-	cfg := auditTestConfig(t.TempDir())
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	m, err := Open(ctx, cfg, "abc123", logger)
+func TestAuditAcceptsQueuedPayloadWithoutCredentialID(t *testing.T) {
+	m, err := Open(t.Context(), auditTestConfig(t.TempDir()), "abc123", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := m.Record(ctx, Event{ID: "historical", Method: "POST", Action: "change", Path: "/old", Principal: "owner"}); err != nil {
+	defer m.Close(context.Background())
+	var event Event
+	if err := json.Unmarshal([]byte(`{"id":"old-outbox","method":"POST","action":"change","path":"/old-outbox"}`), &event); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := m.db.Exec("DROP INDEX audit_events_time; DROP INDEX audit_events_workspace; ALTER TABLE audit_events DROP COLUMN credential_id"); err != nil {
+	if err := m.Record(t.Context(), event); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.Close(ctx); err != nil {
-		t.Fatal(err)
-	}
-	m, err = Open(ctx, cfg, "abc123", logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer m.Close(ctx)
-	events, err := m.List(ctx, Query{})
-	if err != nil || len(events) != 1 || events[0].CredentialID != "" || events[0].Principal != "owner" {
-		t.Fatalf("historical events: %+v %v", events, err)
-	}
-	var legacy Event
-	if err := json.Unmarshal([]byte(`{"id":"old-outbox","method":"POST","action":"change","path":"/old-outbox"}`), &legacy); err != nil {
-		t.Fatal(err)
-	}
-	if err := m.Record(ctx, legacy); err != nil {
-		t.Fatal(err)
+	events, err := m.List(t.Context(), Query{})
+	if err != nil || len(events) != 1 || events[0].CredentialID != "" {
+		t.Fatalf("events=%v error=%v", events, err)
 	}
 }

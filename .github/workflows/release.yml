@@ -21,7 +21,7 @@ jobs:
     # manual candidates. Failed, cancelled, or skipped gates cannot export.
     needs: [ci, security, conformance]
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       VERSION: ${{ inputs.version || github.ref_name }}
       QUALIFICATIONS: ${{ toJSON(needs) }}
@@ -38,6 +38,11 @@ jobs:
         run: docker build --pull --no-cache --build-arg "VERSION=$VERSION" --build-arg "COMMIT=$GITHUB_SHA" -t neoserver:candidate .
       - name: Smoke test the actual non-root release image
         run: ./scripts/test-release-container.sh neoserver:candidate "$VERSION"
+      - name: Verify runtime formats, offline queries, grids and size
+        run: |
+          node scripts/test-runtime-container.mjs neoserver:candidate
+          node scripts/test-proj-grids.mjs neoserver:candidate
+          node scripts/check-runtime-image.mjs neoserver:candidate
       - name: WFS integrity and durable-cache acceptance on the stamped image
         run: node scripts/test-wfs-cache-container.mjs neoserver:candidate
       - name: Install live console test dependencies
@@ -62,9 +67,12 @@ jobs:
       - name: Export SBOM and image
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --format cyclonedx neoserver:candidate > sbom.cdx.json
+          node scripts/check-runtime-image.mjs neoserver:candidate sbom.cdx.json
+          docker run --rm --entrypoint sh neoserver:candidate -c 'for c in /usr/share/doc/*/copyright; do echo "== $c"; cat "$c"; done; cat /usr/share/doc/neoserver/native/* /usr/share/doc/neoserver/duckdb/NOTICES.txt' > image-copyright.txt
+          tar -czf runtime-evidence.tar.gz -C test-results runtime-container
           docker save neoserver:candidate | gzip > neoserver-linux-amd64.tar.gz
           node scripts/release-evidence.mjs
-          sha256sum neoserver-linux-amd64.tar.gz sbom.cdx.json qualification.json > SHA256SUMS
+          sha256sum neoserver-linux-amd64.tar.gz sbom.cdx.json qualification.json image-copyright.txt runtime-evidence.tar.gz > SHA256SUMS
       - uses: actions/upload-artifact@v6
         with:
           name: neoserver-${{ env.VERSION }}-linux-amd64
@@ -73,6 +81,8 @@ jobs:
             sbom.cdx.json
             SHA256SUMS
             qualification.json
+            image-copyright.txt
+            runtime-evidence.tar.gz
           retention-days: 30
 
   # Publishes only for a real tag: a manual candidate run qualifies an artifact
@@ -144,8 +154,9 @@ jobs:
             echo "## Verifying this release"
             echo
             echo "\`qualification.json\` records the source SHA, the image ID and the workflow evidence for every gate this build passed."
-            echo "\`sbom.cdx.json\` is the CycloneDX inventory of the image, and \`SHA256SUMS\` covers all three attached files."
+            echo "\`sbom.cdx.json\` inventories the image, and \`SHA256SUMS\` covers every attached artifact."
             echo "\`neoserver-linux-amd64.tar.gz\` is the same image, for \`docker load\` without a registry."
+            echo "\`image-copyright.txt\` contains dependency notices; \`runtime-evidence.tar.gz\` records format, offline, grid, size and scanner-coverage checks."
             echo
             echo "## Upgrade notes"
             echo
@@ -159,4 +170,5 @@ jobs:
             prerelease="--prerelease"
           fi
           gh release create "$VERSION" --title "$VERSION" --notes-file "$notes" $prerelease \
-            neoserver-linux-amd64.tar.gz sbom.cdx.json SHA256SUMS qualification.json
+            neoserver-linux-amd64.tar.gz sbom.cdx.json SHA256SUMS qualification.json \
+            image-copyright.txt runtime-evidence.tar.gz

@@ -3,6 +3,7 @@ package audit
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
+
 	"strconv"
 	"strings"
 	"sync"
@@ -21,6 +24,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 	"github.com/tobilg/neoserver/internal/conf"
+	"github.com/tobilg/neoserver/internal/dbschema"
 	"github.com/tobilg/neoserver/internal/identity"
 	"github.com/tobilg/neoserver/internal/protocolrequest"
 	"github.com/tobilg/neoserver/internal/store"
@@ -125,17 +129,7 @@ func Open(ctx context.Context, cfg conf.Audit, encryptionKey string, logger *slo
 		db.Close()
 		return nil, fmt.Errorf("open encrypted audit database: %w", err)
 	}
-	if _, err = db.Exec(`CREATE TABLE IF NOT EXISTS audit_events (
-		id VARCHAR PRIMARY KEY, occurred_at TIMESTAMP NOT NULL, request_id VARCHAR, principal VARCHAR,
-		auth_method VARCHAR, workspace VARCHAR, protocol VARCHAR, operation VARCHAR, action VARCHAR,
-		method VARCHAR, path VARCHAR, status INTEGER, duration_ms BIGINT, security_event BOOLEAN
-	); CREATE INDEX IF NOT EXISTS audit_events_time ON audit_events(occurred_at);
-	CREATE INDEX IF NOT EXISTS audit_events_workspace ON audit_events(workspace,occurred_at);`); err != nil {
-		db.Close()
-		return nil, err
-	}
-	// Additive migration preserves old events and queued pre-upgrade payloads.
-	if _, err = db.Exec(`ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS credential_id VARCHAR DEFAULT ''`); err != nil {
+	if err = initSchema(db); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -687,4 +681,82 @@ func sqlLiteral(value string) string { return strings.ReplaceAll(value, "'", "''
 func ParseLimit(value string) int {
 	limit, _ := strconv.Atoi(value)
 	return limit
+}
+
+// schemaVersion is the audit log schema this binary creates and opens. A
+// future change bumps it and upgrades logs recorded at the previous version.
+const auditBaselineVersion = 1
+const schemaVersion = 1
+
+var auditMigrations []dbschema.Migration
+
+// auditBaselineSQL also recognizes the unversioned shape released in 0.1.0.
+// Keep it frozen when schemaSQL and schemaVersion change.
+//
+//go:embed testdata/baseline-v1.sql
+var auditBaselineSQL string
+
+const schemaSQL = `CREATE TABLE IF NOT EXISTS audit_events (
+	id VARCHAR PRIMARY KEY, occurred_at TIMESTAMP NOT NULL, request_id VARCHAR, principal VARCHAR,
+	auth_method VARCHAR, workspace VARCHAR, protocol VARCHAR, operation VARCHAR, action VARCHAR,
+	method VARCHAR, path VARCHAR, status INTEGER, duration_ms BIGINT, security_event BOOLEAN,
+	credential_id VARCHAR DEFAULT ''
+); CREATE INDEX IF NOT EXISTS audit_events_time ON audit_events(occurred_at);
+CREATE INDEX IF NOT EXISTS audit_events_workspace ON audit_events(workspace,occurred_at);`
+
+// initSchema creates the audit log or checks that an existing one is at the
+// version this binary supports. A log written before the version table
+// existed is stamped at version 1 when its columns already match it.
+func initSchema(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	version, err := dbschema.Version(tx, "audit_schema")
+	if err != nil {
+		return err
+	}
+	if version.Valid {
+		if err := dbschema.Apply(tx, "audit log", "audit_schema", auditBaselineVersion, schemaVersion, int(version.Int64), auditMigrations,
+			"open it with neoserver 0.1.0, or move it aside to start a new log"); err != nil {
+			return err
+		}
+	} else {
+		initialVersion := schemaVersion
+		actual, err := dbschema.Shape(tx)
+		if err != nil {
+			return err
+		}
+		if len(actual) != 0 {
+			expected, err := sql.Open("duckdb", "")
+			if err != nil {
+				return err
+			}
+			defer expected.Close()
+			if _, err := expected.Exec(auditBaselineSQL + "; DROP TABLE audit_schema;"); err != nil {
+				return err
+			}
+			shape, err := dbschema.Shape(expected)
+			if err != nil {
+				return err
+			}
+			if !slices.Equal(actual, shape) {
+				return fmt.Errorf("audit log predates schema version %d or has an incompatible structure; open it with neoserver 0.1.0, or move it aside to start a new log", auditBaselineVersion)
+			}
+			initialVersion = auditBaselineVersion
+		} else if _, err := tx.Exec(schemaSQL); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`CREATE TABLE audit_schema (version INTEGER PRIMARY KEY, applied_at TIMESTAMP DEFAULT current_timestamp)`); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("INSERT INTO audit_schema(version) VALUES (?)", initialVersion); err != nil {
+			return err
+		}
+		if err := dbschema.Apply(tx, "audit log", "audit_schema", auditBaselineVersion, schemaVersion, initialVersion, auditMigrations, "move it aside to start a new log"); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
