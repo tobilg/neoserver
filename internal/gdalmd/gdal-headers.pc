@@ -1,0 +1,6 @@
+# Import GDAL's compiler flags without linking it a second time. The Go
+# dependency on godal supplies the public GDAL link dependency.
+Name: neoserver-gdal-headers
+Description: GDAL headers for neoserver's multidimensional API bridge
+Version: 1
+Requires.private: gdal

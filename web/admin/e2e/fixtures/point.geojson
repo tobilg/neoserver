@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "synthetic point" },
+      "geometry": { "type": "Point", "coordinates": [10, 20] }
+    }
+  ]
+}

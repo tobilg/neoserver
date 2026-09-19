@@ -1,0 +1,4 @@
+# Only used by make dev. Paths for state are supplied by scripts/dev.mjs.
+# A dedicated file avoids loading an operator's existing config/neoserver.toml.
+[Datasource]
+AllowedPaths = ["./.cache/dev/**", "./testing/tutorial/**"]

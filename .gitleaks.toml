@@ -1,0 +1,35 @@
+# Secret-scanning configuration for the history scan in
+# .github/workflows/security.yml.
+#
+# The default rule set stays on. Exceptions are listed one by one and matched
+# against the detected value, never by skipping a path or a rule: a real
+# credential committed to a documented file must still fail the scan.
+#
+# Review this list when it changes. Every entry below is a literal that appears
+# in documentation or test data and grants access to nothing.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders and fixture values, reviewed individually"
+regexTarget = "secret"
+regexes = [
+  # Official OGC test-suite identifiers in testing/officialets. The
+  # generic-api-key heuristic reads them as high-entropy tokens.
+  '''^ogcapi-(features|tiles)10$''',
+
+  # Placeholders in the tutorials and README that the reader replaces with a
+  # key the server returns. They are not accepted by any deployment.
+  '''^nsk_replace_with_returned_key$''',
+  '''^nsk_abc123\.\.\.$''',
+  '''^your-secret-api-key$''',
+
+  # A truncated example JWT in an earlier README. This is the base64 header
+  # {"alg":"ES256","typ":"JWT"} only, with no payload or signature.
+  '''^eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9\.\.\.$''',
+
+  # GeoServer's own published default credentials, quoted in a comparison
+  # document that is no longer part of the repository.
+  '''^admin:geoserver$''',
+]

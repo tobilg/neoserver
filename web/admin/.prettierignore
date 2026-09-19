@@ -1,0 +1,9 @@
+src/api/generated/
+openapi.json
+src/components/ui/
+src/hooks/use-mobile.ts
+../../internal/admin/dist/
+coverage/
+playwright-report/
+test-results/
+e2e/.fixture.json

@@ -1,0 +1,537 @@
+{
+  "WMSSettings": {
+    "properties": {
+      "abstract": { "type": "string" },
+      "default_style": { "type": "string" },
+      "enabled": { "type": "boolean" },
+      "extensions": {
+        "items": {
+          "enum": [
+            "dynamic-raster",
+            "advanced-labels",
+            "rendering-transformations",
+            "compositing",
+            "z-order",
+            "dynamic-style",
+            "remote-graphics"
+          ],
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "max_height": { "type": "integer" },
+      "max_pixels": { "type": "integer" },
+      "max_render_features": { "type": "integer" },
+      "max_render_vertices": { "type": "integer" },
+      "max_width": { "type": "integer" },
+      "public": { "type": "boolean" },
+      "simplify_enabled": { "type": "boolean" },
+      "simplify_pixel_tolerance": { "type": "number" },
+      "title": { "type": "string" }
+    },
+    "required": ["enabled"],
+    "type": "object"
+  },
+  "WFSSettings": {
+    "properties": {
+      "abstract": { "type": "string" },
+      "count_timeout_ms": { "type": "integer" },
+      "default_count": { "type": "integer" },
+      "enabled": { "type": "boolean" },
+      "max_features": { "type": "integer" },
+      "max_offset": { "type": "integer" },
+      "public": { "type": "boolean" },
+      "title": { "type": "string" }
+    },
+    "required": ["enabled"],
+    "type": "object"
+  },
+  "WCSSettings": {
+    "properties": {
+      "abstract": { "type": "string" },
+      "allowed_output_crs": { "items": { "type": "string" }, "type": "array" },
+      "allowed_subsetting_crs": {
+        "items": { "type": "string" },
+        "type": "array"
+      },
+      "enabled": { "type": "boolean" },
+      "extensions": { "items": { "type": "string" }, "type": "array" },
+      "interpolation_methods": {
+        "items": { "type": "string" },
+        "type": "array"
+      },
+      "max_axis_values": { "format": "int64", "type": "integer" },
+      "max_cells": { "format": "int64", "type": "integer" },
+      "max_dimensions": { "type": "integer" },
+      "max_output_bytes": { "format": "int64", "type": "integer" },
+      "max_source_granules": { "type": "integer" },
+      "max_temporary_bytes": { "format": "int64", "type": "integer" },
+      "output_formats": { "items": { "type": "string" }, "type": "array" },
+      "processing_timeout_ms": { "type": "integer" },
+      "public": { "type": "boolean" },
+      "title": { "type": "string" }
+    },
+    "required": ["enabled", "public"],
+    "type": "object"
+  },
+  "WMTSSettings": {
+    "properties": {
+      "abstract": { "type": "string" },
+      "contact_email": { "format": "email", "type": "string" },
+      "contact_name": { "type": "string" },
+      "contact_position": { "type": "string" },
+      "enabled": { "type": "boolean" },
+      "feature_info_enabled": { "type": "boolean" },
+      "provider_name": { "type": "string" },
+      "provider_site": { "format": "uri", "type": "string" },
+      "public": { "type": "boolean" },
+      "title": { "type": "string" },
+      "vector_tiles_enabled": { "type": "boolean" }
+    },
+    "required": ["enabled", "public", "feature_info_enabled"],
+    "type": "object"
+  },
+  "OGCAPISettings": {
+    "properties": {
+      "abstract": { "type": "string" },
+      "enabled": { "type": "boolean" },
+      "limit_default": { "type": "integer" },
+      "limit_max": { "type": "integer" },
+      "max_offset": { "type": "integer" },
+      "public": { "type": "boolean" },
+      "title": { "type": "string" }
+    },
+    "required": ["enabled"],
+    "type": "object"
+  },
+  "OGCTilesSettings": {
+    "properties": {
+      "abstract": { "type": "string" },
+      "enabled": { "type": "boolean" },
+      "public": { "type": "boolean" },
+      "settings": {
+        "properties": {
+          "cache_enabled": { "type": "boolean" },
+          "map_tiles": {
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "formats": { "items": { "type": "string" }, "type": "array" }
+            },
+            "required": ["enabled"],
+            "type": "object"
+          },
+          "max_features": { "type": "integer" },
+          "max_tile_bytes": { "type": "integer" },
+          "max_vertices": { "type": "integer" },
+          "persistent_cache_quota_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "tile_matrix_sets": {
+            "items": { "type": "string" },
+            "type": "array"
+          },
+          "vector_tiles": {
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "formats": { "items": { "type": "string" }, "type": "array" }
+            },
+            "required": ["enabled"],
+            "type": "object"
+          }
+        },
+        "required": ["vector_tiles", "map_tiles", "cache_enabled"],
+        "type": "object"
+      },
+      "title": { "type": "string" },
+      "versions": { "items": { "type": "string" }, "type": "array" }
+    },
+    "required": ["enabled", "settings"],
+    "type": "object"
+  },
+  "Layer": {
+    "properties": {
+      "allowed_roles": { "items": { "type": "string" }, "type": "array" },
+      "created_at": { "format": "date-time", "type": "string" },
+      "crs_default": { "type": "integer" },
+      "default_style": { "type": "string" },
+      "description": { "type": "string" },
+      "dimensions": {
+        "items": {
+          "properties": {
+            "current": { "type": "boolean" },
+            "default": { "type": "string" },
+            "end_property": { "type": "string" },
+            "extent": { "type": "string" },
+            "multiple_values": { "type": "boolean" },
+            "name": { "type": "string" },
+            "nearest_value": { "type": "boolean" },
+            "source_axis": { "type": "string" },
+            "source_property": { "type": "string" },
+            "units": { "type": "string" }
+          },
+          "required": ["name", "units", "extent"],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "enabled": { "type": "boolean" },
+      "id": { "type": "string" },
+      "is_sql_view": { "type": "boolean" },
+      "native_extent": {
+        "properties": {
+          "max_x": { "type": "number" },
+          "max_y": { "type": "number" },
+          "min_x": { "type": "number" },
+          "min_y": { "type": "number" },
+          "srid": { "type": "integer" },
+          "stale": { "type": "boolean" }
+        },
+        "required": ["min_x", "min_y", "max_x", "max_y", "srid"],
+        "type": "object"
+      },
+      "public": { "type": "boolean" },
+      "public_id": { "type": "string" },
+      "service_id": { "type": "string" },
+      "source_layer": { "type": "string" },
+      "sql_view_config": {
+        "properties": {
+          "geometry_column": { "type": "string" },
+          "geometry_type": { "type": "string" },
+          "id_column": { "type": "string" },
+          "properties": {
+            "items": {
+              "properties": {
+                "name": { "type": "string" },
+                "type": { "type": "string" }
+              },
+              "required": ["name", "type"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "read_only": { "type": "boolean" },
+          "sql": { "type": "string" },
+          "srid": { "type": "integer" }
+        },
+        "required": ["sql", "geometry_column"],
+        "type": "object"
+      },
+      "styles": { "items": { "type": "string" }, "type": "array" },
+      "tile_cache_generation": { "format": "int64", "type": "integer" },
+      "tile_cache_quota_bytes": { "format": "int64", "type": "integer" },
+      "title": { "type": "string" },
+      "updated_at": { "format": "date-time", "type": "string" }
+    },
+    "required": [
+      "id",
+      "service_id",
+      "source_layer",
+      "public_id",
+      "enabled",
+      "created_at",
+      "updated_at"
+    ],
+    "type": "object"
+  },
+  "LayerGroup": {
+    "properties": {
+      "allowed_roles": { "items": { "type": "string" }, "type": "array" },
+      "default_style": { "type": "string" },
+      "description": { "type": "string" },
+      "enabled": { "type": "boolean" },
+      "id": { "type": "string" },
+      "members": {
+        "items": {
+          "properties": {
+            "composite": {
+              "enum": [
+                "source-over",
+                "multiply",
+                "screen",
+                "overlay",
+                "darken",
+                "lighten"
+              ],
+              "type": "string"
+            },
+            "opacity": { "type": "number" },
+            "resource": { "type": "string" },
+            "style": { "type": "string" }
+          },
+          "required": ["resource"],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "native_extent": {
+        "properties": {
+          "max_x": { "type": "number" },
+          "max_y": { "type": "number" },
+          "min_x": { "type": "number" },
+          "min_y": { "type": "number" },
+          "srid": { "type": "integer" },
+          "stale": { "type": "boolean" }
+        },
+        "required": ["min_x", "min_y", "max_x", "max_y", "srid"],
+        "type": "object"
+      },
+      "public": { "type": "boolean" },
+      "public_id": { "type": "string" },
+      "styles": { "items": { "type": "string" }, "type": "array" },
+      "tile_cache_generation": { "format": "int64", "type": "integer" },
+      "tile_cache_quota_bytes": { "format": "int64", "type": "integer" },
+      "title": { "type": "string" },
+      "workspace_id": { "type": "string" }
+    },
+    "required": ["public_id", "members"],
+    "type": "object"
+  },
+  "CoverageUpdate": {
+    "properties": {
+      "allowed_roles": { "items": { "type": "string" }, "type": "array" },
+      "default_style": { "type": "string" },
+      "description": { "type": "string" },
+      "enabled": { "type": "boolean" },
+      "public": { "type": "boolean" },
+      "public_id": { "type": "string" },
+      "range_fields": {
+        "items": {
+          "properties": {
+            "band": { "type": "integer" },
+            "definition": { "type": "string" },
+            "description": { "type": "string" },
+            "name": { "type": "string" },
+            "nil_values": { "items": { "type": "string" }, "type": "array" },
+            "uom": { "type": "string" }
+          },
+          "required": ["band", "name"],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "resampling": {
+        "enum": ["nearest", "bilinear", "cubic"],
+        "type": "string"
+      },
+      "styles": { "items": { "type": "string" }, "type": "array" },
+      "tile_cache_quota_bytes": { "format": "int64", "type": "integer" },
+      "title": { "type": "string" },
+      "wcs20_coverage_subtype": {
+        "enum": ["RectifiedGridCoverage", "GridCoverage"],
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "ImportPlan": {
+    "properties": {
+      "layers": {
+        "items": {
+          "properties": {
+            "allowed_roles": { "items": { "type": "string" }, "type": "array" },
+            "description": { "type": "string" },
+            "enabled": { "type": "boolean" },
+            "fields": {
+              "items": {
+                "properties": {
+                  "include": { "type": "boolean" },
+                  "source": { "type": "string" },
+                  "target": { "type": "string" },
+                  "type": { "type": "string" }
+                },
+                "required": ["source", "target", "include"],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "geometry_column": { "type": "string" },
+            "id_column": { "type": "string" },
+            "public": { "type": "boolean" },
+            "public_id": { "type": "string" },
+            "source_layer": { "type": "string" },
+            "source_srid": { "type": "integer" },
+            "target_geometry_column": { "type": "string" },
+            "target_srid": { "type": "integer" },
+            "title": { "type": "string" }
+          },
+          "required": ["source_layer", "public_id", "enabled", "public"],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "service_name": { "type": "string" }
+    },
+    "required": ["service_name", "layers"],
+    "type": "object"
+  },
+  "RolePolicy": {
+    "properties": {
+      "action": { "type": "string" },
+      "operation": {
+        "description": "A supported operation, or * / empty for all operations with the selected action. WFS stored-query administration requires manage; transactions and locks require write.",
+        "type": "string"
+      },
+      "service": { "type": "string" },
+      "workspace": {
+        "description": "Existing workspace UUID or name (stored as UUID), or * for all workspaces. Removal uses the exact stored scope.",
+        "type": "string"
+      }
+    },
+    "required": ["workspace", "service", "action"],
+    "type": "object",
+    "x-service-operations": {
+      "ogc-tiles": {
+        "GET": "read",
+        "GETTILE": "read",
+        "HEAD": "read",
+        "LISTCOLLECTIONS": "read"
+      },
+      "ogcapi": {
+        "GET": "read",
+        "GETFEATURES": "read",
+        "GETITEM": "read",
+        "HEAD": "read",
+        "LISTCOLLECTIONS": "read"
+      },
+      "wcs": {
+        "DESCRIBECOVERAGE": "read",
+        "GETCAPABILITIES": "read",
+        "GETCOVERAGE": "read"
+      },
+      "wfs": {
+        "CREATESTOREDQUERY": "manage",
+        "DESCRIBEFEATURETYPE": "read",
+        "DESCRIBESTOREDQUERIES": "read",
+        "DROPSTOREDQUERY": "manage",
+        "GETCAPABILITIES": "read",
+        "GETFEATURE": "read",
+        "GETFEATUREWITHLOCK": "write",
+        "GETPROPERTYVALUE": "read",
+        "LISTSTOREDQUERIES": "read",
+        "LOCKFEATURE": "write",
+        "TRANSACTION": "write"
+      },
+      "wms": {
+        "DESCRIBELAYER": "read",
+        "GETCAPABILITIES": "read",
+        "GETFEATUREINFO": "read",
+        "GETLEGENDGRAPHIC": "read",
+        "GETMAP": "read"
+      },
+      "wmts": {
+        "GETCAPABILITIES": "read",
+        "GETFEATUREINFO": "read",
+        "GETTILE": "read"
+      }
+    }
+  },
+  "TileCacheJobRequest": {
+    "properties": {
+      "all_resources": { "type": "boolean" },
+      "bounds": {
+        "properties": {
+          "bbox": { "items": { "type": "number" }, "type": "array" },
+          "crs": { "type": "string" }
+        },
+        "required": ["bbox", "crs"],
+        "type": "object"
+      },
+      "format": { "type": "string" },
+      "max_zoom": { "type": "integer" },
+      "min_zoom": { "type": "integer" },
+      "operation": { "enum": ["seed", "reseed", "truncate"], "type": "string" },
+      "resource": { "type": "string" },
+      "style": { "type": "string" },
+      "tile_matrix_set": { "type": "string" },
+      "tile_type": { "enum": ["map", "vector"], "type": "string" }
+    },
+    "required": ["operation"],
+    "type": "object"
+  },
+  "MosaicHarvestRequest": {
+    "properties": {
+      "directory": { "type": "string" },
+      "granules": {
+        "items": {
+          "properties": {
+            "elevation": { "type": "number" },
+            "path": { "type": "string" },
+            "priority": { "type": "integer" },
+            "time": { "type": "string" }
+          },
+          "required": ["path"],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "mode": { "enum": ["append", "synchronize"], "type": "string" },
+      "pattern": { "type": "string" }
+    },
+    "type": "object"
+  },
+  "Store": {
+    "properties": {
+      "cache_settings": {
+        "properties": {
+          "features_enabled": { "type": "boolean" },
+          "features_ttl_sec": { "type": "integer" },
+          "tiles_enabled": { "type": "boolean" },
+          "tiles_ttl_sec": { "type": "integer" }
+        },
+        "type": "object"
+      },
+      "connection_info": {
+        "properties": {
+          "connection_string": { "type": "string" },
+          "database": { "type": "string" },
+          "glob": { "type": "string" },
+          "host": { "type": "string" },
+          "layer": { "type": "string" },
+          "layer_srids": { "type": "object" },
+          "password": { "type": "string" },
+          "path": { "type": "string" },
+          "port": { "type": "integer" },
+          "schema": { "type": "string" },
+          "srid": { "minimum": 1, "type": "integer" },
+          "sslmode": { "type": "string" },
+          "table": { "type": "string" },
+          "url": { "type": "string" },
+          "user": { "type": "string" }
+        },
+        "type": "object"
+      },
+      "enabled": { "type": "boolean" },
+      "name": { "type": "string" }
+    },
+    "type": "object"
+  },
+  "ClaimMapping": {
+    "properties": {
+      "claim_name": {
+        "description": "JWT claim name (e.g., groups, roles)",
+        "type": "string"
+      },
+      "claim_value": {
+        "description": "Claim value to match",
+        "type": "string"
+      },
+      "priority": {
+        "description": "Priority (higher = checked first)",
+        "type": "integer"
+      },
+      "role_id": { "description": "Role to assign", "type": "string" }
+    },
+    "required": ["claim_name", "claim_value", "role_id"],
+    "type": "object"
+  },
+  "Role": {
+    "properties": {
+      "description": { "type": "string" },
+      "id": { "type": "string" },
+      "name": { "type": "string" }
+    },
+    "required": ["id"],
+    "type": "object"
+  }
+}

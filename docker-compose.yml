@@ -1,0 +1,75 @@
+services:
+  server:
+    build: .
+    environment:
+      # Required: Encryption key for the backing store
+      # Generate with: openssl rand -hex 32
+      NEOSRV_STORE_KEY: ${NEOSRV_STORE_KEY:?NEOSRV_STORE_KEY must be set}
+      NEOSRV_STORE_PATH: /data/neoserver.db
+      NEOSRV_SERVER_HTTPHOST: 0.0.0.0
+      NEOSRV_SERVER_HTTPPORT: 9000
+      # Public URL used in generated OGC links (use http://server:9000 for CITE containers)
+      NEOSRV_SERVER_URLBASE: ${NEOSRV_SERVER_URLBASE:?NEOSRV_SERVER_URLBASE must be set}
+      NEOSRV_METADATA_TITLE: "NeoServer"
+      NEOSRV_METADATA_DESCRIPTION: "OGC API Features / WMS / WFS server"
+      NEOSRV_WEBSITE_BASEMAPURL: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+      NEOSRV_WMS_ENABLED: "true"
+      NEOSRV_WFS_ENABLED: "true"
+      NEOSRV_WCS_ENABLED: "true"
+    volumes:
+      # Persist backing store outside container
+      # Named-volume initialization preserves the image's non-root ownership.
+      - serverdata:/data
+    ports:
+      - "127.0.0.1:9000:9000"
+
+  # PostGIS database - start separately when needed for PostGIS services
+  # Usage: docker compose up -d db
+  db:
+    image: postgis/postgis:16-3.4
+    profiles:
+      - postgis
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgis
+      # Required by the WCS PostGIS fixture's ST_AsGDALRaster(..., 'GTiff').
+      POSTGIS_GDAL_ENABLED_DRIVERS: GTiff
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./testing/initdb:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgis"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+# OGC CITE TeamEngine for WMS 1.3.0 compliance testing
+  # teamengine-wms13:
+  #   image: ogccite/ets-wms13
+  #   depends_on:
+  #     - server
+  #   ports:
+  #     - "8081:8080"
+
+# OGC CITE TeamEngine for WFS 2.0 compliance testing
+  # teamengine-wfs20:
+  #   image: ogccite/ets-wfs20:latest
+  #   depends_on:
+  #     - server
+  #   ports:
+  #     - "8082:8080"
+
+# OGC CITE TeamEngine for OGC Features 1.0 compliance testing
+# teamengine-ogcfeatures10:
+#   image: ogccite/ets-ogcfeatures10
+#   depends_on:
+#     - server
+#   ports:
+#     - "8083:8080"
+
+volumes:
+  serverdata:
+  pgdata:

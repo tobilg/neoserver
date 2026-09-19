@@ -1,0 +1,82 @@
+{
+  "realm": "neoserver",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "gis-admins", "description": "Maps to workspace admin" },
+      { "name": "gis-nobody", "description": "Intentionally unmapped" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "neoserver-console",
+      "name": "neoserver administration console",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      },
+      "redirectUris": [
+        "http://localhost:19100/admin/*",
+        "http://127.0.0.1:19100/admin/*"
+      ],
+      "webOrigins": ["http://localhost:19100", "http://127.0.0.1:19100"],
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "realm roles in browser identity",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "gis-admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "gis-admin@example.org",
+      "firstName": "Ada",
+      "lastName": "Admin",
+      "credentials": [
+        { "type": "password", "value": "gis-admin-password", "temporary": false }
+      ],
+      "realmRoles": ["gis-admins"]
+    },
+    {
+      "username": "no-roles",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "no-roles@example.org",
+      "firstName": "Noa",
+      "lastName": "Access",
+      "credentials": [
+        { "type": "password", "value": "no-roles-password", "temporary": false }
+      ],
+      "realmRoles": ["gis-nobody"]
+    }
+  ]
+}

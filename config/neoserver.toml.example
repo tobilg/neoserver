@@ -1,0 +1,492 @@
+# =============================================================================
+# neoserver Configuration File
+# =============================================================================
+# All settings can also be configured via environment variables with the
+# NEOSRV_ prefix (e.g., NEOSRV_SERVER_HTTPPORT=8080).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Server Settings
+# -----------------------------------------------------------------------------
+[Server]
+# Host to bind the HTTP server to
+HttpHost = "0.0.0.0"
+
+# Port to listen on
+HttpPort = 9000
+
+# Public URL base (used for generating links in responses). This is required
+# when HttpHost is not a loopback address and must match the externally visible URL.
+UrlBase = "http://localhost:9000"
+
+# Base path prefix for all routes (e.g., "/api/v1")
+BasePath = ""
+
+# CORS allowed origins (comma-separated, "*" for all)
+CORSOrigins = "*"
+
+# Enable debug logging
+Debug = false
+
+# HTTP read timeout in seconds
+ReadTimeoutSec = 5
+
+# HTTP write timeout in seconds
+WriteTimeoutSec = 30
+
+# Maximum request body size in bytes
+MaxBodyBytes = 10485760
+
+# Only these direct peers may supply X-Forwarded-For / X-Forwarded-Proto.
+# Loopback proxies are trusted automatically for local development.
+TrustedProxyCIDRs = []
+
+# Serve the embedded administration console at /admin
+AdminUI = true
+
+# Disable all browser UI, including the administration console
+DisableUI = false
+
+# -----------------------------------------------------------------------------
+# File and remote datasource policy
+# -----------------------------------------------------------------------------
+[Datasource]
+AllowedPaths = ["./data/**", "data/**"]
+RemoteCachePath = "./data/remote-cache"
+RemoteMaxBytes = 1073741824
+RemoteTimeoutSec = 60
+# Maximum number of granules accepted by a managed raster_mosaic service
+MosaicMaxGranules = 100000
+
+# -----------------------------------------------------------------------------
+# Database Settings
+# -----------------------------------------------------------------------------
+[Database]
+# PostgreSQL/PostGIS connection URL
+# Can also be set via DATABASE_URL or NEOSRV_DATABASE_DATABASEURL environment variable
+DatabaseURL = "postgres://postgres:postgres@localhost:5432/postgis?sslmode=disable"
+
+# Schemas to scan for tables with geometry columns
+Schemas = ["public"]
+
+# Only include these tables (empty = include all)
+# Matches against: schema.table, collectionId, or table name
+TableIncludes = []
+
+# Exclude these tables (takes precedence over includes)
+# Matches against: schema.table, collectionId, or table name
+TableExcludes = []
+
+# Maximum number of open connections in the pool
+MaxOpenConns = 25
+
+# Maximum number of idle connections in the pool
+MaxIdleConns = 5
+
+# Maximum lifetime of a connection in seconds
+ConnMaxLifetimeSec = 3600
+
+# Maximum idle time of a connection in seconds
+ConnMaxIdleTimeSec = 600
+
+# -----------------------------------------------------------------------------
+# Paging Settings
+# -----------------------------------------------------------------------------
+[Paging]
+# Default number of features per page
+LimitDefault = 10
+
+# Maximum allowed features per page
+LimitMax = 1000
+
+# Optional protection against deep OFFSET scans (0 = unlimited)
+MaxOffset = 0
+
+# -----------------------------------------------------------------------------
+# Metadata Settings
+# -----------------------------------------------------------------------------
+[Metadata]
+# Service title (shown in API responses and capabilities documents)
+Title = "neoserver"
+
+# Service description
+Description = "PostGIS OGC API - Features and WMS server"
+
+# -----------------------------------------------------------------------------
+# Website / UI Settings
+# -----------------------------------------------------------------------------
+[Website]
+# Basemap tile URL for the map viewer UI (uses {x}, {y}, {z} placeholders)
+# Leave empty for no basemap
+BasemapUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+
+# -----------------------------------------------------------------------------
+# WMS Service Settings (OGC WMS 1.3.0)
+# -----------------------------------------------------------------------------
+[WMS]
+# Enable the WMS service at /wms
+Enabled = false
+
+# Maximum allowed image width in pixels
+MaxWidth = 4096
+
+# Maximum allowed image height in pixels
+MaxHeight = 4096
+
+# Maximum total rendered pixels, independent of width/height limits
+MaxPixels = 16777216
+
+# Maximum features and vertices considered by one GetMap request
+MaxRenderFeatures = 50000
+MaxRenderVertices = 5000000
+MaxRasterMemoryBytes = 268435456
+# Hard ceiling for the encoded GetMap response (PNG/PNG8/JPEG/GIF/TIFF/SVG)
+MaxOutputBytes = 268435456
+
+# 0 derives a safe value from GOMAXPROCS (capped at 4)
+MaxConcurrentRenders = 0
+RenderQueueTimeoutMS = 2000
+SimplifyEnabled = true
+SimplifyPixelTolerance = 0.5
+
+# Default style name to use when no style is specified
+DefaultStyle = "default"
+
+# Path to directory containing SLD style files
+SLDPath = "./styles"
+
+# Advanced portrayal is opt-in at both server and workspace level.
+# Valid values: dynamic-raster, dynamic-style, advanced-labels,
+# rendering-transformations, compositing, z-order, remote-graphics
+Extensions = []
+MaxEnvVariables = 32
+MaxEnvValueBytes = 256
+MaxContourLevels = 32
+MaxGroupDepth = 8
+MaxMosaicGranulesPerRender = 256
+MaxStyleBodyBytes = 1048576
+MaxStyleAssetBytes = 5242880
+StyleAssetPath = "./data/style-assets"
+ExternalGraphicCachePath = "./data/external-graphic-cache"
+# Exact HTTPS origins, for example ["https://cdn.example.com"]. Both the
+# server and workspace must also enable remote-graphics.
+ExternalGraphicAllowedOrigins = []
+ExternalGraphicTimeoutMS = 5000
+MaxExternalGraphicDimension = 4096
+MaxExternalGraphicsPerRender = 64
+MaxProcessFeatures = 100000
+MaxProcessCells = 16777216
+MaxProcessMemoryBytes = 268435456
+ProcessTimeoutMS = 10000
+# Optional operator-controlled font directories. Bundled Go fonts remain the
+# deterministic fallback.
+FontPaths = []
+
+# Built-in style definitions
+# You can define multiple styles here and reference them by name
+[WMS.Styles.default]
+FillColor = "#3388ff"
+FillOpacity = 0.5
+StrokeColor = "#3388ff"
+StrokeWidth = 2.0
+PointRadius = 5.0
+
+# -----------------------------------------------------------------------------
+# WFS Service Settings
+# -----------------------------------------------------------------------------
+[WFS]
+Enabled = false
+# Test/development escape hatch only. When true, anonymous clients may mutate a
+# public WFS workspace. Startup rejects this setting while Auth.Enabled is true.
+AllowAnonymousMutations = false
+MaxFeatures = 10000
+DefaultCount = 100
+MaxOffset = 0
+CountTimeoutMS = 5000
+DefaultSRS = "urn:ogc:def:crs:EPSG::4326"
+AppNamespace = "http://neoserver/app"
+AppNamespacePrefix = "app"
+MaxLockExpirySec = 3600
+MaxLocksPerWorkspace = 1000
+MaxLocksPerPrincipal = 100
+MaxFeaturesPerLock = 10000
+LockCleanupIntervalSec = 60
+MaxVersionedFeatures = 100000
+MaxVersionsPerFeature = 100
+# CSV and GeoPackage export ceilings. GeoPackage uses a private temporary file
+# and a bounded worker queue.
+MaxOutputBytes = 268435456
+MaxTemporaryBytes = 1073741824
+TemporaryDirectory = "./data/wfs-tmp"
+MaxConcurrentExports = 2
+ExportQueueTimeoutMS = 2000
+ExportTimeoutMS = 30000
+
+# Durable managed vector imports are opt-in. Sources must still satisfy the
+# Datasource allowlist; uploads and archive expansion have independent bounds.
+[Importer]
+Enabled = false
+Root = "./data/imports"
+TemporaryDirectory = "./data/imports/tmp"
+WorkerCount = 1
+MaxConcurrentJobs = 1
+MaxUploadBytes = 1073741824
+MaxRetainedSourceBytes = 10737418240 # aggregate uploads/extracted sources, retained until publish/cancel
+UploadTimeoutSec = 900 # whole upload/staging deadline, independent of normal requests
+UploadIdleTimeoutSec = 60 # maximum gap between body reads
+MaxSourceBytes = 1073741824
+MaxExpandedBytes = 4294967296
+MaxArchiveFiles = 1024
+MaxLayers = 256
+MaxFeatures = 10000000
+PreviewFeatures = 100
+TransformTimeoutSec = 3600
+MaxRetries = 3
+ShutdownTimeoutSec = 30
+
+# -----------------------------------------------------------------------------
+# WCS 2.1 / 2.0.1 hard ceilings
+# -----------------------------------------------------------------------------
+[WCS]
+Enabled = false
+MaxCells = 16777216
+MaxOutputBytes = 268435456
+MaxDimensions = 8
+MaxAxisValues = 1000000
+MaxSourceGranules = 10000
+MaxTemporaryBytes = 1073741824
+TemporaryDirectory = "./data/wcs-tmp"
+# 0 selects an automatic limit between 1 and 4.
+MaxConcurrentRequests = 0
+QueueTimeoutMS = 2000
+ProcessingTimeoutMS = 30000
+
+# Optional operational granule catalog for raster_mosaic services. The index
+# is a separate encrypted DuckDB file and is disabled by default.
+[MosaicCatalog]
+Enabled = false
+DatabasePath = "./data/mosaic-index.duckdb"
+WorkerCount = 2
+MaxConcurrentJobs = 1
+MaxGranulesPerJob = 1000000
+BatchSize = 1000
+MaxRetries = 3
+ShutdownTimeoutSec = 30
+
+# -----------------------------------------------------------------------------
+# OGC API Tiles hard ceilings
+# -----------------------------------------------------------------------------
+[Tiles]
+Enabled = false
+MinZoom = 0
+MaxZoom = 22
+TileSize = 4096
+MaxFeatures = 50000
+MaxVertices = 5000000
+MaxTileBytes = 10485760
+MaxConcurrentRenders = 0
+RenderQueueTimeoutMS = 2000
+StatementTimeoutMS = 30000
+MaxMetatileFactor = 4
+MaxGutterPixels = 64
+MaxParameterCombinations = 256
+
+# WMTS 1.0.0 reuses the Tiles limits and per-workspace OGC Tiles matrix sets,
+# formats, styles, and cache policy.
+[WMTS]
+Enabled = false
+MaxFeatureInfoResults = 10
+
+# -----------------------------------------------------------------------------
+# Response Cache Settings
+# -----------------------------------------------------------------------------
+[Cache]
+Enabled = true
+MaxMemoryMB = 512
+# balanced, feature-heavy, or map-heavy. Explicit sub-cache budgets below win.
+Profile = "balanced"
+CounterRatio = 10
+BufferItems = 64
+MetricsEnabled = true
+TTLTickSec = 5
+FillCoalescingEnabled = true
+FillTimeoutSec = 60
+
+[Cache.Capabilities]
+Enabled = true
+TTLSec = 3600
+MaxMemoryMB = 16
+MaxEntrySize = 1048576
+
+[Cache.Collections]
+Enabled = true
+TTLSec = 1800
+MaxMemoryMB = 16
+MaxEntrySize = 4194304
+
+[Cache.Features]
+Enabled = true
+TTLSec = 300
+MaxEntries = 1000
+MaxEntrySize = 10485760
+MaxMemoryMB = 208
+
+[Cache.Counts]
+Enabled = true
+TTLSec = 60
+MaxMemoryMB = 16
+
+[Cache.Tiles]
+Enabled = true
+TTLSec = 900
+MaxMemoryMB = 256
+MaxEntrySize = 10485760
+
+# Optional durable L2 cache for canonical OGC API Tiles and WMTS tiles.
+# MaxBytes is required and must be positive when Enabled=true.
+[PersistentCache]
+Enabled = false
+Backend = "filesystem" # filesystem or s3
+DatabasePath = "./data/tile-cache.duckdb"
+MaxBytes = 10737418240
+AccessFlushIntervalSec = 30
+MaintenanceIntervalSec = 60
+
+[PersistentCache.Filesystem]
+Root = "./data/tile-cache"
+
+# S3-compatible storage uses the standard AWS credential chain. S3 mode is
+# single-active-node: do not share this cache between running neoserver nodes.
+[PersistentCache.S3]
+Bucket = ""
+Region = ""
+Prefix = "neoserver-tiles"
+Endpoint = ""
+UsePathStyle = false
+ServerSideEncryption = "" # "", AES256, or aws:kms
+KMSKeyID = ""
+# Single-active-node ownership guard: a marker object in the prefix refuses
+# startup when another live node owns it. See docs/tile-cache.md.
+OwnershipEnabled = true
+OwnershipCheckIntervalSec = 60
+
+[PersistentCache.Jobs]
+WorkerCount = 2
+MaxConcurrentJobs = 1
+MaxConcurrentRenders = 1
+MaxTilesPerJob = 1000000
+MaxRetries = 3
+ShutdownTimeoutSec = 30
+
+[Observability.OTel]
+Enabled = false
+ServiceName = "neoserver"
+ShutdownTimeoutSec = 5
+
+[Observability.Pprof]
+Enabled = false
+
+# Example: Additional custom style
+# [WMS.Styles.highlight]
+# FillColor = "#ff0000"
+# FillOpacity = 0.8
+# StrokeColor = "#990000"
+# StrokeWidth = 3.0
+# PointRadius = 8.0
+
+# -----------------------------------------------------------------------------
+# Authentication Settings
+# -----------------------------------------------------------------------------
+[Auth]
+# Enable authentication (applies to WMS service)
+Enabled = false
+
+# Authentication method: "none", "apikey", "basic", or "oidc"
+Method = "none"
+
+# API key for "apikey" method
+# Clients should provide it via X-API-Key. Query authentication is disabled below.
+ApiKey = ""
+
+# Require HTTPS for authenticated requests (recommended for production)
+RequireHTTPS = true
+
+# Role granted to principals authenticated via the "apikey" (static key) or
+# "basic" methods above. Defaults to "viewer" (least privilege / read-only).
+# Set to "admin" or "super_admin" only if these shared credentials are genuinely
+# meant to hold elevated access — "super_admin" grants full global admin,
+# including the management API, to anyone holding the static key / basic login.
+DefaultRole = "viewer"
+
+# Query-string keys leak into logs and browser history; enable only for legacy clients.
+AllowAPIKeyInQuery = false
+
+# Browser sessions created by the administration console. Session credentials
+# are stored only as hashes in the encrypted catalog.
+[Auth.Session]
+TTLSec = 43200
+IdleTimeoutSec = 3600
+CleanupIntervalSec = 300
+
+# Users for "basic" authentication (username = password)
+# Can also be set via AUTH_USERS env var: "user1:pass1,user2:pass2"
+[Auth.Users]
+# admin = "secretpassword"
+# viewer = "viewerpass"
+
+# OpenID Connect settings for "oidc" method
+[Auth.OIDC]
+# OIDC provider issuer URL (e.g., "https://accounts.google.com")
+IssuerURL = ""
+
+# OAuth2 client ID
+ClientID = ""
+
+# Allow browser Authorization Code + PKCE sign-in when issuer and client ID are set
+BrowserLoginEnabled = true
+
+# Scopes requested by the public browser client
+BrowserScopes = ["openid", "profile", "email"]
+
+# Exact or dotted claim names considered for claim-to-role mappings
+GroupClaims = ["groups", "cognito:groups", "realm_access.roles", "roles"]
+
+# Required scopes (optional, token must have all listed scopes)
+RequiredScopes = []
+
+# Skip issuer verification (not recommended for production)
+SkipIssuerCheck = false
+
+# Separate encrypted security/change-event history. Query strings and bodies
+# are never stored. Read events are opt-in; mutations and 401/403 responses are
+# recorded by default.
+[Audit]
+Enabled = true
+DatabasePath = "./data/audit.duckdb"
+RetentionDays = 90
+RecordReads = false
+MaxFieldBytes = 256
+CleanupIntervalSec = 86400
+ShutdownTimeoutSec = 10
+WriteTimeoutSec = 2
+RetryIntervalSec = 5
+RetryBatchSize = 100
+
+# -----------------------------------------------------------------------------
+# Per-Collection Overrides
+# -----------------------------------------------------------------------------
+# Override settings for auto-discovered collections.
+# Keys match discovered IDs in the format "schema.table".
+#
+# Example:
+# [Collections."public.buildings"]
+# CollectionId = "buildings"           # Public ID used in URLs
+# Title = "Buildings"                  # Display title
+# Description = "Building footprints"  # Description text
+# Hidden = false                       # Hide from listings
+# IDColumn = "id"                      # Override primary key column
+# GeometryColumn = "geom"              # Override geometry column
+# PropertiesInclude = ["name", "type"] # Only include these properties
+# PropertiesExclude = ["internal_note"] # Exclude these properties
+# CrsDefault = 4326                    # Default output CRS (EPSG code)
+# CrsAllowed = [4326, 3857]            # Allowed CRS transformations

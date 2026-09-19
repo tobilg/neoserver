@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","name":"denied_fixture","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[1,2]},"properties":{"marker":"synthetic-outside-allowlist"}}]}

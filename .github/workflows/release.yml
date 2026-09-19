@@ -1,0 +1,162 @@
+name: Release candidate
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Candidate version (vMAJOR.MINOR.PATCH, optional -suffix)'
+        required: true
+permissions:
+  contents: read
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+  security:
+    uses: ./.github/workflows/security.yml
+  conformance:
+    uses: ./.github/workflows/conformance.yml
+  image:
+    # Local reusable workflows qualify this exact checkout SHA, including
+    # manual candidates. Failed, cancelled, or skipped gates cannot export.
+    needs: [ci, security, conformance]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ inputs.version || github.ref_name }}
+      QUALIFICATIONS: ${{ toJSON(needs) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/admin/package-lock.json
+      - name: Validate version
+        run: '[[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]'
+      - name: Build stamped Linux amd64 image with embedded console
+        run: docker build --pull --no-cache --build-arg "VERSION=$VERSION" --build-arg "COMMIT=$GITHUB_SHA" -t neoserver:candidate .
+      - name: Smoke test the actual non-root release image
+        run: ./scripts/test-release-container.sh neoserver:candidate "$VERSION"
+      - name: WFS integrity and durable-cache acceptance on the stamped image
+        run: node scripts/test-wfs-cache-container.mjs neoserver:candidate
+      - name: Install live console test dependencies
+        run: npm ci --prefix web/admin && cd web/admin && npx playwright install --with-deps chromium
+      - name: Resolve the OIDC issuer hostname
+        run: echo "127.0.0.1 keycloak" | sudo tee -a /etc/hosts
+      - name: Live console acceptance on the same stamped image
+        env:
+          CONSOLE_TEST_IMAGE: neoserver:candidate
+          CONSOLE_SKIP_BUILD: 'true'
+        run: ./scripts/console/run-e2e.sh
+      - name: Scan release image
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --exit-code 1 --severity HIGH,CRITICAL --format json neoserver:candidate > image-security.json
+      - name: Retain image-security evidence even when the gate fails
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: image-security-${{ github.sha }}
+          path: image-security.json
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Export SBOM and image
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.69.3 image --format cyclonedx neoserver:candidate > sbom.cdx.json
+          docker save neoserver:candidate | gzip > neoserver-linux-amd64.tar.gz
+          node scripts/release-evidence.mjs
+          sha256sum neoserver-linux-amd64.tar.gz sbom.cdx.json qualification.json > SHA256SUMS
+      - uses: actions/upload-artifact@v6
+        with:
+          name: neoserver-${{ env.VERSION }}-linux-amd64
+          path: |
+            neoserver-linux-amd64.tar.gz
+            sbom.cdx.json
+            SHA256SUMS
+            qualification.json
+          retention-days: 30
+
+  # Publishes only for a real tag: a manual candidate run qualifies an artifact
+  # for review and must not put anything in front of users. Everything here acts
+  # on the image the image job already smoke-tested, accepted and scanned --
+  # nothing is rebuilt, so what ships is what passed.
+  publish:
+    name: Publish to Docker Hub and GitHub Releases
+    needs: image
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ github.ref_name }}
+      IMAGE: docker.io/tobilg/neoserver
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Collect the qualified artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: neoserver-${{ github.ref_name }}-linux-amd64
+      - name: Verify the artifacts against their checksums
+        run: sha256sum --check SHA256SUMS
+      - name: Load the qualified image
+        run: docker load --input neoserver-linux-amd64.tar.gz
+      - name: Push the release tags
+        id: push
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # A trap drops the credential on every exit path, so no always-run
+          # step is needed. This workflow permits one only for the image-scan
+          # evidence upload, so that no failed gate can be worked around.
+          trap 'docker logout docker.io >/dev/null 2>&1 || true' EXIT
+          echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+          version="${VERSION#v}"
+          docker tag neoserver:candidate "$IMAGE:$version"
+          docker push "$IMAGE:$version"
+          # A prerelease never becomes what `docker pull` returns by default.
+          if [[ "$VERSION" != *-* ]]; then
+            docker tag neoserver:candidate "$IMAGE:latest"
+            docker push "$IMAGE:latest"
+            echo "moved_latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "moved_latest=false" >> "$GITHUB_OUTPUT"
+          fi
+          digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$version")"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+      - name: Create the GitHub release
+        run: |
+          set -euo pipefail
+          version="${VERSION#v}"
+          notes="$(mktemp)"
+          {
+            echo "## Container image"
+            echo
+            echo '```sh'
+            echo "docker pull ${{ steps.push.outputs.digest }}"
+            echo '```'
+            echo
+            echo "Published as \`$IMAGE:$version\`$( [ "${{ steps.push.outputs.moved_latest }}" = true ] && echo " and \`$IMAGE:latest\`" )."
+            echo "Linux amd64 only."
+            echo
+            echo "## Verifying this release"
+            echo
+            echo "\`qualification.json\` records the source SHA, the image ID and the workflow evidence for every gate this build passed."
+            echo "\`sbom.cdx.json\` is the CycloneDX inventory of the image, and \`SHA256SUMS\` covers all three attached files."
+            echo "\`neoserver-linux-amd64.tar.gz\` is the same image, for \`docker load\` without a registry."
+            echo
+            echo "## Upgrade notes"
+            echo
+            echo "See [release notes](docs/release-notes.md) for migrations, breaking changes and known limitations,"
+            echo "and [third-party licenses](THIRD-PARTY-LICENSES.md) for what the image redistributes."
+          } > "$notes"
+          # Not `[[ ... ]] && prerelease=...`: that returns non-zero for a
+          # stable version and `set -e` would abort the step.
+          prerelease=""
+          if [[ "$VERSION" == *-* ]]; then
+            prerelease="--prerelease"
+          fi
+          gh release create "$VERSION" --title "$VERSION" --notes-file "$notes" $prerelease \
+            neoserver-linux-amd64.tar.gz sbom.cdx.json SHA256SUMS qualification.json

@@ -1,0 +1,107 @@
+name: Protocol integration and OGC conformance
+
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-integration:
+    name: Native protocol integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      # The OGC API groups build test binaries against the server internals,
+      # which bind GDAL through cgo and resolve it with pkg-config.
+      - name: Install native build dependencies
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends libgdal-dev
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run native protocol integration
+        run: make test-protocol-integration
+      - name: Upload protocol integration evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: protocol-integration-evidence
+          path: test-results/protocol-integration
+          if-no-files-found: warn
+
+  select-official-suites:
+    name: Select official ETS suites
+    runs-on: ubuntu-latest
+    outputs:
+      suites: ${{ steps.select.outputs.suites }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Select suites
+        id: select
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            suites="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | go run ./testing/officialets/cmd/selectsuites)"
+          else
+            suites="$(go run ./testing/officialets/cmd/selectsuites --all)"
+          fi
+          echo "Selected suites: $suites"
+          echo "suites=$suites" >> "$GITHUB_OUTPUT"
+
+  official-conformance:
+    name: Official ETS - ${{ matrix.suite }}
+    needs: select-official-suites
+    if: needs.select-official-suites.outputs.suites != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJSON(needs.select-official-suites.outputs.suites) }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run digest-pinned stock TEAM Engine suite
+        run: make test-conformance-${{ matrix.suite }}
+      - name: Upload stock official ETS evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: official-ets-${{ matrix.suite }}
+          path: test-results/conformance/${{ matrix.suite }}
+          if-no-files-found: warn
+
+  official-derived-wcs-interpolation:
+    name: Official-derived ETS - WCS 2.0 Interpolation
+    needs: select-official-suites
+    if: contains(fromJSON(needs.select-official-suites.outputs.suites), 'wcs20')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run pinned WCS Interpolation compatibility profile
+        run: make test-conformance-derived-wcs20-interpolation
+      - name: Upload official-derived ETS evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: official-derived-ets-wcs20-interpolation
+          path: test-results/conformance-derived/wcs20/interpolation
+          if-no-files-found: warn

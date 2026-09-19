@@ -1,0 +1,55 @@
+name: Security
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends libgdal-dev
+      # Build the pinned scanner with its required toolchain, then scan using
+      # the project's toolchain (including its standard-library version).
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.26.8'
+      - run: GOBIN="$RUNNER_TEMP/security-tools" go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: GOTOOLCHAIN=local "$RUNNER_TEMP/security-tools/govulncheck" ./...
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts && npm audit --audit-level=high
+        working-directory: web/admin
+      - name: Record dependency inventory for license review
+        run: |
+          go list -m -json all > go-modules.json
+          npm query '*' --json --prefix web/admin > npm-dependencies.json
+      - uses: actions/upload-artifact@v6
+        with:
+          name: dependency-inventory
+          path: |
+            go-modules.json
+            npm-dependencies.json
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Scan Git history for secrets
+        # Test fixtures intentionally contain local-only credentials; any
+        # exceptions must be explicit and reviewed in .gitleaks.toml, which
+        # allowlists individual documented values, never a path or a rule.
+        run: docker run --rm -v "$PWD:/repo:ro" -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo ghcr.io/gitleaks/gitleaks:v8.24.3 git /repo --redact --config /repo/.gitleaks.toml

@@ -1,0 +1,150 @@
+name: neoserver-conformance
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgis
+      POSTGIS_GDAL_ENABLED_DRIVERS: GTiff
+    volumes:
+      - ./testing/initdb:/docker-entrypoint-initdb.d:ro
+      - conformance-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgis && psql -v ON_ERROR_STOP=1 -U postgres -d postgis -tAc 'SELECT 1 FROM cite.\"BasicPolygons\" LIMIT 1' >/dev/null && psql -v ON_ERROR_STOP=1 -U postgres -d postgis -tAc 'SELECT 1 FROM public.wcs_fixture_aux LIMIT 1' >/dev/null"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+
+  store-init:
+    image: "${CONFORMANCE_TEST_IMAGE:-neoserver-conformance:local}"
+    build: .
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        /app/neoserver init --store-path /state/neoserver.db > /state/init.log
+        awk '/^Bootstrap Access Token/{getline; print; exit}' /state/init.log > /state/token
+        test -s /state/token
+        chmod 0666 /state/neoserver.db /state/token
+    environment:
+      NEOSRV_STORE_KEY: abc123
+    volumes:
+      - conformance-state:/state
+
+  server:
+    image: "${CONFORMANCE_TEST_IMAGE:-neoserver-conformance:local}"
+    build: .
+    user: "0:0"
+    depends_on:
+      db:
+        condition: service_healthy
+      store-init:
+        condition: service_completed_successfully
+    environment:
+      NEOSRV_STORE_KEY: abc123
+      NEOSRV_STORE_PATH: /state/neoserver.db
+      NEOSRV_SERVER_HTTPHOST: 0.0.0.0
+      NEOSRV_SERVER_HTTPPORT: 9000
+      NEOSRV_SERVER_URLBASE: "${CONFORMANCE_SERVER_URLBASE:-http://server:9000}"
+      # This network is an isolated local test fixture. The setup job must use
+      # its bootstrap token before services are switched to public access.
+      NEOSRV_AUTH_REQUIREHTTPS: "false"
+      NEOSRV_WMS_ENABLED: "true"
+      NEOSRV_WFS_ENABLED: "true"
+      NEOSRV_WFS_APPNAMESPACE: "http://cite.opengeospatial.org/gmlsf"
+      NEOSRV_WFS_APPNAMESPACEPREFIX: "cite"
+      NEOSRV_WFS_ALLOWANONYMOUSMUTATIONS: "true"
+      NEOSRV_WCS_ENABLED: "true"
+      NEOSRV_TILES_ENABLED: "true"
+      NEOSRV_WMTS_ENABLED: "true"
+      NEOSRV_PERSISTENTCACHE_ENABLED: "false"
+    volumes:
+      - conformance-state:/state
+    ports:
+      - "127.0.0.1:${CONFORMANCE_HTTP_PORT:-19000}:9000"
+
+  setup:
+    build:
+      context: .
+      dockerfile: testing/conformance/setup.Dockerfile
+    depends_on:
+      server:
+        condition: service_started
+    environment:
+      NEOSERVER_URL: http://server:9000
+    entrypoint:
+      - /bin/bash
+      - -ec
+      - |
+        export NEOSERVER_TOKEN="$$(cat /state/token)"
+        exec /usr/local/bin/setup-demo-workspace --public --conformance
+    volumes:
+      - conformance-state:/state:ro
+
+  ets-controller:
+    build:
+      context: .
+      dockerfile: testing/officialets/Dockerfile
+    user: "0:0"
+    environment:
+      TEAMENGINE_USER: ogctest
+      TEAMENGINE_PASSWORD: ogctest
+      ETS_TIMEOUT: "${ETS_TIMEOUT:-45m}"
+      NEOSERVER_COMMIT: "${NEOSERVER_COMMIT:-unknown}"
+      NEOSERVER_IMAGE_ID: "${NEOSERVER_IMAGE_ID:-}"
+    volumes:
+      - ./test-results:/results
+
+  teamengine-wms13:
+    profiles: ["wms13"]
+    image: "ogccite/ets-wms13:1.33-teamengine-5.7@sha256:3f9012ca9b2a5a67075e64781ec504507a735cf6df31df94d0d09a2f4f375784"
+    tmpfs:
+      - /root/te_base/users/ogctest/rest
+
+  teamengine-wfs20:
+    profiles: ["wfs20"]
+    image: "ogccite/ets-wfs20:1.42-teamengine-5.7@sha256:d8099237033172d23ba1beefbb16f6bd46025354a3f57c74ae009d9b91d7525b"
+    tmpfs:
+      - /root/te_base/users/ogctest/rest
+
+  teamengine-wcs20:
+    profiles: ["wcs20"]
+    image: "ogccite/ets-wcs20:1.21-teamengine-5.7@sha256:07aa1ce786e89bd00bef63a270b63c962b6f60b854712f112bc660a31f5a5f9e"
+    tmpfs:
+      - /root/te_base/users/ogctest/rest
+
+  teamengine-wcs20-derived:
+    profiles: ["wcs20-derived"]
+    image: "neoserver/ets-wcs20-interpolation-derived:wcs20-1.21-uri-xpath-v1"
+    build:
+      context: .
+      dockerfile: testing/officialets/patches/wcs20-interpolation.Dockerfile
+    labels:
+      org.neoserver.ets-evidence: "official-derived"
+      org.neoserver.ets-patch: "wcs20-interpolation-uri-xpath-v1"
+    tmpfs:
+      - /root/te_base/users/ogctest/rest
+
+  teamengine-wmts10:
+    profiles: ["wmts10"]
+    image: "ogccite/ets-wmts10:1.10-teamengine-5.7@sha256:0ec86d3db80575741b4d8364709e3058f2b8fd875728961deae60dad3b138a2c"
+    tmpfs:
+      - /root/te_base/users/ogctest/rest
+
+  teamengine-ogcapi-features10:
+    profiles: ["ogcapi-features10"]
+    image: "ogccite/ets-ogcapi-features10:1.8-teamengine-5.7@sha256:d884de89ac8dae6ea153766886c706f9ddf6ce172de0c4bd4bdd591d28bdaffe"
+    tmpfs:
+      - /root/te_base/users/ogctest/rest
+
+  teamengine-ogcapi-tiles10:
+    profiles: ["ogcapi-tiles10"]
+    image: "ogccite/ets-ogcapi-tiles10:1.1-teamengine-5.7@sha256:ceab021daa7a1054403e3c175c6553a96cbf38bafb9021aa7246b5dd39dd0b1b"
+    tmpfs:
+      - /root/te_base/users/ogctest/rest
+
+volumes:
+  conformance-pgdata:
+  conformance-state:

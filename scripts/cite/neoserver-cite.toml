@@ -1,0 +1,169 @@
+# =============================================================================
+# neoserver Configuration for CITE WMS 1.3.0 Testing
+# =============================================================================
+# This configuration is specifically for running OGC CITE compliance tests.
+# It enables the cite schema and maps layer names to the expected format.
+# =============================================================================
+
+[Server]
+HttpHost = "0.0.0.0"
+HttpPort = 9000
+UrlBase = "http://server:9000"
+BasePath = ""
+CORSOrigins = "*"
+Debug = true
+# Use /app/assets for Docker container
+ReadTimeoutSec = 5
+WriteTimeoutSec = 30
+DisableUI = false
+
+[Database]
+# DatabaseURL is set via environment variable in docker-compose.yml
+# DatabaseURL = "postgres://postgres:postgres@db:5432/postgis?sslmode=disable"
+# Include both public and cite schemas
+Schemas = ["public", "cite"]
+TableIncludes = []
+TableExcludes = []
+MaxOpenConns = 25
+MaxIdleConns = 5
+ConnMaxLifetimeSec = 3600
+ConnMaxIdleTimeSec = 600
+
+[Paging]
+LimitDefault = 10
+LimitMax = 1000
+
+[Metadata]
+Title = "CITE WMS 1.3.0 Test Server"
+Description = "PostGIS WMS server for OGC CITE compliance testing"
+
+[Website]
+BasemapUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+
+[WFS]
+Enabled = true
+# CITE GML Simple Features namespace for WFS conformance testing
+AppNamespace = "http://cite.opengeospatial.org/gmlsf"
+AppNamespacePrefix = "cite"
+
+[WMS]
+Enabled = true
+MaxWidth = 4096
+MaxHeight = 4096
+DefaultStyle = "default"
+# SLDPath is optional - leave empty to use only built-in styles
+SLDPath = ""
+
+[WMS.Styles.default]
+FillColor = "#3388ff"
+FillOpacity = 0.5
+StrokeColor = "#3388ff"
+StrokeWidth = 2.0
+PointRadius = 5.0
+
+[Auth]
+Enabled = false
+Method = "none"
+
+# =============================================================================
+# CITE Layer Overrides
+# Map schema.table to cite:LayerName format for WMS compliance
+# Use underscores instead of dots because viper uses dots as key separators
+# =============================================================================
+
+[Collections.cite_BasicPolygons]
+CollectionId = "cite:BasicPolygons"
+Title = "Basic Polygons"
+Description = "Diamond and two overlapping squares for CITE testing"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_Lakes]
+CollectionId = "cite:Lakes"
+Title = "Lakes"
+Description = "Blue Lake with Goose Island"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_Forests]
+CollectionId = "cite:Forests"
+Title = "Forests"
+Description = "Green Forest area"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_Bridges]
+CollectionId = "cite:Bridges"
+Title = "Bridges"
+Description = "Cam Bridge"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_BuildingCenters]
+CollectionId = "cite:BuildingCenters"
+Title = "Building Centers"
+Description = "Building center points"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_Buildings]
+CollectionId = "cite:Buildings"
+Title = "Buildings"
+Description = "Buildings on Main Street"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_DividedRoutes]
+CollectionId = "cite:DividedRoutes"
+Title = "Divided Routes"
+Description = "Route 75 divided highway"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_MapNeatline]
+CollectionId = "cite:MapNeatline"
+Title = "Map Neatline"
+Description = "Map border boundary"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_NamedPlaces]
+CollectionId = "cite:NamedPlaces"
+Title = "Named Places"
+Description = "Ashton and Goose Island"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_Ponds]
+CollectionId = "cite:Ponds"
+Title = "Ponds"
+Description = "Stock Pond"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_RoadSegments]
+CollectionId = "cite:RoadSegments"
+Title = "Road Segments"
+Description = "Various road segments"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_Streams]
+CollectionId = "cite:Streams"
+Title = "Streams"
+Description = "Cam Stream and tributary"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_Autos]
+CollectionId = "cite:Autos"
+Title = "cite:Autos"
+Description = "Automobiles with time dimension"
+CrsAllowed = [3857, 4258]
+
+[Collections.cite_LakesWithElevation]
+CollectionId = "cite:LakesWithElevation"
+Title = "Lakes With Elevation"
+Description = "Lakes with elevation dimension"
+CrsAllowed = [3857, 4258]
+
+# =============================================================================
+# Hide public schema collections from CITE testing
+# =============================================================================
+
+[Collections.public_places]
+Hidden = true
+
+[Collections.public_cities]
+Hidden = true
+
+[Collections.public_areas]
+Hidden = true

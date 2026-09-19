@@ -1,0 +1,8 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "id": 1, "properties": {"name": "Berlin"}, "geometry": {"type": "Point", "coordinates": [13.405, 52.52]}},
+    {"type": "Feature", "id": 2, "properties": {"name": "Paris"}, "geometry": {"type": "Point", "coordinates": [2.3522, 48.8566]}},
+    {"type": "Feature", "id": 3, "properties": {"name": "London"}, "geometry": {"type": "Point", "coordinates": [-0.1276, 51.5072]}}
+  ]
+}

@@ -1,0 +1,117 @@
+name: neoserver-console-e2e
+
+# Disposable fixture for the administration console's end-to-end suite.
+#
+# Deliberately separate from docker-compose.conformance.yml: that fixture backs
+# the pinned official ETS evidence and must not be perturbed by console work.
+# This one adds Keycloak and OIDC configuration, and publishes on 19100 so both
+# can run at once.
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgis
+      POSTGIS_GDAL_ENABLED_DRIVERS: GTiff
+    volumes:
+      - ./testing/initdb:/docker-entrypoint-initdb.d:ro
+      - console-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d postgis && psql -v ON_ERROR_STOP=1 -U postgres -d postgis -tAc 'SELECT 1 FROM cite.\"BasicPolygons\" LIMIT 1' >/dev/null",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+
+  # Publishes the realm the console authenticates against. `KC_HOSTNAME` pins
+  # the issuer so the value the browser sees on the host and the value the
+  # server verifies inside the network are byte-identical -- the verifier pins
+  # `aud` and the issuer, so a mismatch here fails the flow rather than
+  # silently degrading it.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    platform: "${CONSOLE_KEYCLOAK_PLATFORM:-linux/amd64}"
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://keycloak:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./testing/console/keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /realms/neoserver/.well-known/openid-configuration HTTP/1.1\\r\\nHost: keycloak:8080\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q 'authorization_endpoint' <&3",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  store-init:
+    image: ${CONSOLE_TEST_IMAGE:-neoserver-console-e2e-store-init:latest}
+    build: .
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        /app/neoserver init --store-path /state/neoserver.db > /state/init.log
+        awk '/^Bootstrap Access Token/{getline; print; exit}' /state/init.log > /state/token
+        test -s /state/token
+        chmod 0666 /state/neoserver.db /state/token
+    environment:
+      NEOSRV_STORE_KEY: abc123
+    volumes:
+      - console-state:/state
+
+  server:
+    image: ${CONSOLE_TEST_IMAGE:-neoserver-console-e2e-server:latest}
+    build: .
+    user: "0:0"
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      store-init:
+        condition: service_completed_successfully
+    environment:
+      NEOSRV_STORE_KEY: abc123
+      NEOSRV_STORE_PATH: /state/neoserver.db
+      NEOSRV_SERVER_HTTPHOST: 0.0.0.0
+      NEOSRV_SERVER_HTTPPORT: 9000
+      NEOSRV_SERVER_URLBASE: "http://localhost:${CONSOLE_HTTP_PORT:-19100}"
+      NEOSRV_SERVER_ADMINUI: "true"
+      NEOSRV_AUTH_REQUIREHTTPS: "false"
+      # Human sign-in is OIDC; machine clients keep API keys and JWTs.
+      NEOSRV_AUTH_OIDC_ISSUERURL: "http://keycloak:8080/realms/neoserver"
+      NEOSRV_AUTH_OIDC_CLIENTID: "neoserver-console"
+      NEOSRV_WMS_ENABLED: "true"
+      NEOSRV_WFS_ENABLED: "true"
+      NEOSRV_WCS_ENABLED: "true"
+      NEOSRV_TILES_ENABLED: "true"
+      NEOSRV_WMTS_ENABLED: "true"
+      NEOSRV_PERSISTENTCACHE_ENABLED: "false"
+      NEOSRV_IMPORTER_ENABLED: "true"
+      NEOSRV_AUDIT_ENABLED: "true"
+      NEOSRV_AUDIT_RECORDREADS: "false"
+    # Benign sentinel outside Datasource.AllowedPaths, readable by the native
+    # process but never by a user-supplied indirect dataset.
+    volumes:
+      - console-state:/state
+      - ./testing/console/denied-fixture.geojson:/denied/source.geojson:ro
+    ports:
+      - "127.0.0.1:${CONSOLE_HTTP_PORT:-19100}:9000"
+
+volumes:
+  console-pgdata:
+  console-state:

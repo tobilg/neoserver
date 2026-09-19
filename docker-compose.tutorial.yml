@@ -1,0 +1,12 @@
+# Opt-in local learning environment. Never use these credentials in production.
+# Combine with docker-compose.yml and --profile postgis.
+services:
+  server:
+    environment:
+      NEOSRV_IMPORTER_ENABLED: "true"
+      NEOSRV_IMPORTER_ROOT: /data/imports
+      NEOSRV_IMPORTER_TEMPORARYDIRECTORY: /data/imports/tmp
+      NEOSRV_AUTH_REQUIREHTTPS: "false"
+    depends_on:
+      db:
+        condition: service_healthy

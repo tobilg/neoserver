@@ -1,0 +1,129 @@
+{
+  "schema_version": 2,
+  "teamengine_api": "5.7",
+  "suites": {
+    "wms13": {
+      "suite_code": "wms13",
+      "image": "ogccite/ets-wms13:1.33-teamengine-5.7@sha256:3f9012ca9b2a5a67075e64781ec504507a735cf6df31df94d0d09a2f4f375784"
+    },
+    "wfs20": {
+      "suite_code": "wfs20",
+      "image": "ogccite/ets-wfs20:1.42-teamengine-5.7@sha256:d8099237033172d23ba1beefbb16f6bd46025354a3f57c74ae009d9b91d7525b"
+    },
+    "wcs20": {
+      "suite_code": "wcs",
+      "image": "ogccite/ets-wcs20:1.21-teamengine-5.7@sha256:07aa1ce786e89bd00bef63a270b63c962b6f60b854712f112bc660a31f5a5f9e"
+    },
+    "wmts10": {
+      "suite_code": "wmts",
+      "image": "ogccite/ets-wmts10:1.10-teamengine-5.7@sha256:0ec86d3db80575741b4d8364709e3058f2b8fd875728961deae60dad3b138a2c"
+    },
+    "ogcapi-features10": {
+      "suite_code": "ogcapi-features-1.0",
+      "image": "ogccite/ets-ogcapi-features10:1.8-teamengine-5.7@sha256:d884de89ac8dae6ea153766886c706f9ddf6ce172de0c4bd4bdd591d28bdaffe"
+    },
+    "ogcapi-tiles10": {
+      "suite_code": "ogcapi-tiles-1.0",
+      "image": "ogccite/ets-ogcapi-tiles10:1.1-teamengine-5.7@sha256:ceab021daa7a1054403e3c175c6553a96cbf38bafb9021aa7246b5dd39dd0b1b"
+    }
+  },
+  "profiles": {
+    "wms13/core": {
+      "suite": "wms13",
+      "evidence_kind": "official",
+      "arguments": {
+        "capabilities-url": "${SERVER}/workspaces/demo/wms?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0",
+        "basic": "basic",
+        "queryable": "queryable",
+        "time": "time"
+      }
+    },
+    "wfs20/core": {
+      "suite": "wfs20",
+      "evidence_kind": "official",
+      "arguments": {
+        "wfs": "${SERVER}/workspaces/demo/wfs?SERVICE=WFS&REQUEST=GetCapabilities&VERSION=2.0.0"
+      }
+    },
+    "wcs20/core": {
+      "suite": "wcs20",
+      "evidence_kind": "official",
+      "arguments": {
+        "url": "${SERVER}/workspaces/demo/wcs?SERVICE=WCS&REQUEST=GetCapabilities&ACCEPTVERSIONS=2.0.1",
+        "core": "core"
+      }
+    },
+    "wcs20/post": {
+      "suite": "wcs20",
+      "evidence_kind": "official",
+      "arguments": {
+        "url": "${SERVER}/workspaces/demo/wcs?SERVICE=WCS&REQUEST=GetCapabilities&ACCEPTVERSIONS=2.0.1",
+        "ext_post": "post"
+      }
+    },
+    "wcs20/range-subsetting": {
+      "suite": "wcs20",
+      "evidence_kind": "official",
+      "arguments": {
+        "url": "${SERVER}/workspaces/demo/wcs?SERVICE=WCS&REQUEST=GetCapabilities&ACCEPTVERSIONS=2.0.1",
+        "ext_rsub": "range subsetting"
+      }
+    },
+    "wcs20/scaling": {
+      "suite": "wcs20",
+      "evidence_kind": "official",
+      "arguments": {
+        "url": "${SERVER}/workspaces/demo/wcs?SERVICE=WCS&REQUEST=GetCapabilities&ACCEPTVERSIONS=2.0.1",
+        "ext_scal": "scaling"
+      }
+    },
+    "wcs20/crs": {
+      "suite": "wcs20",
+      "evidence_kind": "official",
+      "arguments": {
+        "url": "${SERVER}/workspaces/demo/wcs?SERVICE=WCS&REQUEST=GetCapabilities&ACCEPTVERSIONS=2.0.1",
+        "ext_crs": "crs"
+      }
+    },
+    "wcs20/interpolation": {
+      "suite": "wcs20",
+      "evidence_kind": "official-derived",
+      "arguments": {
+        "url": "${SERVER}/workspaces/demo/wcs?SERVICE=WCS&REQUEST=GetCapabilities&ACCEPTVERSIONS=2.0.1",
+        "ext_int": "interpolation"
+      },
+      "patch_set": "wcs20-interpolation-uri-xpath-v1",
+      "patch": "testing/officialets/patches/wcs20-interpolation-entrypoint.sh",
+      "patch_sha256": "3edeba17fcd021cc8c320d729b041ee0d003a2e8b936f5ad8d55e66d84b7d70a"
+    },
+    "wmts10/core": {
+      "suite": "wmts10",
+      "evidence_kind": "official",
+      "arguments": {
+        "capabilities-url": "${SERVER}/workspaces/demo/wmts?SERVICE=WMTS&REQUEST=GetCapabilities&VERSION=1.0.0"
+      }
+    },
+    "ogcapi-features10/core": {
+      "suite": "ogcapi-features10",
+      "evidence_kind": "official",
+      "arguments": {
+        "iut": "${SERVER}/workspaces/demo/ogc/",
+        "noofcollections": "-1"
+      }
+    },
+    "ogcapi-tiles10/core": {
+      "suite": "ogcapi-tiles10",
+      "evidence_kind": "official",
+      "arguments": {
+        "iut": "${SERVER}/workspaces/demo/ogc-tiles/",
+        "tilematrixsetdefinitionuri": "http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad",
+        "urltemplatefortiles": "${SERVER}/workspaces/demo/ogc-tiles/collections/cite%3ABasicPolygons/map/tiles/WebMercatorQuad/{tileMatrix}/{tileRow}/{tileCol}?f=png",
+        "tilematrix": "0",
+        "mintilerow": "0",
+        "maxtilerow": "0",
+        "mintilecol": "0",
+        "maxtilecol": "0"
+      }
+    }
+  }
+}
