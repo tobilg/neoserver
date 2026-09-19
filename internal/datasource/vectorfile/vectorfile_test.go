@@ -102,11 +102,13 @@ func createTestGeoPackage(t *testing.T) (string, func()) {
 		t.Fatalf("failed to load spatial extension: %v", err)
 	}
 
-	// Create first layer (points)
+	// Create first layer (points). GeoPackage assigns its own FID, so the
+	// attribute is "id": a field named "fid" must match the FID GDAL assigns
+	// to each row, which newer GDAL builds enforce.
 	query1 := `
 		COPY (
 			SELECT
-				1 AS fid,
+				1 AS id,
 				'Point A' AS name,
 				ST_Point(0, 0) AS geom
 			UNION ALL
