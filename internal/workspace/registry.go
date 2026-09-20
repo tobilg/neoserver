@@ -42,16 +42,17 @@ type DataSourceFactory func(svc *store.Service) (datasource.DataSource, error)
 
 // Registry manages workspaces at runtime.
 type Registry struct {
-	store             store.Store
-	workspaces        map[string]*Workspace // keyed by name
-	workspacesByID    map[string]*Workspace // keyed by ID
-	dataSourceFactory DataSourceFactory
-	cache             *cache.Manager
-	mu                sync.RWMutex
-	sourcesMu         sync.Mutex
-	sources           map[datasource.DataSource]*sourceReference
-	serviceUpdates    sync.Map        // service ID -> *sync.Mutex; preparation never holds the registry lock
-	quiescedServices  map[string]bool // guarded by mu; late refreshes cannot resurrect deleted services
+	capabilitiesRevisions sync.Map // workspace ID -> *atomic.Int64
+	store                 store.Store
+	workspaces            map[string]*Workspace // keyed by name
+	workspacesByID        map[string]*Workspace // keyed by ID
+	dataSourceFactory     DataSourceFactory
+	cache                 *cache.Manager
+	mu                    sync.RWMutex
+	sourcesMu             sync.Mutex
+	sources               map[datasource.DataSource]*sourceReference
+	serviceUpdates        sync.Map        // service ID -> *sync.Mutex; preparation never holds the registry lock
+	quiescedServices      map[string]bool // guarded by mu; late refreshes cannot resurrect deleted services
 }
 
 // NewRegistry creates a new workspace registry.
@@ -71,6 +72,7 @@ func (r *Registry) SetCacheManager(cm *cache.Manager) {
 
 // invalidateWorkspaceCache invalidates all caches for a workspace.
 func (r *Registry) invalidateWorkspaceCache(workspaceID string) {
+	r.refreshCapabilitiesRevision(context.Background(), workspaceID)
 	if r.cache != nil {
 		r.cache.InvalidateWorkspace(workspaceID)
 	}
@@ -78,6 +80,7 @@ func (r *Registry) invalidateWorkspaceCache(workspaceID string) {
 
 // invalidateLayerCache invalidates caches when a layer changes.
 func (r *Registry) invalidateLayerCache(workspaceID, layerID string) {
+	r.refreshCapabilitiesRevision(context.Background(), workspaceID)
 	if r.cache != nil {
 		r.cache.InvalidateLayer(workspaceID, layerID)
 	}
@@ -85,6 +88,7 @@ func (r *Registry) invalidateLayerCache(workspaceID, layerID string) {
 
 // invalidateCapabilitiesCache invalidates capabilities caches for a workspace.
 func (r *Registry) invalidateCapabilitiesCache(workspaceID string) {
+	r.refreshCapabilitiesRevision(context.Background(), workspaceID)
 	if r.cache != nil {
 		r.cache.InvalidateCapabilities(workspaceID)
 		r.cache.InvalidateCollections(workspaceID)
@@ -141,6 +145,7 @@ func (r *Registry) Load(ctx context.Context) error {
 			}
 		}
 		ws.TileRevision = tileRevision
+		ws.capabilitiesRevision = r.loadCapabilitiesRevision(ctx, wsData.ID)
 		assetDigest, assets, assetErr := r.styleAssetManifest(ctx, ws.ID)
 		if assetErr != nil {
 			return fmt.Errorf("load workspace style assets: %w", assetErr)
@@ -372,14 +377,15 @@ func (r *Registry) CreateWorkspace(ctx context.Context, input store.CreateWorksp
 	}
 
 	ws := &Workspace{
-		ID:           wsData.ID,
-		Name:         wsData.Name,
-		Description:  wsData.Description,
-		TileRevision: 1,
-		dataState:    newDataState(1, false),
-		Services:     make(map[string]*Service),
-		Styles:       make(map[string]*Style),
-		Groups:       make(map[string]*LayerGroup),
+		ID:                   wsData.ID,
+		Name:                 wsData.Name,
+		Description:          wsData.Description,
+		TileRevision:         1,
+		capabilitiesRevision: r.loadCapabilitiesRevision(ctx, wsData.ID),
+		dataState:            newDataState(1, false),
+		Services:             make(map[string]*Service),
+		Styles:               make(map[string]*Style),
+		Groups:               make(map[string]*LayerGroup),
 		Settings: &store.WorkspaceSettings{
 			WMS:         store.WMSSettings{Enabled: false},
 			WFS:         store.WFSSettings{Enabled: false},
@@ -423,6 +429,7 @@ func (r *Registry) UpdateWorkspace(ctx context.Context, id string, input store.U
 		r.workspaces[ws.Name] = ws
 	}
 	ws.Description = wsData.Description
+	r.invalidateCapabilitiesCache(id)
 
 	return snapshotWorkspace(ws), nil
 }
@@ -1215,17 +1222,17 @@ func (r *Registry) UpdateOGCAPISettings(ctx context.Context, workspaceID string,
 
 // UpdateOGCTilesAPISettings updates OGC Tiles API settings for a workspace.
 func (r *Registry) UpdateOGCTilesAPISettings(ctx context.Context, workspaceID string, settings store.OGCTilesAPISettings) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if err := r.store.UpdateOGCTilesAPISettings(ctx, workspaceID, settings); err != nil {
 		return err
 	}
 
-	r.mu.Lock()
 	ws, ok := r.workspacesByID[workspaceID]
 	if ok && ws.Settings != nil {
 		ws.Settings.OGCTilesAPI = cloneMetadata(settings)
 		ws.TileRevision++
 	}
-	r.mu.Unlock()
 
 	r.invalidateWorkspaceCache(workspaceID)
 

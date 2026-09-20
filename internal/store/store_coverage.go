@@ -71,7 +71,7 @@ func (s *DuckDBStore) CreateCoverage(ctx context.Context, input CreateCoverageIn
 			return nil, fmt.Errorf("resolve coverage workspace: %w", err)
 		}
 	}
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.execCapabilitiesMutation(ctx, "SELECT workspace_id FROM services WHERE id = ?", input.ServiceID, `
 		INSERT INTO coverages (`+coverageColumns+`)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
 	`, id, workspaceID, input.ServiceID, input.SourceCoverage, input.PublicID, input.Title,
@@ -195,7 +195,7 @@ func (s *DuckDBStore) UpdateCoverage(ctx context.Context, id string, input Updat
 	}
 	coverage.TileCacheGeneration++
 	coverage.UpdatedAt = time.Now().UTC()
-	_, err = s.db.ExecContext(ctx, `
+	_, err = s.execCapabilitiesMutation(ctx, "SELECT id FROM workspaces WHERE id = ?", coverage.WorkspaceID, `
 		UPDATE coverages SET public_id=?, title=?, description=?, enabled=?, public=?, allowed_roles=?,
 		 range_fields=?, dimensions=?, default_style=?, styles=?, resampling=?, wcs20_coverage_subtype=?, native_extent=?, tile_cache_quota_bytes=?,
 		 tile_cache_generation=?, updated_at=? WHERE id=?
@@ -230,7 +230,7 @@ func effectiveWCS20CoverageSubtype(value string) string {
 }
 
 func (s *DuckDBStore) DeleteCoverage(ctx context.Context, id string) error {
-	result, err := s.db.ExecContext(ctx, "DELETE FROM coverages WHERE id = ?", id)
+	result, err := s.execCapabilitiesMutation(ctx, "SELECT workspace_id FROM coverages WHERE id = ?", id, "DELETE FROM coverages WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("delete coverage: %w", err)
 	}

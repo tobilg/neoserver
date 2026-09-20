@@ -63,6 +63,7 @@ type DeletionAuxiliary struct {
 // snapshot. Internal ID slices are intentionally omitted from JSON because the
 // corresponding dependency records already carry those identifiers.
 type DeletionPlan struct {
+	Blockers    []DeletionRef `json:"blockers,omitempty"`
 	Scope       DeletionScope `json:"scope"`
 	WorkspaceID string        `json:"workspace_id"`
 	Target      DeletionRef   `json:"target"`
@@ -81,14 +82,14 @@ type DeletionPlan struct {
 }
 
 func (p DeletionPlan) HasDependencies() bool {
-	return len(p.Services)+len(p.Layers)+len(p.Coverages)+len(p.LayerGroups)+len(p.Styles)+
+	return len(p.Blockers)+len(p.Services)+len(p.Layers)+len(p.Coverages)+len(p.LayerGroups)+len(p.Styles)+
 		len(p.StyleAssets)+len(p.APIKeys)+len(p.StoredQueries)+len(p.ClaimMappings)+len(p.Policies) > 0 ||
 		p.Auxiliary.TileEntries > 0 || p.Auxiliary.TileJobs > 0 || p.Auxiliary.MosaicGranules > 0 ||
 		p.Auxiliary.MosaicJobs > 0 || p.Auxiliary.MosaicServices > 0 || p.Auxiliary.ManagedAssets > 0
 }
 
 func (p *DeletionPlan) sort() {
-	collections := [][]DeletionRef{p.Services, p.Layers, p.Coverages, p.LayerGroups, p.Styles,
+	collections := [][]DeletionRef{p.Blockers, p.Services, p.Layers, p.Coverages, p.LayerGroups, p.Styles,
 		p.StyleAssets, p.APIKeys, p.StoredQueries, p.ClaimMappings, p.Policies}
 	for _, refs := range collections {
 		sort.Slice(refs, func(i, j int) bool {
@@ -240,6 +241,9 @@ func (s *DuckDBStore) PlanServiceDeletion(ctx context.Context, workspaceID, serv
 			}
 		}
 	}
+	if err := s.addDatasetMapDeletionBlocker(ctx, plan); err != nil {
+		return nil, err
+	}
 	plan.sort()
 	return plan, nil
 }
@@ -263,6 +267,8 @@ func (s *DuckDBStore) deletionRefs(ctx context.Context, query, kind, reason stri
 }
 
 func (s *DuckDBStore) BeginCatalogDeletion(ctx context.Context, plan DeletionPlan) (*DeletionOperation, bool, error) {
+	s.datasetMapMu.Lock()
+	defer s.datasetMapMu.Unlock()
 	if plan.Target.ID == "" || plan.WorkspaceID == "" {
 		return nil, false, errors.New("deletion plan target and workspace are required")
 	}
@@ -270,6 +276,19 @@ func (s *DuckDBStore) BeginCatalogDeletion(ctx context.Context, plan DeletionPla
 		return existing, false, nil
 	} else if !errors.Is(err, ErrNotFound) {
 		return nil, false, err
+	}
+	// Check current dependencies under the same lock as selection and group writes.
+	if plan.Scope == DeletionScopeService {
+		current, err := s.PlanServiceDeletion(ctx, plan.WorkspaceID, plan.Target.ID)
+		if err != nil {
+			return nil, false, err
+		}
+		if len(current.Blockers) > 0 {
+			return nil, false, ErrDatasetMapInUse
+		}
+		// Keep coordinator-enriched auxiliary counts, but capture current catalog dependencies.
+		current.Auxiliary = plan.Auxiliary
+		plan = *current
 	}
 	plan.sort()
 	encoded, err := json.Marshal(plan)
@@ -432,6 +451,9 @@ func (s *DuckDBStore) CommitCatalogDeletion(ctx context.Context, operationID str
 	}
 	now := time.Now().UTC()
 	if _, err := tx.ExecContext(ctx, `UPDATE catalog_deletions SET status='running',phase=?,last_error='',updated_at=? WHERE id=?`, DeletionPhaseCatalogCommitted, now, operationID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, "UPDATE workspaces SET capabilities_revision = capabilities_revision + 1 WHERE id = ?", op.WorkspaceID); err != nil {
 		return err
 	}
 	return tx.Commit()

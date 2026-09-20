@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/tobilg/neoserver/internal/cache"
 	"github.com/tobilg/neoserver/internal/conf"
+	claim "github.com/tobilg/neoserver/internal/conformance"
 	"github.com/tobilg/neoserver/internal/datasource"
 	"github.com/tobilg/neoserver/internal/identity"
 	"github.com/tobilg/neoserver/internal/sld"
@@ -78,6 +79,11 @@ func RegisterWorkspaceRoutes(r chi.Router, deps WorkspaceDependencies) {
 	r.Get("/collections/{collectionId}/map/tiles", h.collectionMapTilesets)
 	r.Get("/collections/{collectionId}/map/tiles/{tileMatrixSetId}", h.collectionMapTileset)
 	r.Get("/collections/{collectionId}/map/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}", h.getMapTile)
+
+	// Curated workspace map; the shared handlers resolve the configured group.
+	r.Get("/map/tiles", h.collectionMapTilesets)
+	r.Get("/map/tiles/{tileMatrixSetId}", h.collectionMapTileset)
+	r.Get("/map/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}", h.getMapTile)
 
 	// TileJSON
 	r.Get("/collections/{collectionId}/tilejson.json", h.tileJSON)
@@ -211,6 +217,9 @@ func (h *workspaceHandler) landing(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	if datasetMapResource(ws, workspaceRole(r, ws.ID)) != nil {
+		resp.Links = append(resp.Links, Link{Href: base + "/map/tiles", Rel: "http://www.opengis.net/def/rel/ogc/1.0/tilesets-map", Type: MediaTypeJSON, Title: "Workspace map tilesets"})
+	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -229,6 +238,9 @@ func (h *workspaceHandler) conformance(w http.ResponseWriter, r *http.Request) {
 		ConformsTo: effectiveConformanceClasses(ws.Settings.OGCTilesAPI),
 	}
 
+	if datasetMapResource(ws, workspaceRole(r, ws.ID)) != nil {
+		resp.ConformsTo = append(resp.ConformsTo, claim.URIs(claim.TilesDataset)...)
+	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -567,9 +579,8 @@ func (h *workspaceHandler) collectionMapTilesets(w http.ResponseWriter, r *http.
 	}
 
 	collectionID := pathParam(r, "collectionId")
-	resource := ws.GetResource(collectionID)
-	if resource == nil || !resourceVisible(ws, resource, workspaceRole(r, ws.ID)) {
-		writeErr(w, http.StatusNotFound, "NotFound", "collection not found")
+	resource := h.mapResource(w, r, ws, collectionID)
+	if resource == nil {
 		return
 	}
 
@@ -582,15 +593,18 @@ func (h *workspaceHandler) collectionMapTilesets(w http.ResponseWriter, r *http.
 			continue
 		}
 
-		links := []Link{{Href: fmt.Sprintf("%s/collections/%s/map/tiles/%s", base, urlPathEscape(collectionID), urlPathEscape(tmsID)), Rel: "self", Type: MediaTypeJSON}}
+		links := []Link{{Href: mapTilesURL(base, collectionID) + "/" + urlPathEscape(tmsID), Rel: "self", Type: MediaTypeJSON}}
 		links = append(links, mapTileItemLinks(base, collectionID, tmsID, ws.Settings.OGCTilesAPI.Settings.MapTiles.Formats)...)
+		links = append(links, Link{Href: base + "/tileMatrixSets/" + urlPathEscape(tmsID), Rel: "http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", Type: MediaTypeJSON})
 		tileset := TileSetMetadata{
-			Title:           resourceTitle(resource),
-			Description:     resourceDescription(resource),
-			DataType:        DataTypeMap,
-			TileMatrixSetID: tmsID,
-			CRS:             tms.CRS,
-			Links:           links,
+			Title:               resourceTitle(resource),
+			TileMatrixSetLimits: h.mapTileMatrixLimits(tms),
+			Description:         resourceDescription(resource),
+			DataType:            DataTypeMap,
+			TileMatrixSetID:     tmsID,
+			TileMatrixSetURI:    tms.URI,
+			CRS:                 tms.CRS,
+			Links:               links,
 		}
 		tilesets = append(tilesets, tileset)
 	}
@@ -598,7 +612,7 @@ func (h *workspaceHandler) collectionMapTilesets(w http.ResponseWriter, r *http.
 	resp := TileSetList{
 		TileSets: tilesets,
 		Links: []Link{
-			{Href: fmt.Sprintf("%s/collections/%s/map/tiles", base, urlPathEscape(collectionID)), Rel: "self", Type: MediaTypeJSON},
+			{Href: mapTilesURL(base, collectionID), Rel: "self", Type: MediaTypeJSON},
 		},
 	}
 
@@ -622,10 +636,13 @@ func (h *workspaceHandler) collectionMapTileset(w http.ResponseWriter, r *http.R
 
 	collectionID := pathParam(r, "collectionId")
 	tmsID := pathParam(r, "tileMatrixSetId")
+	if !containsString(ws.Settings.OGCTilesAPI.Settings.TileMatrixSets, tmsID) {
+		writeErr(w, http.StatusNotFound, "NotFound", "tile matrix set is not enabled")
+		return
+	}
 
-	resource := ws.GetResource(collectionID)
-	if resource == nil || !resourceVisible(ws, resource, workspaceRole(r, ws.ID)) {
-		writeErr(w, http.StatusNotFound, "NotFound", "collection not found")
+	resource := h.mapResource(w, r, ws, collectionID)
+	if resource == nil {
 		return
 	}
 
@@ -636,16 +653,18 @@ func (h *workspaceHandler) collectionMapTileset(w http.ResponseWriter, r *http.R
 	}
 
 	base := h.workspaceBaseURL(r, ws.Name)
-	links := []Link{{Href: fmt.Sprintf("%s/collections/%s/map/tiles/%s", base, urlPathEscape(collectionID), urlPathEscape(tmsID)), Rel: "self", Type: MediaTypeJSON}}
+	links := []Link{{Href: mapTilesURL(base, collectionID) + "/" + urlPathEscape(tmsID), Rel: "self", Type: MediaTypeJSON}}
 	links = append(links, mapTileItemLinks(base, collectionID, tmsID, ws.Settings.OGCTilesAPI.Settings.MapTiles.Formats)...)
 	links = append(links, Link{Href: fmt.Sprintf("%s/tileMatrixSets/%s", base, urlPathEscape(tmsID)), Rel: "http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", Type: MediaTypeJSON})
 	resp := TileSetMetadata{
-		Title:           resourceTitle(resource),
-		Description:     resourceDescription(resource),
-		DataType:        DataTypeMap,
-		TileMatrixSetID: tmsID,
-		CRS:             tms.CRS,
-		Links:           links,
+		Title:               resourceTitle(resource),
+		TileMatrixSetLimits: h.mapTileMatrixLimits(tms),
+		Description:         resourceDescription(resource),
+		DataType:            DataTypeMap,
+		TileMatrixSetID:     tmsID,
+		TileMatrixSetURI:    tms.URI,
+		CRS:                 tms.CRS,
+		Links:               links,
 	}
 
 	writeJSON(w, http.StatusOK, resp)
@@ -669,7 +688,15 @@ func (h *workspaceHandler) getMapTile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	collectionID := pathParam(r, "collectionId")
+	resource := h.mapResource(w, r, ws, collectionID)
+	if resource == nil {
+		return
+	}
 	tmsID := pathParam(r, "tileMatrixSetId")
+	if !containsString(ws.Settings.OGCTilesAPI.Settings.TileMatrixSets, tmsID) {
+		writeErr(w, http.StatusNotFound, "NotFound", "tile matrix set is not enabled")
+		return
+	}
 
 	coordinates, invalidParameter := parseOGCTileCoordinates(r)
 	if invalidParameter != "" {
@@ -721,11 +748,6 @@ func (h *workspaceHandler) getMapTile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resource := ws.GetResource(collectionID)
-	if resource == nil || !resourceVisible(ws, resource, workspaceRole(r, ws.ID)) {
-		writeErr(w, http.StatusNotFound, "NotFound", "collection not found")
-		return
-	}
 	if resource.Kind == workspace.ResourceFeature && (resource.Service == nil || resource.Service.DataSource == nil) {
 		writeErr(w, http.StatusServiceUnavailable, "ServiceUnavailable", "data source not available")
 		return
@@ -814,6 +836,9 @@ func parseOGCTileCoordinates(r *http.Request) (ogcTileCoordinates, string) {
 }
 
 func ogcTileItemURL(base, collectionID, tilesPath, tmsID string) string {
+	if collectionID == "" {
+		return fmt.Sprintf("%s/%s/%s/{tileMatrix}/{tileRow}/{tileCol}", base, tilesPath, urlPathEscape(tmsID))
+	}
 	return fmt.Sprintf("%s/collections/%s/%s/%s/{tileMatrix}/{tileRow}/{tileCol}", base, urlPathEscape(collectionID), tilesPath, urlPathEscape(tmsID))
 }
 
@@ -830,7 +855,7 @@ func mapTileItemLinks(base, collectionID, tmsID string, formats []string) []Link
 		default:
 			continue
 		}
-		links = append(links, Link{Href: ogcTileItemURL(base, collectionID, "map/tiles", tmsID) + "?f=" + parameter, Rel: "item", Type: format})
+		links = append(links, Link{Href: ogcTileItemURL(base, collectionID, "map/tiles", tmsID) + "?f=" + parameter, Rel: "item", Type: format, Templated: true})
 	}
 	return links
 }

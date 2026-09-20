@@ -82,6 +82,9 @@ func (h *handler) putTileMatrixSet(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "Internal Error", "tile matrix set was saved but runtime reload failed")
 		return
 	}
+	for _, ws := range h.registry.List() {
+		h.registry.InvalidateWorkspace(ws.ID)
+	}
 	writeJSON(w, http.StatusOK, item)
 }
 
@@ -122,6 +125,9 @@ func (h *handler) deleteTileMatrixSet(w http.ResponseWriter, r *http.Request) {
 	if err := reloadTileMatrixSets(r.Context(), catalog); err != nil {
 		writeError(w, http.StatusInternalServerError, "Internal Error", "tile matrix set was deleted but runtime reload failed")
 		return
+	}
+	for _, ws := range h.registry.List() {
+		h.registry.InvalidateWorkspace(ws.ID)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -160,6 +160,9 @@ func (c *Coordinator) DeleteService(ctx context.Context, workspaceID, serviceID 
 	if err != nil {
 		return nil, err
 	}
+	if len(plan.Blockers) > 0 {
+		return nil, store.ErrDatasetMapInUse
+	}
 	if !recursive {
 		if plan.HasDependencies() {
 			return nil, &store.DeletionConflictError{Plan: *plan}
@@ -218,7 +221,7 @@ func (c *Coordinator) begin(ctx context.Context, plan store.DeletionPlan) (*stor
 	}
 	// Quiesce synchronously before returning 202: callers must never receive an
 	// accepted operation while the old publication can still serve requests.
-	c.quiesceRuntime(plan)
+	c.quiesceRuntime(op.Plan)
 	if err := c.deps.Deletions.UpdateCatalogDeletion(ctx, op.ID, store.DeletionRunning, store.DeletionPhaseTombstoned, ""); err != nil {
 		return nil, err
 	}

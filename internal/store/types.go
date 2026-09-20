@@ -401,6 +401,7 @@ type OGCTilesAPIMapSettings struct {
 
 // OGCTilesAPIInnerSettings holds the detailed tile configuration.
 type OGCTilesAPIInnerSettings struct {
+	DatasetMapLayerGroupID    string                    `json:"dataset_map_layer_group_id,omitempty"`
 	TileMatrixSets            []string                  `json:"tile_matrix_sets,omitempty"` // Default: ["WebMercatorQuad"]
 	VectorTiles               OGCTilesAPIVectorSettings `json:"vector_tiles"`
 	MapTiles                  OGCTilesAPIMapSettings    `json:"map_tiles"`
@@ -424,17 +425,18 @@ type OGCTilesAPISettings struct {
 // WMTSSettings holds independently activatable WMTS protocol metadata. Tile
 // formats and matrix sets deliberately reuse OGCTilesAPIInnerSettings.
 type WMTSSettings struct {
-	Enabled            bool   `json:"enabled"`
-	Public             bool   `json:"public"`
-	Title              string `json:"title,omitempty"`
-	Abstract           string `json:"abstract,omitempty"`
-	FeatureInfoEnabled bool   `json:"feature_info_enabled"`
-	VectorTilesEnabled bool   `json:"vector_tiles_enabled,omitempty"`
-	ProviderName       string `json:"provider_name,omitempty"`
-	ProviderSite       string `json:"provider_site,omitempty"`
-	ContactName        string `json:"contact_name,omitempty"`
-	ContactPosition    string `json:"contact_position,omitempty"`
-	ContactEmail       string `json:"contact_email,omitempty"`
+	Enabled                 bool   `json:"enabled"`
+	Public                  bool   `json:"public"`
+	Title                   string `json:"title,omitempty"`
+	Abstract                string `json:"abstract,omitempty"`
+	FeatureInfoEnabled      bool   `json:"feature_info_enabled"`
+	VectorTilesEnabled      bool   `json:"vector_tiles_enabled,omitempty"`
+	TileMatrixLimitsEnabled bool   `json:"tile_matrix_limits_enabled"`
+	ProviderName            string `json:"provider_name,omitempty"`
+	ProviderSite            string `json:"provider_site,omitempty"`
+	ContactName             string `json:"contact_name,omitempty"`
+	ContactPosition         string `json:"contact_position,omitempty"`
+	ContactEmail            string `json:"contact_email,omitempty"`
 }
 
 func DefaultWMTSSettings() WMTSSettings {

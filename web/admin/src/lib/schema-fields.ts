@@ -17,6 +17,7 @@ export interface Choice {
 }
 export type FieldChoices = Record<string, Choice[]>;
 const names: Record<string, string> = {
+  dataset_map_layer_group_id: "Workspace map",
   services: "Stores",
   api_keys: "API keys",
   ogcapi: "OGC API – Features",
@@ -117,6 +118,7 @@ export function enumLabel(value: string) {
 
 /** Wording of the empty option when a select has no value yet. */
 export const emptyChoiceLabels: Record<string, string> = {
+  dataset_map_layer_group_id: "None",
   resource: "Choose a publication…",
   tile_matrix_set: "Server default",
 };

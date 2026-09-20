@@ -140,12 +140,40 @@ func TestSkipCategory(t *testing.T) {
 		"nillable fixture":   {caseResult{Message: "FeatureType places does not contain at least one nillable property"}, "fixture-not-applicable"},
 		"version":            {caseResult{Name: "WFS 2.0.2 only"}, "profile-version"},
 		"unknown":            {caseResult{Name: "opaque CTL branch"}, "unclassified"},
+		"point exclusion":    {caseResult{Message: "Intersects tests are not supported for point geometry types."}, "fixture-not-applicable"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if got := skipCategory(test.item); got != test.want {
 				t.Fatalf("category = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestCTLMessagesReachJUnitWithoutChangingCounts(t *testing.T) {
+	result, err := parseSuiteResult([]byte(`<execution>
+<log><starttest local-name="pass" path="suite/pass"/><endtest result="1"/></log>
+<log><starttest local-name="AcceptVersions.Invalid" path="suite/version"/>
+<message>Returned HTTP status code 200 did not match required code <b>400</b></message>
+<message>Version negotiation considered not implemented.</message><endtest result="3"/></log>
+</execution>`))
+	if err != nil || result.Leaf.Passed != 1 || result.Leaf.Skipped != 1 {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	if got := result.Cases[1].Message; !strings.Contains(got, "required code 400\nVersion negotiation") {
+		t.Fatalf("lost CTL diagnostic: %q", got)
+	}
+}
+
+func TestDependentConfigurationSkipKeepsParentReason(t *testing.T) {
+	result := suiteResult{Cases: []caseResult{
+		{Class: "example.versioning.FeatureVersioning", Kind: "infrastructure", Status: "skipped", Message: "Capability not implemented: ImplementsFeatureVersioning."},
+		{Class: "example.versioning.VersioningTests", Name: "initParser", Kind: "infrastructure", Status: "skipped"},
+		{Class: "example.unrelated.Test", Name: "initParser", Kind: "infrastructure", Status: "skipped"},
+	}}
+	classifySkippedCases(&result)
+	if !strings.Contains(result.Cases[1].Message, "ImplementsFeatureVersioning") || result.Cases[2].Message != "" || result.SkipCategories["infrastructure"] != 3 {
+		t.Fatalf("incorrect dependency attribution: %+v", result)
 	}
 }
 

@@ -11,6 +11,10 @@ import (
 
 func (h *workspaceHandler) handleGetCapabilities(w http.ResponseWriter, r *http.Request, ws *workspace.Workspace) {
 	q := NormalizeQuery(r)
+	responseVersion := "2.0.0"
+	if q.Get("VERSION") == "2.0.2" {
+		responseVersion = "2.0.2"
+	}
 
 	// Handle version negotiation per WFS 2.0 spec (ISO 19142:7.2.3)
 	// AcceptVersions parameter contains a comma-separated list of acceptable versions
@@ -21,6 +25,7 @@ func (h *workspaceHandler) handleGetCapabilities(w http.ResponseWriter, r *http.
 			v = strings.TrimSpace(v)
 			if v == "2.0.0" || v == "2.0.2" {
 				supported = true
+				responseVersion = v
 				break
 			}
 		}
@@ -34,7 +39,7 @@ func (h *workspaceHandler) handleGetCapabilities(w http.ResponseWriter, r *http.
 	// Try to get from cache first. The advertised feature types are filtered by
 	// the caller's per-layer read access, so the cache key must include the role.
 	role := workspaceRole(r, ws.ID)
-	cacheKey := cache.WFSCapabilitiesKey(ws.ID) + "|role=" + role
+	cacheKey := cache.WFSCapabilitiesKey(ws.ID) + "|role=" + role + "|version=" + responseVersion
 	cacheFill := h.cache.BeginFill(cache.CacheTypeCapabilities, cacheKey)
 	if h.cache != nil {
 		if cached, ok := h.cache.GetCapabilities(cacheKey); ok {
@@ -62,12 +67,12 @@ func (h *workspaceHandler) handleGetCapabilities(w http.ResponseWriter, r *http.
 	var buf strings.Builder
 	namespaceDeclarations := applicationNamespaceDeclarations(h.cfg.WFS.AppNamespace, h.cfg.WFS.AppNamespacePrefix)
 	fmt.Fprintf(&buf, `<?xml version="1.0" encoding="UTF-8"?>
-<wfs:WFS_Capabilities version="2.0.0" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:fes="http://www.opengis.net/fes/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" %s xsi:schemaLocation="http://www.opengis.net/wfs/2.0 http://schemas.opengis.net/wfs/2.0/wfs.xsd http://www.opengis.net/fes/2.0 http://schemas.opengis.net/filter/2.0/filterAll.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd">
+<wfs:WFS_Capabilities version="__NEOSERVER_WFS_VERSION__" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:fes="http://www.opengis.net/fes/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" %s xsi:schemaLocation="http://www.opengis.net/wfs/2.0 http://schemas.opengis.net/wfs/2.0/wfs.xsd http://www.opengis.net/fes/2.0 http://schemas.opengis.net/filter/2.0/filterAll.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd">
   <ows:ServiceIdentification>
     <ows:Title>%s</ows:Title>
     <ows:Abstract>%s</ows:Abstract>
     <ows:ServiceType>WFS</ows:ServiceType>
-    <ows:ServiceTypeVersion>2.0.0</ows:ServiceTypeVersion>
+    <ows:ServiceTypeVersion>__NEOSERVER_WFS_VERSION__</ows:ServiceTypeVersion>
   </ows:ServiceIdentification>
   <ows:ServiceProvider>
     <ows:ProviderName>neoserver</ows:ProviderName>
@@ -339,7 +344,7 @@ func (h *workspaceHandler) handleGetCapabilities(w http.ResponseWriter, r *http.
 	for _, outputFormat := range availableWFSOutputFormats() {
 		formatValues = append(formatValues, fmt.Sprintf("<ows:Value>%s</ows:Value>", escapeXML(outputFormat)))
 	}
-	response := []byte(strings.Replace(buf.String(), "__NEOSERVER_WFS_OUTPUT_FORMATS__", strings.Join(formatValues, "\n\t\t  "), 1))
+	response := []byte(strings.Replace(strings.ReplaceAll(buf.String(), "__NEOSERVER_WFS_VERSION__", responseVersion), "__NEOSERVER_WFS_OUTPUT_FORMATS__", strings.Join(formatValues, "\n\t\t  "), 1))
 	if h.cache != nil {
 		h.cache.SetCapabilities(cacheKey, response, cacheFill)
 	}

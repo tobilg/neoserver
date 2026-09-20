@@ -532,7 +532,7 @@ func (s *DuckDBStore) PublishImport(ctx context.Context, input PublishImportInpu
 	if err = insertImportEvent(ctx, tx, job, nil); err != nil {
 		return nil, nil, err
 	}
-	if _, err = tx.ExecContext(ctx, `UPDATE workspaces SET tile_revision=tile_revision+1,updated_at=? WHERE id=?`, now, input.WorkspaceID); err != nil {
+	if _, err = tx.ExecContext(ctx, `UPDATE workspaces SET capabilities_revision = capabilities_revision + 1, tile_revision=tile_revision+1,updated_at=? WHERE id=?`, now, input.WorkspaceID); err != nil {
 		return nil, nil, err
 	}
 	if err = tx.Commit(); err != nil {

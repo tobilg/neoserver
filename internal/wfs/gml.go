@@ -28,8 +28,8 @@ func WriteGMLFeatureCollectionMatched(w http.ResponseWriter, layerInfo *datasour
 
 // WriteGMLFeatureCollectionWithLock writes a GML 3.2 feature collection with optional lockId attribute.
 func WriteGMLFeatureCollectionWithLock(w http.ResponseWriter, layerInfo *datasource.LayerInfo, features [][]byte,
-	totalCount, startIndex, count int, namespace, nsPrefix string, srid int, baseURL, typeName string, lockId string) {
-	writeGMLFeatureCollection(w, layerInfo, features, strconv.Itoa(totalCount), startIndex, count, namespace, nsPrefix, srid, baseURL, typeName, lockId)
+	totalCount, startIndex, count int, namespace, nsPrefix string, srid int, baseURL, typeName string, lockId string, requests ...*GetFeatureRequest) {
+	writeGMLFeatureCollection(w, layerInfo, features, strconv.Itoa(totalCount), startIndex, count, namespace, nsPrefix, srid, baseURL, typeName, lockId, requests...)
 }
 
 func writeGMLFeatureCollection(w http.ResponseWriter, layerInfo *datasource.LayerInfo, features [][]byte,
@@ -70,7 +70,7 @@ func writeGMLFeatureCollection(w http.ResponseWriter, layerInfo *datasource.Laye
 
 	// Build schema location
 	schemaLoc := fmt.Sprintf("%s http://schemas.opengis.net/wfs/2.0/wfs.xsd %s %s", NSWfs, effectiveNS,
-		wfsURL(baseURL, map[string]string{"service": "WFS", "version": "2.0.0", "request": "DescribeFeatureType", "typeNames": typeName}))
+		wfsURL(baseURL, map[string]string{"service": "WFS", "version": featureRequestVersion(requests), "request": "DescribeFeatureType", "typeNames": typeName}))
 
 	// Calculate pagination
 	numReturned := len(features)
@@ -646,7 +646,7 @@ func writeGMLStandardProperties(w http.ResponseWriter, properties map[string]int
 // The gmlID parameter should be the exact ID that was requested, to ensure the response
 // gml:id matches the requested identifier.
 func WriteGMLSingleFeature(w http.ResponseWriter, layerInfo *datasource.LayerInfo, featureJSON []byte,
-	namespace, nsPrefix string, srid int, typeName string, baseURL string, gmlID string) {
+	namespace, nsPrefix string, srid int, typeName string, baseURL string, gmlID string, requests ...*GetFeatureRequest) {
 
 	// Parse GeoJSON feature
 	feature, err := decodeFeatureJSON(featureJSON)
@@ -703,7 +703,7 @@ func WriteGMLSingleFeature(w http.ResponseWriter, layerInfo *datasource.LayerInf
 	geometry, _ := feature["geometry"].(map[string]interface{})
 
 	// Build schema location
-	schemaLoc := fmt.Sprintf("%s %s", effectiveNS, wfsURL(baseURL, map[string]string{"service": "WFS", "version": "2.0.0", "request": "DescribeFeatureType", "typeNames": typeName}))
+	schemaLoc := fmt.Sprintf("%s %s", effectiveNS, wfsURL(baseURL, map[string]string{"service": "WFS", "version": featureRequestVersion(requests), "request": "DescribeFeatureType", "typeNames": typeName}))
 
 	w.Header().Set("Content-Type", "application/gml+xml; version=3.2; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -946,4 +946,11 @@ func WriteValueCollectionHits(w http.ResponseWriter, numberMatched int) {
   numberMatched="%d"
   numberReturned="0"/>
 `, NSWfs, NSGml, NSXsi, WfsSchemaLocation, nowISO8601(), numberMatched)
+}
+
+func featureRequestVersion(requests []*GetFeatureRequest) string {
+	if len(requests) > 0 && requests[0] != nil {
+		return transactionResponseVersion(requests[0].Version)
+	}
+	return Version200
 }

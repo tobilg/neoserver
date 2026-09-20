@@ -124,6 +124,16 @@
         "mintilecol": "0",
         "maxtilecol": "0"
       }
+    },
+    "wfs20/core202": {
+      "suite": "wfs20",
+      "evidence_kind": "official-derived",
+      "arguments": {
+        "wfs": "${SERVER}/workspaces/demo/wfs?SERVICE=WFS&REQUEST=GetCapabilities&VERSION=2.0.2"
+      },
+      "patch_set": "wfs202-lock-response-v1",
+      "patch": "testing/officialets/patches/wfs202-lock-response.go",
+      "patch_sha256": "bc4054bf20325ced6111ca503908bb6a0ca9ead6573e9343f4c3b30fa017eea9"
     }
   }
 }

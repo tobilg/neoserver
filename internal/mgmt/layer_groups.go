@@ -95,7 +95,7 @@ func (h *handler) createLayerGroup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Bad Request", err.Error())
 		return
 	}
-	writeJSON(w, http.StatusCreated, created)
+	h.writeStoredLayerGroup(w, r, created.ID, http.StatusCreated)
 }
 
 func (h *handler) getLayerGroup(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +147,7 @@ func (h *handler) updateLayerGroup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Bad Request", err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, updated)
+	h.writeStoredLayerGroup(w, r, updated.ID, http.StatusOK)
 }
 
 func (h *handler) deleteLayerGroup(w http.ResponseWriter, r *http.Request) {
@@ -196,4 +196,15 @@ func derefInt64(value *int64) int64 {
 		return 0
 	}
 	return *value
+}
+
+// Management responses use the same persisted schema as GET and list; runtime
+// LayerGroup snapshots have neither JSON tags nor catalog ownership/timestamps.
+func (h *handler) writeStoredLayerGroup(w http.ResponseWriter, r *http.Request, id string, status int) {
+	group, err := h.store.(store.LayerGroupStore).GetLayerGroup(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Internal Error", "failed to load saved layer group")
+		return
+	}
+	writeJSON(w, status, group)
 }

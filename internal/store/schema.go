@@ -2,11 +2,10 @@
 package store
 
 // schemaVersion is the catalog schema this binary creates and opens. It is
-// also the baseline: a catalog at an older version is refused rather than
-// upgraded. A future schema change bumps this and appends a step to
-// catalogMigrations in store_init.go.
+// supported current version. Versions before catalogBaselineVersion are refused;
+// released baseline catalogs are upgraded by catalogMigrations.
 const catalogBaselineVersion = 25
-const schemaVersion = 25
+const schemaVersion = 26
 
 // schemaSQL contains the DDL for creating all backing store tables.
 const schemaSQL = dataRevisionSchema + `
@@ -40,6 +39,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
 	wcs_settings JSON DEFAULT '{"enabled":false,"public":false}',
 	wmts_settings JSON DEFAULT '{"enabled":false,"public":false,"feature_info_enabled":true}',
 	tile_revision BIGINT DEFAULT 1,
+	capabilities_revision BIGINT DEFAULT 1,
     created_at TIMESTAMP DEFAULT current_timestamp,
     updated_at TIMESTAMP DEFAULT current_timestamp
 );

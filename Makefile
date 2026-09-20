@@ -17,7 +17,7 @@ dev:
 	node scripts/dev.mjs dev
 
 test-dev-tools:
-	node --test scripts/dev.test.mjs
+	node --test scripts/dev.test.mjs scripts/set-version.test.mjs
 
 # Example: make test-focused PKG=./internal/mgmt TEST=TestConsole
 PKG ?= ./internal/mgmt
@@ -40,9 +40,8 @@ release-build: ui-build
 	@test -n "$(VERSION)" || { echo "VERSION is required (for example v0.1.0)" >&2; exit 1; }
 	go build -trimpath -ldflags='$(GO_APP_LINK_FLAGS) -X github.com/tobilg/neoserver/internal/conf.setVersion=$(VERSION) -X github.com/tobilg/neoserver/internal/conf.setCommit=$(shell git rev-parse HEAD)' ./cmd/$(APP_NAME)
 
-# Rewrite the version literals in code and configuration, then regenerate the
-# OpenAPI document the server produces. Documentation is reported, not rewritten:
-# some of it records the version a build was tested at.
+# Rewrite current-release versions in code, configuration, README and docs,
+# then regenerate the OpenAPI document the server produces.
 .PHONY: set-version
 set-version:
 	@test -n "$(VERSION)" || { echo "VERSION is required (for example v0.1.0)" >&2; exit 1; }
@@ -215,12 +214,15 @@ test-conformance-ogcapi-features10:
 test-conformance-ogcapi-tiles10:
 	./scripts/conformance/run-official.sh ogcapi-tiles10
 
-.PHONY: test-conformance-derived test-conformance-derived-wcs20-interpolation
+.PHONY: test-conformance-derived test-conformance-derived-wcs20-interpolation test-conformance-derived-wfs20-core202
 test-conformance-derived:
 	./scripts/conformance/run-derived.sh all
 
 test-conformance-derived-wcs20-interpolation:
 	./scripts/conformance/run-derived.sh wcs20-interpolation
+
+test-conformance-derived-wfs20-core202:
+	./scripts/conformance/run-derived.sh wfs20-core202
 
 # Render previously collected evidence without starting Docker or TEAM Engine.
 CONFORMANCE_REPORT_INPUT ?= test-results

@@ -401,7 +401,7 @@ func groupDependencyDigest(ws *workspace.Workspace, group *workspace.LayerGroup,
 	visiting[group.PublicID] = true
 	defer delete(visiting, group.PublicID)
 	var value strings.Builder
-	fmt.Fprintf(&value, "%s:%d", group.PublicID, group.TileCacheGeneration)
+	fmt.Fprintf(&value, "group-composite-v2|%s:%d", group.PublicID, group.TileCacheGeneration)
 	for _, member := range group.Members {
 		resource := ws.GetResource(member.Resource)
 		if resource == nil {
@@ -685,6 +685,8 @@ func (e *Engine) renderLayerGroup(ctx context.Context, request EngineRequest, vi
 		}
 		child := request
 		child.Resource, child.Style, child.UseCache, child.Force = resource, renderStyle, false, false
+		// Preserve transparency between members; JPEG is only an output encoding.
+		child.Format = MediaTypePNG
 		var data []byte
 		if resource.Kind == workspace.ResourceGroup {
 			data, err = e.renderLayerGroup(ctx, child, visiting, depth+1)

@@ -154,3 +154,16 @@ digest-pinned official TEAM Engine suite; see
 [Conformance](conformance.md) and [Development](development.md).
 
 Related: [Data sources](data-sources.md) · [Authentication](authentication.md) · [Performance](performance.md)
+
+## Version negotiation
+
+The service supports WFS 2.0.0 and 2.0.2. GetCapabilities without a version
+retains the 2.0.0 default. `VERSION=2.0.2` selects 2.0.2; `ACCEPTVERSIONS`
+selects the first supported version in the supplied preference list. Responses
+and capabilities cache entries retain the selected version. The stock official
+conformance profile requests 2.0.0. The separately labelled official-derived
+`wfs20/core202` profile exercises 2.0.2 with a narrowly scoped upstream test
+correction; see [conformance profiles](conformance.md). Native tests cover both versions.
+
+For 2.0.2, LockFeature requests combining `lockId` with query expressions
+return `OperationParsingFailed` without changing the lock.

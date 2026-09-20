@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/tobilg/neoserver/internal/datasource"
@@ -19,7 +20,8 @@ type Workspace struct {
 	Description string
 	// TileRevision changes whenever workspace-wide tile rendering settings
 	// change, making durable identities safe across configuration updates.
-	TileRevision int64
+	TileRevision         int64
+	capabilitiesRevision *atomic.Int64
 	// StyleAssetDigest identifies the committed asset manifest independently of
 	// transient runtime revisions, so cache keys remain safe across restarts.
 	StyleAssetDigest string

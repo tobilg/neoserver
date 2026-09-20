@@ -346,7 +346,11 @@ func (h *workspaceHandler) transactionService(ws *workspace.Workspace, tx *WFSTr
 }
 
 func (h *workspaceHandler) executeTransactionWithWriter(ctx context.Context, ws *workspace.Workspace, tx *WFSTransaction, writer datasource.FeatureWriter) (*TransactionResponse, error) {
-	response := &TransactionResponse{Version: "2.0.0", XmlnsWfs: NSWfs, XmlnsFes: NSFes}
+	responseVersion := "2.0.0"
+	if tx.Version == "2.0.2" {
+		responseVersion = tx.Version
+	}
+	response := &TransactionResponse{Version: responseVersion, XmlnsWfs: NSWfs, XmlnsFes: NSFes}
 	var events []versionEvent
 	for _, op := range tx.orderedOperations() {
 		switch op.kind {
@@ -1061,9 +1065,9 @@ func WriteTransactionResponse(w http.ResponseWriter, response *TransactionRespon
 	w.WriteHeader(http.StatusOK)
 
 	fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?>
-<wfs:TransactionResponse version="2.0.0" xmlns:wfs="%s" xmlns:fes="%s">
+<wfs:TransactionResponse version="%s" xmlns:wfs="%s" xmlns:fes="%s">
   <wfs:TransactionSummary>
-`, NSWfs, NSFes)
+`, transactionResponseVersion(response.Version), NSWfs, NSFes)
 
 	if response.TransactionSummary.TotalInserted > 0 {
 		fmt.Fprintf(w, "    <wfs:totalInserted>%d</wfs:totalInserted>\n", response.TransactionSummary.TotalInserted)
@@ -1124,4 +1128,12 @@ func WriteTransactionResponse(w http.ResponseWriter, response *TransactionRespon
 	}
 
 	fmt.Fprintf(w, "</wfs:TransactionResponse>")
+}
+
+// Transaction responses retain the requested supported service version.
+func transactionResponseVersion(version string) string {
+	if version == "2.0.2" {
+		return version
+	}
+	return "2.0.0"
 }

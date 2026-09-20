@@ -31,13 +31,18 @@ func scanLayerGroup(scanner interface{ Scan(...any) error }) (*LayerGroup, error
 }
 
 func (s *DuckDBStore) CreateLayerGroup(ctx context.Context, input CreateLayerGroupInput) (*LayerGroup, error) {
+	s.datasetMapMu.Lock()
+	defer s.datasetMapMu.Unlock()
 	s.roleMu.RLock()
 	defer s.roleMu.RUnlock()
 	if err := s.checkRoleAssignments(ctx, input.AllowedRoles); err != nil {
 		return nil, err
 	}
+	if err := s.validateGroupDeletionState(ctx, input.WorkspaceID, "", input.PublicID, input.Members); err != nil {
+		return nil, err
+	}
 	id, now := uuid.NewString(), time.Now().UTC()
-	_, err := s.db.ExecContext(ctx, `INSERT INTO layer_groups (`+layerGroupColumns+`)
+	_, err := s.execCapabilitiesMutation(ctx, "SELECT id FROM workspaces WHERE id = ?", input.WorkspaceID, `INSERT INTO layer_groups (`+layerGroupColumns+`)
 	 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`, id, input.WorkspaceID, input.PublicID,
 		input.Title, input.Description, input.Enabled, input.Public, marshalJSON(input.AllowedRoles, "[]"),
 		marshalJSON(input.Members, "[]"), input.DefaultStyle, marshalJSON(input.Styles, "[]"),
@@ -88,6 +93,8 @@ func (s *DuckDBStore) ListLayerGroups(ctx context.Context, workspaceID string) (
 }
 
 func (s *DuckDBStore) UpdateLayerGroup(ctx context.Context, id string, input UpdateLayerGroupInput) (*LayerGroup, error) {
+	s.datasetMapMu.Lock()
+	defer s.datasetMapMu.Unlock()
 	s.roleMu.RLock()
 	defer s.roleMu.RUnlock()
 	if input.AllowedRoles != nil {
@@ -132,9 +139,12 @@ func (s *DuckDBStore) UpdateLayerGroup(ctx context.Context, id string, input Upd
 	if input.TileCacheQuotaBytes != nil {
 		value.TileCacheQuotaBytes = *input.TileCacheQuotaBytes
 	}
+	if err := s.validateGroupDeletionState(ctx, value.WorkspaceID, value.ID, value.PublicID, value.Members); err != nil {
+		return nil, err
+	}
 	value.TileCacheGeneration++
 	value.UpdatedAt = time.Now().UTC()
-	_, err = s.db.ExecContext(ctx, `UPDATE layer_groups SET public_id=?, title=?, description=?, enabled=?, public=?,
+	_, err = s.execCapabilitiesMutation(ctx, "SELECT id FROM workspaces WHERE id = ?", value.WorkspaceID, `UPDATE layer_groups SET public_id=?, title=?, description=?, enabled=?, public=?,
 	 allowed_roles=?, members=?, default_style=?, styles=?, native_extent=?, tile_cache_quota_bytes=?,
 	 tile_cache_generation=?, updated_at=? WHERE id=?`, value.PublicID, value.Title, value.Description, value.Enabled,
 		value.Public, marshalJSON(value.AllowedRoles, "[]"), marshalJSON(value.Members, "[]"), value.DefaultStyle,
@@ -150,7 +160,16 @@ func (s *DuckDBStore) UpdateLayerGroup(ctx context.Context, id string, input Upd
 }
 
 func (s *DuckDBStore) DeleteLayerGroup(ctx context.Context, id string) error {
-	result, err := s.db.ExecContext(ctx, `DELETE FROM layer_groups WHERE id=?`, id)
+	s.datasetMapMu.Lock()
+	defer s.datasetMapMu.Unlock()
+	var references int
+	if err := s.db.QueryRowContext(ctx, `SELECT count(*) FROM workspaces WHERE json_extract_string(ogc_tiles_api_settings, '$.settings.dataset_map_layer_group_id') = ?`, id).Scan(&references); err != nil {
+		return err
+	}
+	if references > 0 {
+		return ErrDatasetMapInUse
+	}
+	result, err := s.execCapabilitiesMutation(ctx, "SELECT workspace_id FROM layer_groups WHERE id = ?", id, `DELETE FROM layer_groups WHERE id=?`, id)
 	if err != nil {
 		return err
 	}

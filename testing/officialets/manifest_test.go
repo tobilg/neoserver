@@ -22,10 +22,6 @@ func TestOfficialSuitePinsAndClaimMappingsStayAligned(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	derivedDockerfile, err := os.ReadFile("patches/wcs20-interpolation.Dockerfile")
-	if err != nil {
-		t.Fatal(err)
-	}
 	derivedRunner, err := os.ReadFile("../../scripts/conformance/run-derived.sh")
 	if err != nil {
 		t.Fatal(err)
@@ -63,7 +59,15 @@ func TestOfficialSuitePinsAndClaimMappingsStayAligned(t *testing.T) {
 			} else if actual != profile.PatchSHA256 {
 				t.Errorf("profile %s patch digest=%s, want %s", name, actual, profile.PatchSHA256)
 			}
-			if !strings.Contains(string(compose), profile.PatchSet) || !strings.Contains(string(derivedDockerfile), profile.Patch) {
+			dockerfile := map[string]string{
+				"wcs20/interpolation": "patches/wcs20-interpolation.Dockerfile",
+				"wfs20/core202":       "patches/wfs202-lock-response.Dockerfile",
+			}[name]
+			derivedDockerfile, err := os.ReadFile(dockerfile)
+			if err != nil {
+				t.Fatalf("read derived Dockerfile for %s: %v", name, err)
+			}
+			if !strings.Contains(string(compose), profile.PatchSet) || !strings.Contains(string(derivedDockerfile), profile.Patch) || !strings.Contains(string(derivedDockerfile), document.Suites[profile.Suite].Image) {
 				t.Errorf("derived profile %s is not synchronized with Compose and its Dockerfile", name)
 			}
 		default:

@@ -2,11 +2,12 @@ package tiles
 
 // Link represents an OGC API link.
 type Link struct {
-	Href     string `json:"href"`
-	Rel      string `json:"rel,omitempty"`
-	Type     string `json:"type,omitempty"`
-	Title    string `json:"title,omitempty"`
-	Hreflang string `json:"hreflang,omitempty"`
+	Templated bool   `json:"templated,omitempty"`
+	Href      string `json:"href"`
+	Rel       string `json:"rel,omitempty"`
+	Type      string `json:"type,omitempty"`
+	Title     string `json:"title,omitempty"`
+	Hreflang  string `json:"hreflang,omitempty"`
 }
 
 // LandingPage represents the OGC API Tiles landing page response.
@@ -86,16 +87,18 @@ type CollectionsResponse struct {
 
 // TileSetMetadata represents metadata for a tileset.
 type TileSetMetadata struct {
-	Title           string   `json:"title,omitempty"`
-	Description     string   `json:"description,omitempty"`
-	DataType        string   `json:"dataType"`
-	TileMatrixSetID string   `json:"tileMatrixSetId"`
-	CRS             string   `json:"crs"`
-	Epoch           int      `json:"epoch,omitempty"`
-	Layers          []Layer  `json:"layers,omitempty"`
-	BoundingBox     *GeoBBox `json:"boundingBox,omitempty"`
-	CenterPoint     *Point   `json:"centerPoint,omitempty"`
-	Links           []Link   `json:"links"`
+	TileMatrixSetLimits []TileMatrixSetLimits `json:"tileMatrixSetLimits,omitempty"`
+	TileMatrixSetURI    string                `json:"tileMatrixSetURI,omitempty"`
+	Title               string                `json:"title,omitempty"`
+	Description         string                `json:"description,omitempty"`
+	DataType            string                `json:"dataType"`
+	TileMatrixSetID     string                `json:"tileMatrixSetId"`
+	CRS                 string                `json:"crs"`
+	Epoch               int                   `json:"epoch,omitempty"`
+	Layers              []Layer               `json:"layers,omitempty"`
+	BoundingBox         *GeoBBox              `json:"boundingBox,omitempty"`
+	CenterPoint         *Point                `json:"centerPoint,omitempty"`
+	Links               []Link                `json:"links"`
 }
 
 // Layer represents a layer in the tileset.

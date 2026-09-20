@@ -168,9 +168,9 @@ func Load(input string, doc manifest.Document, run Run) (Report, error) {
 			continue
 		}
 		p.Status = "Incomplete"
-		root := SuiteRoot(input, expected.Suite, expected.EvidenceKind)
+		root := SuiteRoot(input, expected.Suite, expected.EvidenceKind, p.Name)
 		if info, err := os.Stat(root); err == nil && info.IsDir() {
-			p.Evidence = artifactName(p.Suite, p.Kind) + ".zip"
+			p.Evidence = artifactName(p.Suite, p.Kind, p.Name) + ".zip"
 		}
 		dir := root
 		if p.Kind == "official" {
@@ -338,22 +338,22 @@ func readJUnit(path string) ([]Case, error) {
 	return cases, nil
 }
 
-func artifactName(suite, kind string) string {
+func artifactName(suite, kind, profile string) string {
 	if kind == "official-derived" {
-		return "official-derived-ets-" + suite + "-interpolation"
+		return "official-derived-ets-" + suite + "-" + profile
 	}
 	return "official-ets-" + suite
 }
 
 // SuiteRoot accepts both local test-results and actions/download-artifact's
 // default directory layout, keeping stock and derived evidence separate.
-func SuiteRoot(input, suite, kind string) string {
-	artifact := filepath.Join(input, artifactName(suite, kind))
+func SuiteRoot(input, suite, kind, profile string) string {
+	artifact := filepath.Join(input, artifactName(suite, kind, profile))
 	if _, err := os.Stat(artifact); err == nil {
 		return artifact
 	}
 	if kind == "official-derived" {
-		return filepath.Join(input, "conformance-derived", suite, "interpolation")
+		return filepath.Join(input, "conformance-derived", suite, profile)
 	}
 	return filepath.Join(input, "conformance", suite)
 }

@@ -13,7 +13,7 @@ func TestOpenRejectsCatalogOlderThanBaselineWithoutChangingIt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = s.db.Exec("DELETE FROM schema_info; INSERT INTO schema_info(version) VALUES(?)", schemaVersion-1); err != nil {
+	if _, err = s.db.Exec("DELETE FROM schema_info; INSERT INTO schema_info(version) VALUES(?)", catalogBaselineVersion-1); err != nil {
 		t.Fatal(err)
 	}
 	s.Close()
@@ -40,7 +40,7 @@ func TestOpenRejectsCatalogOlderThanBaselineWithoutChangingIt(t *testing.T) {
 	}
 	attached()
 	var version int
-	if err = db.QueryRow("SELECT max(version) FROM schema_info").Scan(&version); err != nil || version != schemaVersion-1 {
+	if err = db.QueryRow("SELECT max(version) FROM schema_info").Scan(&version); err != nil || version != catalogBaselineVersion-1 {
 		t.Fatalf("version=%d %v", version, err)
 	}
 }

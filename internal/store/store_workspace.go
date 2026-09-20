@@ -109,7 +109,7 @@ func (s *DuckDBStore) UpdateWorkspace(ctx context.Context, id string, input Upda
 	ws.UpdatedAt = time.Now().UTC()
 
 	result, err := s.db.ExecContext(ctx, `
-		UPDATE workspaces SET name = ?, description = ?, updated_at = ? WHERE id = ?
+		UPDATE workspaces SET capabilities_revision = capabilities_revision + 1, name = ?, description = ?, updated_at = ? WHERE id = ?
 	`, ws.Name, ws.Description, ws.UpdatedAt, id)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint") || strings.Contains(err.Error(), "Duplicate key") || strings.Contains(err.Error(), "unique constraint") {

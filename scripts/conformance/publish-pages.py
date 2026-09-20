@@ -114,8 +114,11 @@ def expected_artifacts(manifest):
             raise ValueError("Invalid suite in source manifest")
         if profile["evidence_kind"] == "official":
             result.add("official-ets-" + suite)
-        elif profile["evidence_kind"] == "official-derived" and name == "wcs20/interpolation":
-            result.add("official-derived-ets-wcs20-interpolation")
+        elif profile["evidence_kind"] == "official-derived":
+            parts = name.split("/")
+            if len(parts) != 2 or parts[0] != suite or not SLUG.fullmatch(parts[1]):
+                raise ValueError("Invalid derived profile in source manifest")
+            result.add("official-derived-ets-" + suite + "-" + parts[1])
         else:
             raise ValueError("Unsupported evidence kind/profile")
     return result

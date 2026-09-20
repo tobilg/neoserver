@@ -27,7 +27,7 @@ main() {
         "${COMPOSE[@]}" up --build -d server
     fi
     docker inspect --format '{{.Image}}' "$("${COMPOSE[@]}" ps -q server)" > "$RESULT_ROOT/candidate-image-id.txt"
-    "${COMPOSE[@]}" run -T --rm --no-deps setup
+    "${COMPOSE[@]}" run -T --rm --no-deps -e DATASET_MAP_FIXTURE=true setup
     cd "$ROOT"
     go run ./testing/protocol/cmd/protocoltest --base-url "$BASE_URL" --results "$RESULT_ROOT"
 }

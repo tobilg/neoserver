@@ -12,6 +12,7 @@ func featurePageURL(base, typeName string, offset, count int, requests ...*GetFe
 	values := map[string]string{"service": "WFS", "version": "2.0.0", "request": "GetFeature", "typeNames": typeName, "startIndex": strconv.Itoa(offset), "count": strconv.Itoa(count)}
 	if len(requests) > 0 && requests[0] != nil {
 		req := requests[0]
+		values["version"] = transactionResponseVersion(req.Version)
 		for key, value := range map[string]string{"srsName": req.SrsName, "filter": req.Filter, "outputFormat": req.OutputFormat, "resultType": req.ResultType, "propertyName": strings.Join(req.PropertyName, ","), "resourceID": strings.Join(req.ResourceID, ","), "resolve": req.Resolve, "resolveDepth": req.ResolveDepth} {
 			if value != "" {
 				values[key] = value

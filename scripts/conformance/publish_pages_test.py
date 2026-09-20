@@ -56,6 +56,20 @@ class EligibilityTests(unittest.TestCase):
 
 
 class ArtifactTests(unittest.TestCase):
+    def test_derived_profile_artifact_names(self):
+        manifest = {"profiles": {
+            "wfs20/core": {"suite": "wfs20", "evidence_kind": "official"},
+            "wfs20/core202": {"suite": "wfs20", "evidence_kind": "official-derived"},
+            "wcs20/interpolation": {"suite": "wcs20", "evidence_kind": "official-derived"},
+        }}
+        self.assertEqual(pages.expected_artifacts(manifest), {
+            "official-ets-wfs20", "official-derived-ets-wfs20-core202",
+            "official-derived-ets-wcs20-interpolation",
+        })
+        manifest["profiles"]["wfs20/../escape"] = {"suite": "wfs20", "evidence_kind": "official-derived"}
+        with self.assertRaises(ValueError):
+            pages.expected_artifacts(manifest)
+
     def archive(self, name, body=b"exact original evidence\r\n", mode=0):
         data = io.BytesIO()
         with zipfile.ZipFile(data, "w") as z:

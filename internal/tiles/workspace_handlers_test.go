@@ -35,8 +35,8 @@ func TestRegisterWorkspaceRoutes_Wiring(t *testing.T) {
 	if err != nil {
 		t.Fatalf("walk: %v", err)
 	}
-	if len(routes) != 14 {
-		t.Errorf("expected 14 registered routes, got %d: %v", len(routes), routes)
+	if len(routes) != 17 {
+		t.Errorf("expected 17 registered routes, got %d: %v", len(routes), routes)
 	}
 	for _, want := range []string{
 		"GET /api",
@@ -428,9 +428,9 @@ func TestCollectionMapTilesets(t *testing.T) {
 	if len(list.TileSets) != 2 || list.TileSets[0].DataType != DataTypeMap {
 		t.Fatalf("expected 2 map tilesets, got %+v", list.TileSets)
 	}
-	// PNG, JPEG, and WebP item links per tileset plus self.
-	if len(list.TileSets[0].Links) != 4 {
-		t.Errorf("expected self + 3 format item links, got %+v", list.TileSets[0].Links)
+	// PNG, JPEG, and WebP item links plus self and the tiling scheme.
+	if len(list.TileSets[0].Links) != 5 {
+		t.Errorf("expected self + tiling scheme + 3 format item links, got %+v", list.TileSets[0].Links)
 	}
 	for _, tileset := range list.TileSets {
 		assertOGCTileItemTemplates(t, tileset.Links)

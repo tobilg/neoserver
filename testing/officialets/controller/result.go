@@ -68,10 +68,25 @@ func parseSuiteResult(document []byte) (suiteResult, error) {
 // branch from a fixture gap or a controller/setup problem.
 func classifySkippedCases(result *suiteResult) {
 	result.SkipCategories = make(map[string]int)
+	// TestNG skips dependent setup/cleanup methods without repeating the
+	// capability check that disabled their test group.
+	parents := make(map[string]string)
+	for _, item := range result.Cases {
+		if item.Status == "skipped" && strings.Contains(item.Message, "Capability not implemented:") {
+			if group := optionalTestGroup(item.Class); group != "" {
+				parents[group] = strings.Split(item.Message, "\n")[0]
+			}
+		}
+	}
 	for index := range result.Cases {
 		item := &result.Cases[index]
 		if item.Status != "skipped" {
 			continue
+		}
+		if item.Kind == "infrastructure" && strings.TrimSpace(item.Message) == "" {
+			if cause := parents[optionalTestGroup(item.Class)]; cause != "" {
+				item.Message = "Dependent setup/cleanup skipped: " + cause
+			}
 		}
 		item.SkipCategory = skipCategory(*item)
 		result.SkipCategories[item.SkipCategory]++
@@ -79,6 +94,15 @@ func classifySkippedCases(result *suiteResult) {
 	if len(result.SkipCategories) == 0 {
 		result.SkipCategories = nil
 	}
+}
+
+func optionalTestGroup(class string) string {
+	for _, group := range []string{".joins.", ".versioning."} {
+		if strings.Contains(class, group) {
+			return group
+		}
+	}
+	return ""
 }
 
 func skipCategory(item caseResult) string {
@@ -89,7 +113,7 @@ func skipCategory(item caseResult) string {
 	if strings.Contains(value, "2.0.2") || strings.Contains(value, "profile version") {
 		return "profile-version"
 	}
-	if containsAny(value, "no numeric", "no temporal", "no nillable", "nillable property", "no feature", "no property", "no value", "fixture", "not applicable", "geometry operand") {
+	if containsAny(value, "no numeric", "no temporal", "no nillable", "nillable property", "no feature", "no property", "no value", "fixture", "not applicable", "geometry operand", "not supported for point geometry types") {
 		return "fixture-not-applicable"
 	}
 	if containsAny(value, "dimension", "matrix limit", "matrixlimit", "tilematrixsetlimit", "gettile.optional", "legendurl", "wellknownscaleset", "well known scale set", "updatesequence", "acceptversions", "acceptformats") {
@@ -190,6 +214,7 @@ type ctlFrame struct {
 	Class    string
 	Path     string
 	HasChild bool
+	Message  string
 }
 
 type ctlOutcome struct {
@@ -209,6 +234,15 @@ func parseCTLResult(decoder *xml.Decoder, root xml.StartElement) (suiteResult, e
 		switch value := token.(type) {
 		case xml.StartElement:
 			switch {
+			case strings.EqualFold(value.Name.Local, "message"):
+				message, err := decodeText(decoder)
+				if err != nil {
+					return result, fmt.Errorf("parse CTL message: %w", err)
+				}
+				if len(stack) > 0 && message != "" {
+					frame := &stack[len(stack)-1]
+					frame.Message = strings.TrimSpace(frame.Message + "\n" + message)
+				}
 			case strings.EqualFold(value.Name.Local, "starttest"):
 				if len(stack) > 0 {
 					stack[len(stack)-1].HasChild = true
@@ -282,9 +316,29 @@ func classifyCTLOutcomes(result *suiteResult, outcomes []ctlOutcome) []string {
 			continue
 		}
 		addCount(&result.Leaf, status)
-		result.Cases = append(result.Cases, caseResult{Name: outcome.Frame.Name, Class: outcome.Frame.Class, Kind: "assertion", Status: status})
+		result.Cases = append(result.Cases, caseResult{Name: outcome.Frame.Name, Class: outcome.Frame.Class, Kind: "assertion", Status: status, Message: outcome.Frame.Message})
 	}
 	return unknown
+}
+
+// decodeText consumes the current element, preserving text in nested markup.
+func decodeText(decoder *xml.Decoder) (string, error) {
+	var body strings.Builder
+	for depth := 1; depth > 0; {
+		token, err := decoder.Token()
+		if err != nil {
+			return "", err
+		}
+		switch value := token.(type) {
+		case xml.StartElement:
+			depth++
+		case xml.EndElement:
+			depth--
+		case xml.CharData:
+			body.Write(value)
+		}
+	}
+	return strings.TrimSpace(body.String()), nil
 }
 
 func normalizedStatus(value string) (string, error) {

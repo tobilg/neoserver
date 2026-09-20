@@ -803,6 +803,11 @@ export function StoreDeletionDialog({
               2,
             )}
           </pre>
+          {plan.data?.blockers?.map((blocker) => (
+            <p key={blocker.id} className="text-sm text-destructive">
+              {blocker.reason}
+            </p>
+          ))}
           <div>
             <Label htmlFor={`delete-store-${service}`}>
               Type {name} to confirm
@@ -828,6 +833,7 @@ export function StoreDeletionDialog({
                 remove.isPending ||
                 plan.isLoading ||
                 Boolean(plan.error) ||
+                Boolean(plan.data?.blockers?.length) ||
                 confirmation !== name
               }
               onClick={() => remove.mutate()}

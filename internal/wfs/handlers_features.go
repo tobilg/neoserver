@@ -416,7 +416,7 @@ func (h *workspaceHandler) handleGetFeatureById(ctx context.Context, w http.Resp
 	// Per WFS 2.0 spec (ISO 19142:2010, cl. 7.9.3.6), GetFeatureById returns just the feature
 	// The gml:id in the response must match the requested featureID exactly
 	WriteGMLSingleFeature(w, layerInfo, []byte(feature), h.cfg.WFS.AppNamespace, h.cfg.WFS.AppNamespacePrefix,
-		outputSRID, responseTypeName, baseURL, featureID)
+		outputSRID, responseTypeName, baseURL, featureID, req)
 }
 
 // executeCustomStoredQuery executes a custom stored query.

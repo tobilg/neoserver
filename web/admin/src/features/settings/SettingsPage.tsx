@@ -8,6 +8,7 @@ import {
 import { useParams } from "react-router";
 import { toast } from "sonner";
 import * as api from "@/api/generated/settings/settings";
+import { useListLayerGroups } from "@/api/generated/layer-groups/layer-groups";
 import { getGetWorkspaceSummaryQueryKey } from "@/api/generated/workspaces/workspaces";
 import type { ConsoleConfigServices } from "@/api/generated/models";
 import { useAuth } from "@/auth/auth-context";
@@ -149,7 +150,20 @@ function ServiceSettings({
     queryKey: protocol.key(workspace),
     queryFn: () => protocol.read(workspace),
   });
+  const groups = useListLayerGroups(workspace, {
+    query: { enabled: protocol.id === "ogc-tiles" },
+  });
   const settings = query.data;
+  const groupChoices = (groups.data?.layer_groups ?? []).flatMap((group) =>
+    group.id
+      ? [
+          {
+            value: group.id,
+            label: `${group.title || group.public_id}${group.enabled ? "" : " (disabled)"}`,
+          },
+        ]
+      : [],
+  );
   const serverEnabled = config?.services[protocol.flag] === true;
   const [draft, setDraft] = useState<string | null>(null);
   const schema = protocolSchema(protocol.schema);
@@ -308,6 +322,20 @@ function ServiceSettings({
               </span>
             )}
           </div>
+          {protocol.id === "ogc-tiles" && (
+            <div className="mt-3 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Workspace map uses the selected layer group’s content, styles,
+                and access rules. Choose None to stop publishing it. Disabled
+                groups become available when enabled.
+              </p>
+              <QueryError
+                error={groups.error}
+                retry={() => groups.refetch()}
+                context="Layer groups could not be loaded"
+              />
+            </div>
+          )}
           <form
             className="mt-4 space-y-4"
             onSubmit={(event) => {
@@ -318,6 +346,11 @@ function ServiceSettings({
             <fieldset disabled={!serverEnabled || update.isPending}>
               <ObjectEditor
                 schema={schema}
+                choices={
+                  protocol.id === "ogc-tiles"
+                    ? { "settings.dataset_map_layer_group_id": groupChoices }
+                    : undefined
+                }
                 draft={draft ?? JSON.stringify(settings, null, 2)}
                 label={protocol.name}
                 disabled={!serverEnabled || update.isPending}

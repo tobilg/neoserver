@@ -27,6 +27,7 @@ curl -X PUT \
     "title": "ACME WMTS",
     "feature_info_enabled": true,
     "vector_tiles_enabled": false,
+    "tile_matrix_limits_enabled": false,
     "provider_name": "ACME Maps",
     "provider_site": "https://maps.example.com",
     "contact_name": "Map Operations",
@@ -59,9 +60,15 @@ curl -o tile.png -H "Authorization: Bearer $TOKEN" \
 
 The REST binding publishes capabilities at `/1.0.0/WMTSCapabilities.xml`. GetCapabilities advertises exact ResourceURL templates for tile and FeatureInfo resources. Supported raster tile formats are PNG, JPEG, and WebP when enabled for the resource. MVT is advertised for feature resources only when both OGC API vector tiles and the WMTS-specific opt-in are enabled. Published coverages and layer groups advertise raster map formats only.
 
-Coverage time/elevation dimensions are advertised in capabilities. KVP GetTile accepts `TIME` and `ELEVATION`; REST tiles accept lowercase query parameters. Each value is part of the canonical cache identity. Layer groups are rendered in persisted member order and use the same authorization and nesting rules as WMS.
+Vector and coverage time/elevation dimensions are advertised in capabilities. KVP GetTile accepts `TIME` and `ELEVATION`; REST tiles accept lowercase query parameters. Omitted dimensions and the literal `default` use their published defaults; a dimension without a default is required. Values outside the published extent return `InvalidParameterValue`. Discrete values and numeric or fixed-duration time intervals (days, hours, minutes, seconds) are supported. `TIME=current`, when enabled on the dimension, selects the latest published time at or before the request time; it resolves to a concrete value before cache lookup. Each selected value is part of the canonical cache identity. Layer groups are rendered in persisted member order and use the same authorization and nesting rules as WMS.
 
 GetFeatureInfo accepts JSON, GeoJSON, XML, HTML, and plain text. It applies the same layer visibility and vector/coverage identify model as WMS. SOAP and XML POST bindings are not implemented.
+
+GetCapabilities negotiates `ACCEPTVERSIONS` (WMTS `1.0.0`) and `ACCEPTFORMATS` (`application/xml` or `text/xml`). Unsupported versions return `VersionNegotiationFailed`; unsupported formats fall back to `application/xml`. The persisted `updateSequence` increases with catalog metadata changes. An equal `UPDATESEQUENCE` returns an empty capabilities root with its version and sequence; an older sequence returns the current document; a newer or malformed sequence returns `InvalidUpdateSequence`.
+
+Published vector and raster styles advertise PNG legends at `/1.0.0/{layer}/{style}/legend.png`. These use the shared WMS style renderer and WMTS access rules, including when the WMS service is disabled. Groups do not advertise standalone legends.
+
+`tile_matrix_limits_enabled` defaults to `false`. When enabled, WMTS advertises `TileMatrixSetLimits` calculated from each published resource's native extent and rejects rows or columns outside those limits with `TileOutOfRange`. Resources with missing, stale, or untransformable extents retain the full matrix. Updating source data also requires refreshing the published extent before enabling bounds based on that data.
 
 ## Access and caching
 

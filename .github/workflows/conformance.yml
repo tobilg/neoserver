@@ -127,9 +127,36 @@ jobs:
           ETS_REPORT_SELECTED: '["wcs20"]'
         run: go run ./testing/officialets/cmd/etsreport --summary-only --suite wcs20 --kind official-derived --summary "$GITHUB_STEP_SUMMARY"
 
+  official-derived-wfs202:
+    name: Official-derived ETS - WFS 2.0.2
+    needs: select-official-suites
+    if: contains(fromJSON(needs.select-official-suites.outputs.suites), 'wfs20')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Run pinned WFS 2.0.2 compatibility profile
+        run: make test-conformance-derived-wfs20-core202
+      - name: Upload official-derived ETS evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: official-derived-ets-wfs20-core202
+          path: test-results/conformance-derived/wfs20/core202
+          if-no-files-found: warn
+      - name: Summarize derived ETS results
+        if: always()
+        continue-on-error: true
+        env:
+          ETS_REPORT_SELECTED: '["wfs20"]'
+        run: go run ./testing/officialets/cmd/etsreport --summary-only --suite wfs20 --kind official-derived --summary "$GITHUB_STEP_SUMMARY"
+
   conformance-report:
     name: Conformance report and evidence bundle
-    needs: [select-official-suites, official-conformance, official-derived-wcs-interpolation]
+    needs: [select-official-suites, official-conformance, official-derived-wcs-interpolation, official-derived-wfs202]
     if: always()
     # Reporting must neither mask failed suites nor become a release gate.
     continue-on-error: true

@@ -36,6 +36,7 @@ const (
 	TilesCore         = "tiles-core"
 	TilesTileSet      = "tiles-tileset"
 	TilesTileSetsList = "tiles-tilesets-list"
+	TilesDataset      = "tiles-dataset-tilesets"
 	TilesGeoData      = "tiles-geodata-tilesets"
 	TilesMVT          = "tiles-mvt"
 	TilesPNG          = "tiles-png"
@@ -76,6 +77,7 @@ var classes = map[string]Class{
 	TilesCore:         {Key: TilesCore, URI: "http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core", IntegrationProfile: "ogcapi-tiles/core", OfficialProfile: "ogcapi-tiles10/core"},
 	TilesTileSet:      {Key: TilesTileSet, URI: "http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tileset", IntegrationProfile: "ogcapi-tiles/tilesets", OfficialProfile: "ogcapi-tiles10/core"},
 	TilesTileSetsList: {Key: TilesTileSetsList, URI: "http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tilesets-list", IntegrationProfile: "ogcapi-tiles/tilesets", OfficialProfile: "ogcapi-tiles10/core"},
+	TilesDataset:      {Key: TilesDataset, URI: "http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/dataset-tilesets", IntegrationProfile: "ogcapi-tiles/dataset-tilesets", OfficialProfile: "ogcapi-tiles10/core"},
 	TilesGeoData:      {Key: TilesGeoData, URI: "http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/geodata-tilesets", IntegrationProfile: "ogcapi-tiles/tilesets", OfficialProfile: "ogcapi-tiles10/core"},
 	TilesMVT:          {Key: TilesMVT, URI: "http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt", IntegrationProfile: "ogcapi-tiles/formats"},
 	TilesPNG:          {Key: TilesPNG, URI: "http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/png", IntegrationProfile: "ogcapi-tiles/formats"},

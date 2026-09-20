@@ -382,9 +382,10 @@ func getSchemas() openapi3.Schemas {
 	wmtsSettingsSchema := &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{"object"}, Properties: openapi3.Schemas{
 		"enabled": {Value: openapi3.NewBoolSchema()}, "public": {Value: openapi3.NewBoolSchema()},
 		"title": {Value: openapi3.NewStringSchema()}, "abstract": {Value: openapi3.NewStringSchema()},
-		"feature_info_enabled": {Value: openapi3.NewBoolSchema()},
-		"vector_tiles_enabled": {Value: openapi3.NewBoolSchema()},
-		"provider_name":        {Value: openapi3.NewStringSchema()}, "provider_site": {Value: openapi3.NewStringSchema().WithFormat("uri")},
+		"feature_info_enabled":       {Value: openapi3.NewBoolSchema()},
+		"vector_tiles_enabled":       {Value: openapi3.NewBoolSchema()},
+		"tile_matrix_limits_enabled": {Value: &openapi3.Schema{Type: &openapi3.Types{"boolean"}, Default: false, Description: "Advertise and enforce tile bounds from published resource extents."}},
+		"provider_name":              {Value: openapi3.NewStringSchema()}, "provider_site": {Value: openapi3.NewStringSchema().WithFormat("uri")},
 		"contact_name": {Value: openapi3.NewStringSchema()}, "contact_position": {Value: openapi3.NewStringSchema()},
 		"contact_email": {Value: openapi3.NewStringSchema().WithFormat("email")},
 	}, Required: []string{"enabled", "public", "feature_info_enabled"}}}
@@ -410,6 +411,7 @@ func getSchemas() openapi3.Schemas {
 	ogcTilesInnerSettingsSchema := &openapi3.SchemaRef{Value: &openapi3.Schema{
 		Type: &openapi3.Types{"object"},
 		Properties: openapi3.Schemas{
+			"dataset_map_layer_group_id":   {Value: &openapi3.Schema{Type: &openapi3.Types{"string"}, Description: "Existing layer group UUID for the workspace map. Empty clears the selection; omission preserves it."}},
 			"tile_matrix_sets":             {Value: openapi3.NewArraySchema().WithItems(openapi3.NewStringSchema())},
 			"vector_tiles":                 ogcTilesVectorSettingsSchema,
 			"map_tiles":                    ogcTilesMapSettingsSchema,
@@ -549,7 +551,7 @@ func getSchemas() openapi3.Schemas {
 	deletionRefs := &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{"array"}, Items: &openapi3.SchemaRef{Ref: "#/components/schemas/DeletionRef"}}}
 	deletionPlanSchema := &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{"object"}, Properties: openapi3.Schemas{
 		"scope": {Value: openapi3.NewStringSchema().WithEnum("workspace", "service")}, "workspace_id": {Value: openapi3.NewStringSchema()},
-		"target": deletionRefSchema, "services": deletionRefs, "layers": deletionRefs, "coverages": deletionRefs,
+		"blockers": deletionRefs, "target": deletionRefSchema, "services": deletionRefs, "layers": deletionRefs, "coverages": deletionRefs,
 		"layer_groups": deletionRefs, "styles": deletionRefs, "style_assets": deletionRefs, "api_keys": deletionRefs,
 		"stored_queries": deletionRefs, "claim_mappings": deletionRefs, "policies": deletionRefs, "auxiliary": deletionAuxiliarySchema,
 	}, Required: []string{"scope", "workspace_id", "target"}}}

@@ -25,6 +25,7 @@ func (s *DuckDBStore) AuditCatalogOrphans(ctx context.Context) ([]CatalogOrphan,
 	queries := []struct {
 		kind, reason, query string
 	}{
+		{"dataset_map", "workspace map group does not exist in this workspace", `SELECT id,name,id FROM workspaces WHERE ` + invalidDatasetMapPredicate},
 		{"rbac_role", "role does not exist", `SELECT CAST(id AS VARCHAR),coalesce(v0,''),coalesce(v1,'') FROM casbin_rules WHERE v0 NOT IN (SELECT id FROM roles)`},
 		{"api_key_role", "role does not exist", `SELECT id,name,coalesce(workspace_id,'') FROM api_keys WHERE role_id NOT IN (SELECT id FROM roles)`},
 		{"claim_mapping_role", "role does not exist", `SELECT id,claim_name,workspace_id FROM claim_role_mappings WHERE role_id NOT IN (SELECT id FROM roles)`},
@@ -68,12 +69,15 @@ func (s *DuckDBStore) AuditCatalogOrphans(ctx context.Context) ([]CatalogOrphan,
 }
 
 func (s *DuckDBStore) RepairCatalogOrphans(ctx context.Context) (int64, error) {
+	s.datasetMapMu.Lock()
+	defer s.datasetMapMu.Unlock()
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
 	statements := []string{
+		`UPDATE workspaces SET ogc_tiles_api_settings=json_merge_patch(ogc_tiles_api_settings, '{"settings":{"dataset_map_layer_group_id":""}}'), capabilities_revision=capabilities_revision+1, tile_revision=tile_revision+1, updated_at=current_timestamp WHERE ` + invalidDatasetMapPredicate,
 		`DELETE FROM casbin_rules WHERE v0 NOT IN (SELECT id FROM roles)`,
 		`DELETE FROM api_keys WHERE role_id NOT IN (SELECT id FROM roles)`,
 		`DELETE FROM claim_role_mappings WHERE role_id NOT IN (SELECT id FROM roles)`,

@@ -24,7 +24,7 @@ func (s *DuckDBStore) CreateService(ctx context.Context, input CreateServiceInpu
 		connInfoStr = "{}"
 	}
 
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.execCapabilitiesMutation(ctx, "SELECT id FROM workspaces WHERE id = ?", input.WorkspaceID, `
 		INSERT INTO services (id, workspace_id, name, type, connection_info, cache_settings, enabled, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, id, input.WorkspaceID, input.Name, string(input.Type), connInfoStr, nullableJSON(input.CacheSettings), input.Enabled, now, now)
@@ -169,7 +169,7 @@ func (s *DuckDBStore) UpdateService(ctx context.Context, id string, input Update
 	// A service update can redirect a publication to different source bytes.
 	// Bump the workspace render revision conservatively for every update so no
 	// persistent tile produced through the previous service state is reused.
-	if _, err := tx.ExecContext(ctx, "UPDATE workspaces SET tile_revision = tile_revision + 1 WHERE id = ?", svc.WorkspaceID); err != nil {
+	if _, err := tx.ExecContext(ctx, "UPDATE workspaces SET capabilities_revision = capabilities_revision + 1, tile_revision = tile_revision + 1 WHERE id = ?", svc.WorkspaceID); err != nil {
 		return nil, fmt.Errorf("bump workspace tile revision: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -202,6 +202,8 @@ func decodeJSONValue(raw any, dst any) error {
 }
 
 func (s *DuckDBStore) DeleteService(ctx context.Context, id string) error {
+	s.datasetMapMu.Lock()
+	defer s.datasetMapMu.Unlock()
 	service, err := s.GetService(ctx, id)
 	if err != nil {
 		return err
@@ -210,10 +212,13 @@ func (s *DuckDBStore) DeleteService(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+	if len(plan.Blockers) > 0 {
+		return ErrDatasetMapInUse
+	}
 	if plan.HasDependencies() {
 		return &DeletionConflictError{Plan: *plan}
 	}
-	result, err := s.db.ExecContext(ctx, "DELETE FROM services WHERE id = ?", id)
+	result, err := s.execCapabilitiesMutation(ctx, "SELECT workspace_id FROM services WHERE id = ?", id, "DELETE FROM services WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("failed to delete service: %w", err)
 	}

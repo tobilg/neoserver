@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COMPOSE=(docker compose -p "${CONFORMANCE_PROJECT_NAME:-neoserver-official-$$}" -f "$ROOT/docker-compose.conformance.yml")
-COMPOSE_ALL=("${COMPOSE[@]}" --profile wms13 --profile wfs20 --profile wcs20 --profile wcs20-derived --profile wmts10 --profile ogcapi-features10 --profile ogcapi-tiles10)
+COMPOSE_ALL=("${COMPOSE[@]}" --profile wms13 --profile wfs20 --profile wcs20 --profile wcs20-derived --profile wfs20-derived --profile wmts10 --profile ogcapi-features10 --profile ogcapi-tiles10)
 RESULT_ROOT="$ROOT/test-results/conformance"
 KEEP_ENVIRONMENT="${KEEP_CONFORMANCE_ENVIRONMENT:-false}"
 CURRENT_TEAMENGINE=""
@@ -35,6 +35,7 @@ is_suite() {
 }
 
 prepare_environment() {
+    local suite="$1"
     "${COMPOSE_ALL[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
     mkdir -p "$RESULT_ROOT"
     "${COMPOSE[@]}" build setup ets-controller
@@ -46,7 +47,10 @@ prepare_environment() {
     fi
     export NEOSERVER_IMAGE_ID
     NEOSERVER_IMAGE_ID="$(docker inspect --format '{{.Image}}' "$("${COMPOSE[@]}" ps -q server)")"
-    "${COMPOSE[@]}" run -T --rm --no-deps setup
+    if [[ -f "$ROOT/testing/conformance/fixtures/$suite.sql" ]]; then
+        "${COMPOSE[@]}" exec -T db psql -U postgres -d postgis -v ON_ERROR_STOP=1 < "$ROOT/testing/conformance/fixtures/$suite.sql"
+    fi
+    "${COMPOSE[@]}" run -T --rm --no-deps -e "CONFORMANCE_SUITE=$suite" setup
 }
 
 run_controller() {
@@ -91,7 +95,7 @@ execute_suite() {
     # A suite is selected from the fixed allowlist above, so removing only its
     # previous generated evidence cannot affect source files or another suite.
     rm -rf "$RESULT_ROOT/$suite"
-    prepare_environment
+    prepare_environment "$suite"
     CURRENT_TEAMENGINE="teamengine-$suite"
     "${COMPOSE[@]}" --profile "$suite" up -d "$CURRENT_TEAMENGINE"
 
@@ -100,6 +104,9 @@ execute_suite() {
         [[ -z "$profile" ]] && continue
         found=1
         run_controller "$suite" "$profile" "$suite_code" "$image" "$args_json" || suite_failed=1
+        if [[ -f "$RESULT_ROOT/$suite/$profile/junit.xml" ]]; then
+            python3 "$ROOT/scripts/conformance/check-coverage.py" "$suite/$profile" "$RESULT_ROOT/$suite/$profile" || suite_failed=1
+        fi
     done 3< <(manifest --server http://server:9000 profiles official "$suite")
     if [[ "$found" -eq 0 ]]; then
         echo "No official profiles are registered for $suite" >&2
@@ -125,18 +132,24 @@ main() {
         NEOSERVER_COMMIT+="-dirty"
     fi
 
-    local failed=0
+    local failed=0 status suite
     if [[ "$requested" == "all" ]]; then
-        local suite
-        for suite in "${SUITES[@]}"; do
-            execute_suite "$suite" || failed=1
-        done
+        :
     elif is_suite "$requested"; then
-        execute_suite "$requested" || failed=1
+        SUITES=("$requested")
     else
         usage
         exit 2
     fi
+    # Keep errexit active during setup (including fixture SQL). Calling the
+    # function as an `if`/`||` condition disables it throughout nested functions.
+    for suite in "${SUITES[@]}"; do
+        set +e
+        (set -e; execute_suite "$suite")
+        status=$?
+        set -e
+        [[ "$status" -eq 0 ]] || failed=1
+    done
     exit "$failed"
 }
 

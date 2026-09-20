@@ -2,6 +2,7 @@ package mgmt
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -209,6 +210,7 @@ type OGCTilesAPIMapSettingsResponse struct {
 
 // OGCTilesAPIInnerSettingsResponse is the API response for inner tile settings.
 type OGCTilesAPIInnerSettingsResponse struct {
+	DatasetMapLayerGroupID    *string                           `json:"dataset_map_layer_group_id,omitempty"`
 	TileMatrixSets            []string                          `json:"tile_matrix_sets,omitempty"`
 	VectorTiles               OGCTilesAPIVectorSettingsResponse `json:"vector_tiles"`
 	MapTiles                  OGCTilesAPIMapSettingsResponse    `json:"map_tiles"`
@@ -230,17 +232,18 @@ type OGCTilesAPISettingsResponse struct {
 }
 
 type WMTSSettingsResponse struct {
-	Enabled            bool   `json:"enabled"`
-	Public             bool   `json:"public"`
-	Title              string `json:"title,omitempty"`
-	Abstract           string `json:"abstract,omitempty"`
-	FeatureInfoEnabled bool   `json:"feature_info_enabled"`
-	VectorTilesEnabled bool   `json:"vector_tiles_enabled,omitempty"`
-	ProviderName       string `json:"provider_name,omitempty"`
-	ProviderSite       string `json:"provider_site,omitempty"`
-	ContactName        string `json:"contact_name,omitempty"`
-	ContactPosition    string `json:"contact_position,omitempty"`
-	ContactEmail       string `json:"contact_email,omitempty"`
+	Enabled                 bool   `json:"enabled"`
+	Public                  bool   `json:"public"`
+	Title                   string `json:"title,omitempty"`
+	Abstract                string `json:"abstract,omitempty"`
+	FeatureInfoEnabled      bool   `json:"feature_info_enabled"`
+	VectorTilesEnabled      bool   `json:"vector_tiles_enabled,omitempty"`
+	TileMatrixLimitsEnabled bool   `json:"tile_matrix_limits_enabled"`
+	ProviderName            string `json:"provider_name,omitempty"`
+	ProviderSite            string `json:"provider_site,omitempty"`
+	ContactName             string `json:"contact_name,omitempty"`
+	ContactPosition         string `json:"contact_position,omitempty"`
+	ContactEmail            string `json:"contact_email,omitempty"`
 }
 
 func (h *handler) getWMTSSettings(w http.ResponseWriter, r *http.Request) {
@@ -286,7 +289,7 @@ func (h *handler) updateWMTSSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	settings := store.WMTSSettings{
 		Enabled: request.Enabled, Public: request.Public, Title: request.Title, Abstract: request.Abstract,
-		FeatureInfoEnabled: request.FeatureInfoEnabled, VectorTilesEnabled: request.VectorTilesEnabled,
+		FeatureInfoEnabled: request.FeatureInfoEnabled, VectorTilesEnabled: request.VectorTilesEnabled, TileMatrixLimitsEnabled: request.TileMatrixLimitsEnabled,
 		ProviderName: providerName, ProviderSite: request.ProviderSite, ContactName: request.ContactName,
 		ContactPosition: request.ContactPosition, ContactEmail: request.ContactEmail,
 	}
@@ -657,7 +660,8 @@ func (h *handler) getOGCTilesAPISettings(w http.ResponseWriter, r *http.Request)
 		Abstract: settings.Abstract,
 		Versions: settings.Versions,
 		Settings: OGCTilesAPIInnerSettingsResponse{
-			TileMatrixSets: settings.Settings.TileMatrixSets,
+			DatasetMapLayerGroupID: &settings.Settings.DatasetMapLayerGroupID,
+			TileMatrixSets:         settings.Settings.TileMatrixSets,
 			VectorTiles: OGCTilesAPIVectorSettingsResponse{
 				Enabled: settings.Settings.VectorTiles.Enabled,
 				Formats: settings.Settings.VectorTiles.Formats,
@@ -720,6 +724,14 @@ func (h *handler) updateOGCTilesAPISettings(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if req.Settings.DatasetMapLayerGroupID == nil {
+		previous, err := h.store.GetOGCTilesAPISettings(ctx, workspaceID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "Internal Error", "failed to load workspace map selection")
+			return
+		}
+		req.Settings.DatasetMapLayerGroupID = &previous.Settings.DatasetMapLayerGroupID
+	}
 	settings := store.OGCTilesAPISettings{
 		Enabled:  req.Enabled,
 		Public:   req.Public,
@@ -727,7 +739,8 @@ func (h *handler) updateOGCTilesAPISettings(w http.ResponseWriter, r *http.Reque
 		Abstract: req.Abstract,
 		Versions: req.Versions,
 		Settings: store.OGCTilesAPIInnerSettings{
-			TileMatrixSets: req.Settings.TileMatrixSets,
+			DatasetMapLayerGroupID: *req.Settings.DatasetMapLayerGroupID,
+			TileMatrixSets:         req.Settings.TileMatrixSets,
 			VectorTiles: store.OGCTilesAPIVectorSettings{
 				Enabled: req.Settings.VectorTiles.Enabled,
 				Formats: req.Settings.VectorTiles.Formats,
@@ -744,6 +757,10 @@ func (h *handler) updateOGCTilesAPISettings(w http.ResponseWriter, r *http.Reque
 
 	// Use registry.UpdateOGCTilesAPISettings to update both store AND runtime registry
 	if err := h.registry.UpdateOGCTilesAPISettings(ctx, workspaceID, settings); err != nil {
+		if errors.Is(err, store.ErrInvalidDatasetMap) {
+			writeError(w, http.StatusBadRequest, "Bad Request", err.Error())
+			return
+		}
 		if err == store.ErrNotFound {
 			writeError(w, http.StatusNotFound, "Not Found", "workspace not found")
 			return
@@ -760,7 +777,8 @@ func (h *handler) updateOGCTilesAPISettings(w http.ResponseWriter, r *http.Reque
 		Abstract: settings.Abstract,
 		Versions: settings.Versions,
 		Settings: OGCTilesAPIInnerSettingsResponse{
-			TileMatrixSets: settings.Settings.TileMatrixSets,
+			DatasetMapLayerGroupID: &settings.Settings.DatasetMapLayerGroupID,
+			TileMatrixSets:         settings.Settings.TileMatrixSets,
 			VectorTiles: OGCTilesAPIVectorSettingsResponse{
 				Enabled: settings.Settings.VectorTiles.Enabled,
 				Formats: settings.Settings.VectorTiles.Formats,

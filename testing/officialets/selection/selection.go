@@ -25,7 +25,10 @@ func ForPaths(paths []string) []string {
 		}
 		matched := true
 		switch {
-		case strings.HasPrefix(path, "internal/wms/") || strings.HasPrefix(path, "testing/wms/"):
+		case strings.HasPrefix(path, "internal/wms/"):
+			// WMTS legends reuse the WMS style renderer.
+			add(selected, "wms13", "wmts10")
+		case strings.HasPrefix(path, "testing/wms/"):
 			add(selected, "wms13")
 		case strings.HasPrefix(path, "internal/wfs/") || strings.HasPrefix(path, "testing/wfs/"):
 			add(selected, "wfs20")

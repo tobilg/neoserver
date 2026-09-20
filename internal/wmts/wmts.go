@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"image/png"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -43,6 +44,7 @@ func RegisterWorkspaceRoutes(r chi.Router, deps WorkspaceDependencies) {
 	}
 	r.Get("/", h.kvp)
 	r.Get("/1.0.0/WMTSCapabilities.xml", h.capabilities)
+	r.Get("/1.0.0/{layer}/{style}/legend.png", h.legend)
 	r.Get("/1.0.0/{layer}/{style}/{tileMatrixSet}/{tileMatrix}/{tileRow}/{tileCol}.{extension}", h.restTile)
 	r.Get("/1.0.0/{layer}/{style}/{tileMatrixSet}/{tileMatrix}/{tileRow}/{tileCol}/{i}/{j}.{extension}", h.restFeatureInfo)
 }
@@ -80,17 +82,46 @@ func (h *handler) capabilities(w http.ResponseWriter, r *http.Request) {
 	if h.requireAuth(w, r, ws) {
 		return
 	}
-	sections, errCode, errMessage := requestedCapabilitySections(normalizedQuery(r.URL.Query()))
+	parameters := normalizedQuery(r.URL.Query())
+	if versions := parameters.Get("ACCEPTVERSIONS"); versions != "" && !containsTrimmed(strings.Split(versions, ","), version) {
+		h.exception(w, http.StatusBadRequest, "VersionNegotiationFailed", "", "Only WMTS 1.0.0 is supported")
+		return
+	}
+	mediaType := "application/xml"
+	for _, candidate := range strings.Split(parameters.Get("ACCEPTFORMATS"), ",") {
+		if candidate = strings.TrimSpace(candidate); candidate == "application/xml" || candidate == "text/xml" {
+			mediaType = candidate
+			break
+		}
+	}
+	sections, errCode, errMessage := requestedCapabilitySections(parameters)
 	if errCode != "" {
 		h.exception(w, http.StatusBadRequest, errCode, "sections", errMessage)
 		return
+	}
+	sequence := ws.CapabilitiesRevision()
+	equalSequence := false
+	if value := parameters.Get("UPDATESEQUENCE"); value != "" {
+		requested, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || requested < 0 || requested > sequence {
+			h.exception(w, 400, "InvalidUpdateSequence", "", "invalid or newer update sequence")
+			return
+		}
+		equalSequence = requested == sequence
 	}
 	base := h.baseURL(r, ws.Name)
 	capabilities := capabilitiesFor(ws)
 	resources := ws.VisibleResources(workspaceRole(r, ws.ID))
 	var document bytes.Buffer
 	document.WriteString(xml.Header)
-	document.WriteString(`<Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd" version="1.0.0">`)
+	document.WriteString(`<Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd" version="1.0.0" updateSequence="`)
+	fmt.Fprintf(&document, `%d">`, sequence)
+	if equalSequence {
+		document.WriteString(`</Capabilities>`)
+		w.Header().Set("Content-Type", mediaType)
+		_, _ = w.Write(document.Bytes())
+		return
+	}
 	if sections.includes("ServiceIdentification") {
 		writeServiceIdentification(&document, ws)
 	}
@@ -112,9 +143,43 @@ func (h *handler) capabilities(w http.ResponseWriter, r *http.Request) {
 		document.WriteString(`"/>`)
 	}
 	document.WriteString(`</Capabilities>`)
-	w.Header().Set("Content-Type", "application/xml")
+	w.Header().Set("Content-Type", mediaType)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(document.Bytes())
+}
+
+func containsTrimmed(values []string, expected string) bool {
+	for _, value := range values {
+		if strings.TrimSpace(value) == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func (h *handler) legend(w http.ResponseWriter, r *http.Request) {
+	ws, ok := h.workspace(w, r)
+	if !ok || h.requireAuth(w, r, ws) {
+		return
+	}
+	resource := ws.GetResource(chi.URLParam(r, "layer"))
+	if resource == nil || resource.Kind == workspace.ResourceGroup || !resourceVisible(ws, resource, workspaceRole(r, ws.ID)) {
+		h.exception(w, http.StatusBadRequest, "InvalidParameterValue", "layer", "layer is not available")
+		return
+	}
+	style := chi.URLParam(r, "style")
+	if !styleAvailable(resource, style) {
+		h.exception(w, http.StatusBadRequest, "InvalidParameterValue", "style", "style is not available for the layer")
+		return
+	}
+	legend, err := wms.RenderResourceLegend(r.Context(), h.cfg, ws, resource, style, 20, 20)
+	if err != nil {
+		h.logger.Error("WMTS legend failed", "layer", resource.PublicID(), "error", err)
+		h.exception(w, http.StatusBadRequest, "InvalidParameterValue", "style", "legend is unavailable")
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	_ = png.Encode(w, legend)
 }
 
 type tileRequest struct {
@@ -178,6 +243,9 @@ func (h *handler) getTile(w http.ResponseWriter, r *http.Request, request tileRe
 	if !ok {
 		return
 	}
+	if !h.resolveDimensions(w, resource, &request) {
+		return
+	}
 	result, err := h.engine.Fetch(r.Context(), tiles.EngineRequest{
 		Workspace: ws, Resource: resource, TileType: tileType, MatrixSet: request.MatrixSet,
 		Zoom: request.Matrix, Column: request.Column, Row: request.Row,
@@ -227,6 +295,9 @@ func (h *handler) restFeatureInfo(w http.ResponseWriter, r *http.Request) {
 func (h *handler) getFeatureInfo(w http.ResponseWriter, r *http.Request, request featureInfoRequest) {
 	ws, resource, _, ok := h.validateTileRequest(w, r, request.tileRequest)
 	if !ok {
+		return
+	}
+	if !h.resolveDimensions(w, resource, &request.tileRequest) {
 		return
 	}
 	if !ws.Settings.WMTS.FeatureInfoEnabled {
@@ -282,11 +353,19 @@ func (h *handler) validateTileRequest(w http.ResponseWriter, r *http.Request, re
 		return nil, nil, "", false
 	}
 	definition, err := tiles.GetTileMatrixSetDefinition(request.MatrixSet)
-	if err != nil || request.Matrix < h.cfg.Tiles.MinZoom || request.Matrix > h.cfg.Tiles.MaxZoom || request.Matrix < 0 || request.Matrix >= len(definition.TileMatrices) {
+	var matrix *tiles.TileMatrix
+	if err == nil {
+		for i := range definition.TileMatrices {
+			if definition.TileMatrices[i].ID == strconv.Itoa(request.Matrix) {
+				matrix = &definition.TileMatrices[i]
+				break
+			}
+		}
+	}
+	if matrix == nil || request.Matrix < h.cfg.Tiles.MinZoom || request.Matrix > h.cfg.Tiles.MaxZoom {
 		h.exception(w, http.StatusBadRequest, "InvalidParameterValue", "TileMatrix", "tile matrix is not enabled")
 		return nil, nil, "", false
 	}
-	matrix := definition.TileMatrices[request.Matrix]
 	if request.Row < 0 || request.Row >= matrix.MatrixHeight {
 		h.exception(w, http.StatusBadRequest, "TileOutOfRange", "TileRow", "tile row is outside the configured matrix")
 		return nil, nil, "", false
@@ -299,6 +378,18 @@ func (h *handler) validateTileRequest(w http.ResponseWriter, r *http.Request, re
 	if resource == nil || !resourceVisible(ws, resource, workspaceRole(r, ws.ID)) {
 		h.exception(w, http.StatusBadRequest, "InvalidParameterValue", "layer", "layer is not available")
 		return nil, nil, "", false
+	}
+	if ws.Settings.WMTS.TileMatrixLimitsEnabled {
+		if limits, ok := resourceMatrixLimits(resource, request.MatrixSet, *matrix); ok {
+			if request.Row < limits.minRow || request.Row > limits.maxRow {
+				h.exception(w, 400, "TileOutOfRange", "TileRow", "tile row is outside the layer extent")
+				return nil, nil, "", false
+			}
+			if request.Column < limits.minCol || request.Column > limits.maxCol {
+				h.exception(w, 400, "TileOutOfRange", "TileCol", "tile column is outside the layer extent")
+				return nil, nil, "", false
+			}
+		}
 	}
 	if !styleAvailable(resource, request.Style) {
 		h.exception(w, http.StatusBadRequest, "InvalidParameterValue", "style", "style is not available for the layer")
@@ -518,6 +609,7 @@ func writeOperation(document *bytes.Buffer, name, base string) {
 	xmlAttr(document, base+"?")
 	document.WriteString(`"><ows:Constraint name="GetEncoding"><ows:AllowedValues><ows:Value>KVP</ows:Value></ows:AllowedValues></ows:Constraint></ows:Get></ows:HTTP></ows:DCP>`)
 	if name == "GetCapabilities" {
+		document.WriteString(`<ows:Parameter name="AcceptFormats"><ows:AllowedValues><ows:Value>application/xml</ows:Value><ows:Value>text/xml</ows:Value></ows:AllowedValues></ows:Parameter>`)
 		document.WriteString(`<ows:Parameter name="Sections"><ows:AllowedValues>`)
 		for _, section := range append(append([]string(nil), capabilitySectionOrder...), "All") {
 			document.WriteString(`<ows:Value>`)
@@ -532,7 +624,7 @@ func writeOperation(document *bytes.Buffer, name, base string) {
 func writeContents(document *bytes.Buffer, base string, ws *workspace.Workspace, resources []*workspace.PublishedResource, capabilities effectiveCapabilities, minZoom, maxZoom int) {
 	document.WriteString(`<Contents>`)
 	for _, resource := range resources {
-		writeLayer(document, base, ws, resource, capabilities)
+		writeLayer(document, base, ws, resource, capabilities, minZoom, maxZoom)
 	}
 	for _, matrixSetID := range capabilities.TileMatrixSets {
 		definition, err := tiles.GetTileMatrixSetDefinition(matrixSetID)
@@ -553,7 +645,7 @@ func writeThemes(document *bytes.Buffer, resources []*workspace.PublishedResourc
 	document.WriteString(`</Theme></Themes>`)
 }
 
-func writeLayer(document *bytes.Buffer, base string, ws *workspace.Workspace, resource *workspace.PublishedResource, capabilities effectiveCapabilities) {
+func writeLayer(document *bytes.Buffer, base string, ws *workspace.Workspace, resource *workspace.PublishedResource, capabilities effectiveCapabilities, minZoom, maxZoom int) {
 	identifier, title, description := resource.PublicID(), resource.PublicID(), ""
 	styles := []string{}
 	defaultStyle := "default"
@@ -585,33 +677,20 @@ func writeLayer(document *bytes.Buffer, base string, ws *workspace.Workspace, re
 	xmlText(document, identifier)
 	document.WriteString(`</ows:Identifier><Style isDefault="true"><ows:Identifier>`)
 	xmlText(document, defaultStyle)
-	document.WriteString(`</ows:Identifier></Style>`)
+	document.WriteString(`</ows:Identifier>`)
+	writeLegendURL(document, base, resource, defaultStyle)
+	document.WriteString(`</Style>`)
 	for _, style := range styles {
 		if style == defaultStyle {
 			continue
 		}
 		document.WriteString(`<Style isDefault="false"><ows:Identifier>`)
 		xmlText(document, style)
-		document.WriteString(`</ows:Identifier></Style>`)
+		document.WriteString(`</ows:Identifier>`)
+		writeLegendURL(document, base, resource, style)
+		document.WriteString(`</Style>`)
 	}
-	if resource.Coverage != nil {
-		for _, dimension := range resource.Coverage.Dimensions {
-			if dimension == nil {
-				continue
-			}
-			document.WriteString(`<Dimension><ows:Identifier>`)
-			xmlText(document, dimension.Name)
-			document.WriteString(`</ows:Identifier>`)
-			if dimension.Default != "" {
-				document.WriteString(`<Default>`)
-				xmlText(document, dimension.Default)
-				document.WriteString(`</Default>`)
-			}
-			document.WriteString(`<Value>`)
-			xmlText(document, dimension.Extent)
-			document.WriteString(`</Value></Dimension>`)
-		}
-	}
+
 	formats := tileFormatsForResource(ws, resource)
 	for _, format := range formats {
 		document.WriteString(`<Format>`)
@@ -625,10 +704,15 @@ func writeLayer(document *bytes.Buffer, base string, ws *workspace.Workspace, re
 			document.WriteString(`</InfoFormat>`)
 		}
 	}
+	writeDimensions(document, resource)
 	for _, matrixSet := range capabilities.TileMatrixSets {
 		document.WriteString(`<TileMatrixSetLink><TileMatrixSet>`)
 		xmlText(document, matrixSet)
-		document.WriteString(`</TileMatrixSet></TileMatrixSetLink>`)
+		document.WriteString(`</TileMatrixSet>`)
+		if ws.Settings.WMTS.TileMatrixLimitsEnabled {
+			writeMatrixLimits(document, resource, matrixSet, minZoom, maxZoom)
+		}
+		document.WriteString(`</TileMatrixSetLink>`)
 	}
 	for _, format := range formats {
 		extension := extensionForTileFormat(format)
@@ -659,15 +743,24 @@ func writeMatrixSet(document *bytes.Buffer, definition *tiles.TileMatrixSetDefin
 	document.WriteString(`</ows:Title><ows:Identifier>`)
 	xmlText(document, definition.ID)
 	document.WriteString(`</ows:Identifier><ows:SupportedCRS>`)
-	xmlText(document, definition.CRS)
+	crs := definition.CRS
+	if definition.ID == tiles.TMSWebMercatorQuad {
+		crs = "urn:ogc:def:crs:EPSG:6.18:3:3857"
+	} else if definition.ID == tiles.TMSWorldCRS84Quad {
+		crs = "urn:ogc:def:crs:OGC:1.3:CRS84"
+	}
+	xmlText(document, crs)
 	document.WriteString(`</ows:SupportedCRS>`)
-	if definition.WellKnownScaleSet != "" {
+	// WorldCRS84Quad starts at 2x1 tiles, omitting the coarsest GoogleCRS84Quad
+	// scale. Do not claim that complete legacy scale set for this grid.
+	if definition.WellKnownScaleSet != "" && definition.ID != tiles.TMSWorldCRS84Quad && minZoom == 0 {
 		document.WriteString(`<WellKnownScaleSet>`)
-		xmlText(document, definition.WellKnownScaleSet)
+		xmlText(document, strings.Replace(definition.WellKnownScaleSet, "http://www.opengis.net/def/wkss/OGC/1.0/", "urn:ogc:def:wkss:OGC:1.0:", 1))
 		document.WriteString(`</WellKnownScaleSet>`)
 	}
-	for zoom, matrix := range definition.TileMatrices {
-		if zoom < minZoom || zoom > maxZoom {
+	for _, matrix := range definition.TileMatrices {
+		zoom, err := strconv.Atoi(matrix.ID)
+		if err != nil || zoom < minZoom || zoom > maxZoom {
 			continue
 		}
 		document.WriteString(`<TileMatrix><ows:Identifier>`)
@@ -675,6 +768,15 @@ func writeMatrixSet(document *bytes.Buffer, definition *tiles.TileMatrixSetDefin
 		fmt.Fprintf(document, `</ows:Identifier><ScaleDenominator>%.15g</ScaleDenominator><TopLeftCorner>%.15g %.15g</TopLeftCorner><TileWidth>%d</TileWidth><TileHeight>%d</TileHeight><MatrixWidth>%d</MatrixWidth><MatrixHeight>%d</MatrixHeight></TileMatrix>`, matrix.ScaleDenominator, matrix.PointOfOrigin[0], matrix.PointOfOrigin[1], matrix.TileWidth, matrix.TileHeight, matrix.MatrixWidth, matrix.MatrixHeight)
 	}
 	document.WriteString(`</TileMatrixSet>`)
+}
+
+func writeLegendURL(document *bytes.Buffer, base string, resource *workspace.PublishedResource, style string) {
+	if resource.Kind == workspace.ResourceGroup {
+		return
+	}
+	document.WriteString(`<LegendURL format="image/png" width="20" height="20" xlink:href="`)
+	xmlAttr(document, base+"/1.0.0/"+url.PathEscape(resource.PublicID())+"/"+url.PathEscape(style)+"/legend.png")
+	document.WriteString(`"/>`)
 }
 
 func writeFeatureInfo(w http.ResponseWriter, format, layer string, properties []map[string]interface{}) {

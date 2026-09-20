@@ -1,0 +1,252 @@
+{
+  "ogcapi-features10/core": {
+    "minimum_assertions": 1745,
+    "allowed_skips": []
+  },
+  "ogcapi-tiles10/core": {
+    "minimum_assertions": 16,
+    "allowed_skips": []
+  },
+  "wcs20/core": {
+    "minimum_assertions": 53,
+    "allowed_skips": []
+  },
+  "wcs20/crs": {
+    "minimum_assertions": 21,
+    "allowed_skips": []
+  },
+  "wcs20/post": {
+    "minimum_assertions": 6,
+    "allowed_skips": []
+  },
+  "wcs20/range-subsetting": {
+    "minimum_assertions": 5,
+    "allowed_skips": []
+  },
+  "wcs20/scaling": {
+    "minimum_assertions": 11,
+    "allowed_skips": []
+  },
+  "wfs20/core": {
+    "minimum_assertions": 981,
+    "allowed_skips": [
+      {
+        "class": "assertion.org.opengis.cite.iso19142.basic.filter.spatial.IntersectsTests",
+        "name": "intersectsCurve",
+        "maximum": 8,
+        "reason_contains": "not supported for point geometry types"
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.basic.filter.spatial.IntersectsTests",
+        "name": "intersectsPolygon",
+        "maximum": 8,
+        "reason_contains": "not supported for point geometry types"
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "joinWithIntersects",
+        "maximum": 1
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "deletedFeatureIsRetired",
+        "maximum": 1
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "firstVersionHasNoPredecessor",
+        "maximum": 1
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "replacementVersionHasNoSuccessor",
+        "maximum": 1
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "updatedVersionHasSupersededPredecessor",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "addAttributesOnTestFailure",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "buildRequestEntity",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "discardResponseEntity",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "implementsSpatialJoins",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "initFixture",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "initParser",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "initQueryFilterFixture",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.FeatureVersioning",
+        "name": "implementsFeatureVersioning",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "addAttributesOnTestFailure",
+        "maximum": 4
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "deleteModifiedFeatures",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "getDataSamplerFromContext",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "initParser",
+        "maximum": 1
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.locking.LockFeatureTests",
+        "name": "lockFeatureWithLockIdAndQuery",
+        "maximum": 1,
+        "reason_contains": "Tested only for WFS 2.0.2"
+      }
+    ]
+  },
+  "wms13/core": {
+    "minimum_assertions": 187,
+    "allowed_skips": []
+  },
+  "wmts10/core": {
+    "minimum_assertions": 51,
+    "allowed_skips": []
+  },
+  "wcs20/interpolation": {
+    "minimum_assertions": 10,
+    "allowed_skips": []
+  },
+  "wfs20/core202": {
+    "minimum_assertions": 981,
+    "allowed_skips": [
+      {
+        "class": "assertion.org.opengis.cite.iso19142.basic.filter.spatial.IntersectsTests",
+        "name": "intersectsCurve",
+        "maximum": 8,
+        "reason_contains": "not supported for point geometry types"
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.basic.filter.spatial.IntersectsTests",
+        "name": "intersectsPolygon",
+        "maximum": 8,
+        "reason_contains": "not supported for point geometry types"
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "joinWithIntersects",
+        "maximum": 1
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "deletedFeatureIsRetired",
+        "maximum": 1
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "firstVersionHasNoPredecessor",
+        "maximum": 1
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "replacementVersionHasNoSuccessor",
+        "maximum": 1
+      },
+      {
+        "class": "assertion.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "updatedVersionHasSupersededPredecessor",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "addAttributesOnTestFailure",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "buildRequestEntity",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "discardResponseEntity",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "implementsSpatialJoins",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "initFixture",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "initParser",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.joins.SpatialJoinTests",
+        "name": "initQueryFilterFixture",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.FeatureVersioning",
+        "name": "implementsFeatureVersioning",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "addAttributesOnTestFailure",
+        "maximum": 4
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "deleteModifiedFeatures",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "getDataSamplerFromContext",
+        "maximum": 1
+      },
+      {
+        "class": "infrastructure.org.opengis.cite.iso19142.versioning.VersioningTests",
+        "name": "initParser",
+        "maximum": 1
+      }
+    ]
+  }
+}

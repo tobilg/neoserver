@@ -125,3 +125,56 @@ Related: [WMTS](wmts.md) · [Persistent tile caching](tile-cache.md) · [WMS](wm
 
 For native Go verification and the digest-pinned official OGC API Tiles suite,
 see [Specification verification and OGC conformance](conformance.md).
+
+## Workspace map tilesets
+
+A workspace can publish one curated map directly from its OGC API – Tiles
+landing page. Create a layer group with the desired ordered members and styles,
+then select it under **Settings → OGC API – Tiles → Workspace map**. The group
+can contain feature layers, coverages, and nested groups supported by the map
+renderer. Existing compositing requirements still apply.
+
+The management settings field `settings.dataset_map_layer_group_id` holds the
+group UUID. Set it using the existing
+`PUT /api/v1/workspaces/{workspace}/settings/ogc-tiles` operation, retaining the
+other settings from GET. For example, add this field to `settings`:
+
+```json
+"dataset_map_layer_group_id": "<layer-group UUID>"
+```
+
+An empty string clears the selection; omitting the field on PUT preserves it.
+Existing workspaces default to no selection. The group can be configured while
+disabled, but publication requires OGC API – Tiles, map tiles, and the group to
+be enabled, with an available matrix set and image format.
+
+Clients follow the landing page's `tilesets-map` link to:
+
+| Path beneath the Tiles endpoint | Purpose |
+| --- | --- |
+| `/map/tiles` | List workspace map tilesets |
+| `/map/tiles/{tileMatrixSetId}` | Describe a map tileset |
+| `/map/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}` | Retrieve a map tile |
+
+The routes accept the same tile formats, styles, and time/elevation parameters as
+collection map tiles. They use the configured group's exact composition and
+share its cache entries with equivalent collection and WMTS requests. Existing
+group cache jobs also warm the workspace map. Client-selected `collections`
+combinations and dataset-level vector tiles are not supported.
+
+Map tileset metadata lists `tileMatrixSetLimits` for the configured zoom range.
+Each matrix covers its full row and column range, including empty tiles outside
+the published data extent.
+
+Every member must be visible to the caller. A public Tiles endpoint does not
+bypass group or member permissions. Inaccessible, missing, or disabled groups
+are absent from discovery and return 404; cached tiles follow the same checks.
+The dataset-tilesets conformance class is advertised only when the workspace map
+is available to the caller. Datasource outages retain the normal rendering error
+behavior.
+
+Renaming the selected group preserves the selection. Before deleting it, or
+recursively deleting a store whose resources belong to it, clear or change the
+workspace map selection. The deletion preview lists this blocker; deleting the
+entire workspace remains supported. Catalog integrity checks report broken
+selections, and explicit integrity repair clears those references.

@@ -11,10 +11,16 @@ func TestDeletionHistoryScopesBeforePagingAndSurvivesNewRows(t *testing.T) {
 	s, cleanup := createTestStore(t)
 	defer cleanup()
 	ctx := context.Background()
+	if _, err := s.db.ExecContext(ctx, `INSERT INTO workspaces(id,name) VALUES ('mine','mine'),('other','other')`); err != nil {
+		t.Fatal(err)
+	}
 	for i := 0; i < 207; i++ {
 		ws := "other"
 		if i < 7 {
 			ws = "mine"
+		}
+		if _, err := s.db.ExecContext(ctx, `INSERT INTO services(id,workspace_id,name,type,connection_info) VALUES (?,?,?,?,'{}')`, fmt.Sprint(i), ws, fmt.Sprint(i), "postgis"); err != nil {
+			t.Fatal(err)
 		}
 		op, _, err := s.BeginCatalogDeletion(ctx, DeletionPlan{Scope: DeletionScopeService, WorkspaceID: ws, Target: DeletionRef{ID: fmt.Sprint(i), Name: fmt.Sprint(i)}})
 		if err != nil {
@@ -45,6 +51,9 @@ func TestDeletionHistoryScopesBeforePagingAndSurvivesNewRows(t *testing.T) {
 			seen[op.ID] = true
 		}
 		if pageNumber == 0 {
+			if _, err := s.db.ExecContext(ctx, `INSERT INTO services(id,workspace_id,name,type,connection_info) VALUES ('new','mine','new','postgis','{}')`); err != nil {
+				t.Fatal(err)
+			}
 			if _, _, err := s.BeginCatalogDeletion(ctx, DeletionPlan{Scope: DeletionScopeService, WorkspaceID: "mine", Target: DeletionRef{ID: "new", Name: "new"}}); err != nil {
 				t.Fatal(err)
 			}

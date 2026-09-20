@@ -60,7 +60,7 @@ func (s *DuckDBStore) CreateLayer(ctx context.Context, input CreateLayerInput) (
 		tileCacheParametersJSON = marshalJSON(input.TileCacheParameters, "null")
 	}
 
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.execCapabilitiesMutation(ctx, "SELECT workspace_id FROM services WHERE id = ?", input.ServiceID, `
 		INSERT INTO layers (id, service_id, source_layer, public_id, title, description, enabled, crs_default, dimensions, is_sql_view, sql_view_config, public, allowed_roles, default_style, styles, native_extent, tile_cache_quota_bytes, tile_cache_parameters, tile_cache_generation, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
 	`, id, input.ServiceID, input.SourceLayer, input.PublicID, input.Title, input.Description, input.Enabled, crsDefault, dimensionsJSON, input.IsSQLView, sqlViewConfigJSON, input.Public, allowedRolesJSON, input.DefaultStyle, stylesJSON, nativeExtentJSON, input.TileCacheQuotaBytes, tileCacheParametersJSON, now, now)
@@ -340,7 +340,7 @@ func (s *DuckDBStore) UpdateLayer(ctx context.Context, id string, input UpdateLa
 		sqlViewConfigJSON = &s
 	}
 
-	result, err := s.db.ExecContext(ctx, `
+	result, err := s.execCapabilitiesMutation(ctx, "SELECT workspace_id FROM services WHERE id = ?", layer.ServiceID, `
 		UPDATE layers SET public_id = ?, title = ?, description = ?, enabled = ?, crs_default = ?, dimensions = ?, sql_view_config = ?, public = ?, allowed_roles = ?, default_style = ?, styles = ?, native_extent = ?, tile_cache_quota_bytes = ?, tile_cache_parameters = ?, tile_cache_generation = ?, updated_at = ? WHERE id = ?
 	`, layer.PublicID, layer.Title, layer.Description, layer.Enabled, layer.CRSDefault, dimensionsJSON, sqlViewConfigJSON, layer.Public, marshalAllowedRoles(layer.AllowedRoles), layer.DefaultStyle, marshalJSON(layer.Styles, "[]"), nullableJSON(layer.NativeExtent), layer.TileCacheQuotaBytes, nullableJSON(layer.TileCacheParameters), layer.TileCacheGeneration, layer.UpdatedAt, id)
 	if err != nil {
@@ -358,7 +358,7 @@ func (s *DuckDBStore) UpdateLayer(ctx context.Context, id string, input UpdateLa
 }
 
 func (s *DuckDBStore) DeleteLayer(ctx context.Context, id string) error {
-	result, err := s.db.ExecContext(ctx, "DELETE FROM layers WHERE id = ?", id)
+	result, err := s.execCapabilitiesMutation(ctx, "SELECT s.workspace_id FROM services s JOIN layers l ON l.service_id=s.id WHERE l.id = ?", id, "DELETE FROM layers WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("failed to delete layer: %w", err)
 	}

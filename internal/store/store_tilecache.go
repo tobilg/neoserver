@@ -27,7 +27,7 @@ func (s *DuckDBStore) UpdateWMTSSettings(ctx context.Context, workspaceID string
 		return fmt.Errorf("marshal WMTS settings: %w", err)
 	}
 	result, err := s.db.ExecContext(ctx, `UPDATE workspaces
-		SET wmts_settings = ?, updated_at = ? WHERE id = ?`,
+		SET capabilities_revision = capabilities_revision + 1, wmts_settings = ?, updated_at = ? WHERE id = ?`,
 		raw, time.Now().UTC(), workspaceID)
 	if err != nil {
 		return fmt.Errorf("update WMTS settings: %w", err)

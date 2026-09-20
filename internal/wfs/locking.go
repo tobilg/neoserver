@@ -610,6 +610,7 @@ func parseLockFeatureKVP(r *http.Request) XMLLockFeature {
 	req := XMLLockFeature{
 		Service:    q.Get("SERVICE"),
 		Version:    q.Get("VERSION"),
+		LockId:     q.Get("LOCKID"),
 		Expiry:     q.Get("EXPIRY"),
 		LockAction: q.Get("LOCKACTION"),
 	}
@@ -680,6 +681,11 @@ func (h *workspaceHandler) handleLockFeature(w http.ResponseWriter, r *http.Requ
 	// Validate service
 	if req.Service != "" && strings.ToUpper(req.Service) != "WFS" {
 		WriteException(w, ExceptionInvalidParameterValue, "service", "SERVICE must be WFS")
+		return
+	}
+
+	if req.Version == "2.0.2" && req.LockId != "" && (len(req.Queries) > 0 || req.StoredQuery != nil) {
+		WriteException(w, ExceptionOperationParsingFailed, "lockId", "lockId and query expressions are mutually exclusive")
 		return
 	}
 
@@ -1158,7 +1164,7 @@ func (h *workspaceHandler) handleGetFeatureWithLock(w http.ResponseWriter, r *ht
 
 	// Write response with lock ID in response XML (WFS 2.0 spec requirement)
 	WriteGMLFeatureCollectionWithLock(w, layerInfo, featuresBytes, totalCount, req.StartIndex, req.Count,
-		h.cfg.WFS.AppNamespace, h.cfg.WFS.AppNamespacePrefix, outputSRID, baseURL, responseTypeName, lock.LockID)
+		h.cfg.WFS.AppNamespace, h.cfg.WFS.AppNamespacePrefix, outputSRID, baseURL, responseTypeName, lock.LockID, req)
 }
 
 // WriteLockFeatureResponse writes a LockFeature response

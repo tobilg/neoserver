@@ -127,7 +127,7 @@ Native protocol integration runs for every pull request and main push. A
 repository-owned conservative path selector chooses affected stock suites on
 pull requests; unknown or shared production paths select all suites.
 Documentation-only changes select none. WCS changes also select the derived
-Interpolation job.
+Interpolation job; WFS changes select the derived WFS 2.0.2 job.
 
 The complete stock and derived matrices run on `main`, version tags, manual
 dispatch, and nightly at 02:17 UTC. Matrix jobs are failure-independent and
@@ -138,7 +138,7 @@ always upload their available evidence.
 The public dashboard is hosted by GitHub Pages at
 [conformance.neoserver.cloud](https://conformance.neoserver.cloud/). It includes
 the six stock official suites and the separately labelled derived WCS
-Interpolation profile. Native protocol integration remains a separate CI lane.
+Interpolation and WFS 2.0.2 profiles. Native protocol integration remains a separate CI lane.
 
 `/latest/` shows the most recent eligible main-branch conformance run, including
 failures. `/releases/<tag>/` retains evidence from the successful release workflow
@@ -267,3 +267,44 @@ the source test or release outcome.
 
 Related: [Development](development.md) · [WCS](wcs.md) ·
 [OGC API - Tiles](ogc-api-tiles.md) · [WMTS](wmts.md)
+
+### Fixture coverage and reviewed skips
+
+Official runs prepare isolated data for each suite before publishing layers.
+WFS adds populated numeric and temporal properties and actual NULL samples.
+OGC API Features retains all 16 feature types and adds geometries in the suite's
+five fixed bbox regions, including the antimeridian and polar regions. WMTS
+uses a time-and-elevation layer and opts into published tile-matrix limits.
+The WMS and WCS data are unchanged by these preparations.
+
+`testing/officialets/coverage-policy.json` records minimum assertion counts and
+reviewed residual skips. Both official and official-derived runners write a
+`coverage-check.json` beside their unchanged raw results, metadata and JUnit,
+and fail on unreviewed skips or lost assertions. WFS point exclusions and
+unclaimed joins/versioning (including dependent setup/cleanup) remain explicitly
+accounted for. The Tiles fixture configures a curated workspace map and requires
+the dataset-tilesets assertion to pass without a skip allowance. CTL messages are
+retained in normalized results. Rendering assessment remains advisory.
+
+### WFS 2.0.2 compatibility profile
+
+`make test-conformance-derived-wfs20-core202` runs WFS 2.0.2 against the pinned
+WFS ETS image with one correction: the locking test reads the lock ID from
+`LockFeatureResponse`. The stock test incorrectly looks for `FeatureCollection`,
+throws a null-pointer exception, and leaves the acquired lock out of its cleanup
+list. This defect was also reproduced in the latest published Docker image,
+`1.43-teamengine-6.0.0-RC2` (digest
+`sha256:101ff2737a36b1b8f7ac6e6bc2347fc4e0132b48ef66c5ab349bb122aeac1878`),
+and is tracked in [upstream issue #288](https://github.com/opengeospatial/ets-wfs20/issues/288).
+
+The patch verifies the original class checksum and changes only the response
+element constant. Assertions, test selection, and skip accounting are preserved.
+CI and the dashboard label these results **official-derived**, record the base
+image and patch identity, and keep them separate from stock WFS 2.0.0 evidence.
+The 2.0.2-only assertion remains an explicit version-applicability skip in the
+stock 2.0.0 profile and executes in `core202`.
+
+Both regular profiles retain ETS 1.42 for now: a local evaluation of 1.43 also
+reported new temporal parsing failures in `afterPeriod` and `beforePeriod`.
+Adopting that image requires resolving those failures independently; the latest
+image evaluation is not represented as passing conformance evidence.

@@ -102,6 +102,8 @@ func TestFeaturePredicatesAcrossDataSources(t *testing.T) {
 				{"spatial", spatial, nil, "", 1},
 				{"authority BBOX", `<Filter><BBOX><Envelope srsName="urn:ogc:def:crs:EPSG::4326"><lowerCorner>50 6</lowerCorner><upperCorner>51.5 7.5</upperCorner></Envelope></BBOX></Filter>`, nil, "", 1},
 				{"authority Point", `<Filter><Intersects><Point srsName="http://www.opengis.net/def/crs/EPSG/0/4326"><pos>51 7</pos></Point></Intersects></Filter>`, nil, "", 1},
+				{"point features intersect curve", `<Filter><Intersects><ValueReference>geom</ValueReference><LineString srsName="CRS:84"><posList>6.5 50.5 7.5 51.5</posList></LineString></Intersects></Filter>`, nil, "", 1},
+				{"point features intersect polygon", `<Filter><Intersects><ValueReference>geom</ValueReference><Polygon srsName="CRS:84"><exterior><LinearRing><posList>6 50 7.5 50 7.5 51.5 6 51.5 6 50</posList></LinearRing></exterior></Polygon></Intersects></Filter>`, nil, "", 1},
 				{"null", null, nil, "", 3},
 				{"bbox and filter", equality, nil, "6,50,10,54,CRS:84", 1},
 				{"authority KVP bbox and filter", equality, nil, "50,6,54,10,urn:ogc:def:crs:EPSG::4326", 1},

@@ -1,5 +1,7 @@
 # neoserver
 
+Current version: **0.1.2**.
+
 neoserver is a modern, multi-workspace geospatial server written in Go. It publishes PostGIS, DuckDB, GeoParquet, vector-file, and raster data through OGC API - Features, WMS 1.3.0, WFS 2.0, WCS 2.1/2.0.1, OGC API - Tiles, a management REST API, and an embedded administration console.
 
 It is designed as a lightweight, API-driven alternative to GeoServer, with isolated workspaces, configurable service metadata, role-based access control, and an encrypted DuckDB backing store.
@@ -48,7 +50,7 @@ The server stores its configuration and security state in an encrypted DuckDB fi
 Released images are published to Docker Hub for Linux amd64:
 
 ~~~bash
-docker pull tobilg/neoserver:latest     # or a pinned released version
+docker pull tobilg/neoserver:0.1.2     # use :latest for the latest stable release
 ~~~
 
 Each [GitHub release](https://github.com/tobilg/neoserver/releases) also carries
@@ -57,9 +59,10 @@ recording the gates that build passed.
 
 ## Quickstart with Docker Compose
 
-The 0.1.1 runtime measures 634 MB uncompressed (230 MB as a compressed Docker
-archive), about 75% smaller than 0.1.0. It bundles DuckDB extensions for offline
-startup and omits PROJ datum grids. For precise grid-dependent raster
+The [minimal-image baseline](scripts/container/image-budget.json) measured
+634 MB uncompressed (230 MB as a compressed Docker archive), about 75% smaller
+than 0.1.0. The runtime bundles DuckDB extensions for offline startup and omits
+PROJ datum grids. For precise grid-dependent raster
 reprojection, add the required grids using the [deployment instructions](docs/deployment.md#datum-shift-grids).
 
 Choose your path:

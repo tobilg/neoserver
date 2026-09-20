@@ -82,7 +82,7 @@ func snapshotWorkspace(ws *Workspace) *Workspace {
 	if ws == nil {
 		return nil
 	}
-	out := &Workspace{ID: ws.ID, Name: ws.Name, Description: ws.Description, TileRevision: ws.TileRevision, StyleAssetDigest: ws.StyleAssetDigest,
+	out := &Workspace{ID: ws.ID, Name: ws.Name, Description: ws.Description, TileRevision: ws.TileRevision, capabilitiesRevision: revisionCell(ws.CapabilitiesRevision()), StyleAssetDigest: ws.StyleAssetDigest,
 		StyleAssets: cloneMetadata(ws.StyleAssets),
 		Settings:    cloneMetadata(ws.Settings), Groups: cloneMetadata(ws.Groups), dataState: ws.dataState,
 		Services: make(map[string]*Service, len(ws.Services)), Styles: make(map[string]*Style, len(ws.Styles))}

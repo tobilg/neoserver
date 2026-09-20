@@ -626,6 +626,47 @@ enable_tiles_and_wmts() {
     log_success "OGC API - Tiles and WMTS enabled"
 }
 
+# Curated workspace map is opt-in and isolated to Tiles/native assurance fixtures.
+configure_dataset_map_fixture() {
+    [[ "${CONFORMANCE_SUITE:-}" == "ogcapi-tiles10" || "${DATASET_MAP_FIXTURE:-false}" == "true" ]] || return 0
+    local response group_id settings
+    response=$(api_call GET "/api/v1/workspaces/$WORKSPACE_NAME/layer-groups")
+    group_id=$(jq -r '.layer_groups[]? | select(.public_id=="workspace-map") | .id' <<<"$response")
+    local definition='{"public_id":"workspace-map","title":"Workspace map","description":"Representative polygons and roads for dataset map discovery","enabled":true,"public":true,"members":[{"resource":"cite:BasicPolygons"},{"resource":"cite:RoadSegments"}]}'
+    if [[ -n "$group_id" ]]; then
+        response=$(api_call PUT "/api/v1/workspaces/$WORKSPACE_NAME/layer-groups/$group_id" "$definition")
+    else
+        response=$(api_call POST "/api/v1/workspaces/$WORKSPACE_NAME/layer-groups" "$definition")
+    fi
+    if ! group_id=$(jq -er '.id' <<<"$response"); then
+        log_error "Failed to save workspace map fixture: $response"
+        exit 1
+    fi
+    settings=$(api_call GET "/api/v1/workspaces/$WORKSPACE_NAME/settings/ogc-tiles")
+    settings=$(jq --arg id "$group_id" '.settings.dataset_map_layer_group_id=$id' <<<"$settings")
+    response=$(api_call PUT "/api/v1/workspaces/$WORKSPACE_NAME/settings/ogc-tiles" "$settings")
+    jq -e --arg id "$group_id" '.settings.dataset_map_layer_group_id==$id' <<<"$response" >/dev/null
+    log_success "Workspace map fixture configured"
+}
+
+# Activate two real dimensions on one layer only for the WMTS ETS profile.
+configure_wmts_conformance() {
+    [[ "${CONFORMANCE_SUITE:-}" == "wmts10" ]] || return 0
+    local response layer_id
+    response=$(api_call GET "/api/v1/workspaces/$WORKSPACE_NAME/services/$SERVICE_NAME/layers")
+    layer_id=$(echo "$response" | jq -er '.layers[] | select(.public_id=="cite:Autos") | .id')
+    response=$(api_call PUT "/api/v1/workspaces/$WORKSPACE_NAME/services/$SERVICE_NAME/layers/$layer_id" '{
+      "dimensions": [
+        {"name":"time","units":"ISO8601","source_property":"time","default":"2000-01-01T00:00:00Z","current":true,"extent":"2000-01-01T00:00:00Z,2000-01-01T00:00:05Z,2000-01-01T00:00:10Z,2000-01-01T00:00:15Z,2000-01-01T00:00:20Z,2000-01-01T00:00:25Z,2000-01-01T00:00:30Z,2000-01-01T00:00:35Z,2000-01-01T00:00:40Z,2000-01-01T00:00:45Z,2000-01-01T00:00:50Z,2000-01-01T00:00:55Z,2000-01-01T00:01:00Z"},
+        {"name":"elevation","units":"m","source_property":"ets_elevation","default":"100","extent":"100,200"}
+      ]
+    }')
+    echo "$response" | jq -e '.id' >/dev/null
+    response=$(api_call GET "/api/v1/workspaces/$WORKSPACE_NAME/settings/wmts")
+    response=$(api_call PUT "/api/v1/workspaces/$WORKSPACE_NAME/settings/wmts" "$(echo "$response" | jq '.tile_matrix_limits_enabled = true')")
+    echo "$response" | jq -e '.tile_matrix_limits_enabled == true' >/dev/null
+}
+
 # Step 10: Create API key
 create_api_key() {
     log_info "Creating viewer API key..."
@@ -737,6 +778,8 @@ main() {
     enable_wcs
     if [[ "$CONFORMANCE_MODE" == "true" ]]; then
         enable_tiles_and_wmts
+        configure_wmts_conformance
+        configure_dataset_map_fixture
     fi
     validate_conformance_wfs_fixture
 

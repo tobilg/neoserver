@@ -1824,6 +1824,12 @@
                 },
                 "type": "object"
               },
+              "blockers": {
+                "items": {
+                  "$ref": "#/components/schemas/DeletionRef"
+                },
+                "type": "array"
+              },
               "claim_mappings": {
                 "items": {
                   "$ref": "#/components/schemas/DeletionRef"
@@ -2018,6 +2024,12 @@
                 },
                 "type": "object"
               },
+              "blockers": {
+                "items": {
+                  "$ref": "#/components/schemas/DeletionRef"
+                },
+                "type": "array"
+              },
               "claim_mappings": {
                 "items": {
                   "$ref": "#/components/schemas/DeletionRef"
@@ -2191,6 +2203,12 @@
               }
             },
             "type": "object"
+          },
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/DeletionRef"
+            },
+            "type": "array"
           },
           "claim_mappings": {
             "items": {
@@ -3531,6 +3549,10 @@
           "cache_enabled": {
             "type": "boolean"
           },
+          "dataset_map_layer_group_id": {
+            "description": "Existing layer group UUID for the workspace map. Empty clears the selection; omission preserves it.",
+            "type": "string"
+          },
           "map_tiles": {
             "properties": {
               "enabled": {
@@ -3624,6 +3646,10 @@
             "properties": {
               "cache_enabled": {
                 "type": "boolean"
+              },
+              "dataset_map_layer_group_id": {
+                "description": "Existing layer group UUID for the workspace map. Empty clears the selection; omission preserves it.",
+                "type": "string"
               },
               "map_tiles": {
                 "properties": {
@@ -5241,6 +5267,11 @@
           "public": {
             "type": "boolean"
           },
+          "tile_matrix_limits_enabled": {
+            "default": false,
+            "description": "Advertise and enforce tile bounds from published resource extents.",
+            "type": "boolean"
+          },
           "title": {
             "type": "string"
           },
@@ -5411,7 +5442,7 @@
   "info": {
     "description": "REST API for managing workspaces, services, layers, API keys, roles, and OIDC claim mappings.",
     "title": "neoserver Management API",
-    "version": "0.1.1"
+    "version": "0.1.2"
   },
   "openapi": "3.0.3",
   "paths": {

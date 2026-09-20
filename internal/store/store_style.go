@@ -21,7 +21,7 @@ func (s *DuckDBStore) CreateStyle(ctx context.Context, input CreateStyleInput) (
 		format = "sld_1.1.0"
 	}
 
-	_, err := s.db.ExecContext(ctx, `
+	_, err := s.execCapabilitiesMutation(ctx, "SELECT id FROM workspaces WHERE id = ?", input.WorkspaceID, `
 		INSERT INTO styles (id, workspace_id, name, title, description, sld_body, format, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, id, input.WorkspaceID, input.Name, input.Title, input.Description, input.SLDBody, format, now, now)
@@ -119,7 +119,7 @@ func (s *DuckDBStore) UpdateStyle(ctx context.Context, id string, input UpdateSt
 	}
 	style.UpdatedAt = time.Now().UTC()
 
-	result, err := s.db.ExecContext(ctx, `
+	result, err := s.execCapabilitiesMutation(ctx, "SELECT id FROM workspaces WHERE id = ?", style.WorkspaceID, `
 		UPDATE styles SET name = ?, title = ?, description = ?, sld_body = ?, format = ?, updated_at = ? WHERE id = ?
 	`, style.Name, style.Title, style.Description, style.SLDBody, style.Format, style.UpdatedAt, id)
 	if err != nil {
@@ -137,7 +137,7 @@ func (s *DuckDBStore) UpdateStyle(ctx context.Context, id string, input UpdateSt
 }
 
 func (s *DuckDBStore) DeleteStyle(ctx context.Context, id string) error {
-	result, err := s.db.ExecContext(ctx, "DELETE FROM styles WHERE id = ?", id)
+	result, err := s.execCapabilitiesMutation(ctx, "SELECT workspace_id FROM styles WHERE id = ?", id, "DELETE FROM styles WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("failed to delete style: %w", err)
 	}
@@ -296,7 +296,7 @@ func (s *DuckDBStore) UpdateWMSSettings(ctx context.Context, workspaceID string,
 	}
 
 	result, err := s.db.ExecContext(ctx, `
-		UPDATE workspaces SET wms_settings = ?, updated_at = ? WHERE id = ?
+		UPDATE workspaces SET capabilities_revision = capabilities_revision + 1, wms_settings = ?, updated_at = ? WHERE id = ?
 	`, settingsJSON, time.Now().UTC(), workspaceID)
 	if err != nil {
 		return fmt.Errorf("failed to update WMS settings: %w", err)
@@ -341,7 +341,7 @@ func (s *DuckDBStore) UpdateWFSSettings(ctx context.Context, workspaceID string,
 	}
 
 	result, err := s.db.ExecContext(ctx, `
-		UPDATE workspaces SET wfs_settings = ?, updated_at = ? WHERE id = ?
+		UPDATE workspaces SET capabilities_revision = capabilities_revision + 1, wfs_settings = ?, updated_at = ? WHERE id = ?
 	`, settingsJSON, time.Now().UTC(), workspaceID)
 	if err != nil {
 		return fmt.Errorf("failed to update WFS settings: %w", err)
@@ -386,7 +386,7 @@ func (s *DuckDBStore) UpdateOGCAPISettings(ctx context.Context, workspaceID stri
 	}
 
 	result, err := s.db.ExecContext(ctx, `
-		UPDATE workspaces SET ogcapi_settings = ?, updated_at = ? WHERE id = ?
+		UPDATE workspaces SET capabilities_revision = capabilities_revision + 1, ogcapi_settings = ?, updated_at = ? WHERE id = ?
 	`, settingsJSON, time.Now().UTC(), workspaceID)
 	if err != nil {
 		return fmt.Errorf("failed to update OGC API settings: %w", err)
@@ -426,13 +426,18 @@ func (s *DuckDBStore) GetOGCTilesAPISettings(ctx context.Context, workspaceID st
 }
 
 func (s *DuckDBStore) UpdateOGCTilesAPISettings(ctx context.Context, workspaceID string, settings OGCTilesAPISettings) error {
+	s.datasetMapMu.Lock()
+	defer s.datasetMapMu.Unlock()
+	if err := s.validateDatasetMapSelection(ctx, workspaceID, settings.Settings.DatasetMapLayerGroupID); err != nil {
+		return err
+	}
 	settingsJSON, err := json.Marshal(settings)
 	if err != nil {
 		return fmt.Errorf("failed to marshal OGC Tiles API settings: %w", err)
 	}
 
 	result, err := s.db.ExecContext(ctx, `
-		UPDATE workspaces SET ogc_tiles_api_settings = ?, tile_revision = tile_revision + 1, updated_at = ? WHERE id = ?
+		UPDATE workspaces SET capabilities_revision = capabilities_revision + 1, ogc_tiles_api_settings = ?, tile_revision = tile_revision + 1, updated_at = ? WHERE id = ?
 	`, settingsJSON, time.Now().UTC(), workspaceID)
 	if err != nil {
 		return fmt.Errorf("failed to update OGC Tiles API settings: %w", err)

@@ -1,6 +1,6 @@
 # Release notes
 
-## 0.1.1 — unreleased
+## 0.1.2 — unreleased
 
 The container runtime now uses a minimal Ubuntu 26.04 image with the GDAL
 libraries and plugins neoserver needs. It bundles matching DuckDB 1.5.5 spatial
@@ -14,9 +14,10 @@ or a derived image. See [deployment](deployment.md#datum-shift-grids) for all
 three methods. Default DuckDB vector transformations use the spatial extension's
 own PROJ database; PostGIS vector transformations run in PostgreSQL.
 
-**Upgrading from 0.1.0:** the database schemas are already at the supported
-baseline, so no schema upgrade is needed. The existing audit log gains version
-metadata. Back up the complete consistency set before upgrading: DuckDB 1.5.5
+**Upgrading from 0.1.0:** the catalog upgrades transactionally from schema 25
+to 26. Tile-cache and mosaic schemas already match the supported versions;
+the existing audit log gains version metadata. Back up the complete consistency
+set before upgrading: DuckDB 1.5.5
 can change encrypted-file storage on write, and DuckDB 1.4.3 cannot reopen those
 rewritten files. To roll back, restore the pre-upgrade catalog and audit files.
 

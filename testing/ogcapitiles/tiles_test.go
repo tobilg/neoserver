@@ -3,7 +3,11 @@
 package ogcapitiles
 
 import (
+	"bytes"
 	"encoding/json"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"net/http"
 	"net/url"
@@ -104,6 +108,57 @@ func TestTilesMetadataAndFormats(t *testing.T) {
 			t.Fatalf("map tile status=%d content-type=%q body=%s", response.StatusCode, response.Header.Get("Content-Type"), body)
 		}
 	})
+}
+
+func TestDatasetMapTilesets(t *testing.T) {
+	endpoint := strings.TrimRight(os.Getenv("OGC_TILES_TEST_URL"), "/")
+	if endpoint == "" {
+		t.Skip("OGC_TILES_TEST_URL is not set")
+	}
+	var landing struct{ Links []link }
+	getJSON(t, endpoint+"/", &landing)
+	listURL := ""
+	for _, item := range landing.Links {
+		if item.Rel == "http://www.opengis.net/def/rel/ogc/1.0/tilesets-map" {
+			listURL = item.Href
+		}
+	}
+	if listURL != endpoint+"/map/tiles" {
+		t.Fatalf("workspace map discovery = %q", listURL)
+	}
+	var claims struct{ ConformsTo []string }
+	getJSON(t, endpoint+"/conformance", &claims)
+	if !contains(claims.ConformsTo, "http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/dataset-tilesets") {
+		t.Fatal("dataset conformance missing")
+	}
+	var list tilesetList
+	getJSON(t, listURL, &list)
+	for _, matrix := range []string{"WebMercatorQuad", "WorldCRS84Quad"} {
+		var metadata tileset
+		getJSON(t, listURL+"/"+matrix, &metadata)
+		if metadata.TileMatrixSetID != matrix {
+			t.Fatalf("matrix metadata: %+v", metadata)
+		}
+		for _, format := range []string{"image/png", "image/jpeg"} {
+			template := tileItemTemplate(t, list, matrix, format)
+			response := get(t, expandTileTemplate(template, "2", "1", "2"))
+			body, err := io.ReadAll(response.Body)
+			response.Body.Close()
+			if err != nil || response.StatusCode != 200 || response.Header.Get("Content-Type") != format {
+				t.Fatalf("dataset tile: %d %s %v", response.StatusCode, body, err)
+			}
+			if _, _, err := image.Decode(bytes.NewReader(body)); err != nil {
+				t.Fatalf("invalid map image: %v", err)
+			}
+			collectionURL := strings.Replace(template, "/map/tiles/", "/collections/workspace-map/map/tiles/", 1)
+			same := get(t, expandTileTemplate(collectionURL, "2", "1", "2"))
+			groupBody, err := io.ReadAll(same.Body)
+			same.Body.Close()
+			if err != nil || same.StatusCode != 200 || !bytes.Equal(body, groupBody) {
+				t.Fatal("workspace map differs from configured group")
+			}
+		}
+	}
 }
 
 func tileItemTemplate(t *testing.T, metadata tilesetList, matrixSet, mediaType string) string {

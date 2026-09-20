@@ -33,7 +33,7 @@ func Executions() []Execution {
 		{
 			ID: "ogcapi-tiles", Packages: []string{"./testing/ogcapitiles"},
 			Environment: map[string]string{"OGC_TILES_TEST_URL": "/workspaces/demo/ogc-tiles"},
-			Profiles:    []string{"ogcapi-tiles/core", "ogcapi-tiles/tilesets", "ogcapi-tiles/formats"},
+			Profiles:    []string{"ogcapi-tiles/core", "ogcapi-tiles/tilesets", "ogcapi-tiles/formats", "ogcapi-tiles/dataset-tilesets"},
 		},
 	}
 }

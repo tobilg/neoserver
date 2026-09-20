@@ -24,7 +24,7 @@ func (s *DuckDBStore) UpsertStyleAsset(ctx context.Context, input UpsertStyleAss
 	}
 	// The revision and asset commit together, invalidating persistent render
 	// identities even after a crash/restart between commit and runtime refresh.
-	if _, err := tx.ExecContext(ctx, `UPDATE workspaces SET tile_revision=tile_revision+1 WHERE id=?`, input.WorkspaceID); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE workspaces SET capabilities_revision = capabilities_revision + 1, tile_revision=tile_revision+1 WHERE id=?`, input.WorkspaceID); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -78,7 +78,7 @@ func (s *DuckDBStore) DeleteStyleAsset(ctx context.Context, workspaceID, name st
 	if rows, _ := result.RowsAffected(); rows == 0 {
 		return ErrNotFound
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE workspaces SET tile_revision=tile_revision+1 WHERE id=?`, workspaceID); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE workspaces SET capabilities_revision = capabilities_revision + 1, tile_revision=tile_revision+1 WHERE id=?`, workspaceID); err != nil {
 		return err
 	}
 	return tx.Commit()

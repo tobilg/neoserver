@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/tobilg/neoserver/internal/identity"
@@ -18,12 +19,24 @@ func TestDeletionHistoryAuthorizationAndValidation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
+	workspaceIDs := map[string]string{}
+	for _, name := range []string{"mine", "other"} {
+		ws, err := s.CreateWorkspace(context.Background(), store.CreateWorkspaceInput{Name: name})
+		if err != nil {
+			t.Fatal(err)
+		}
+		workspaceIDs[name] = ws.ID
+	}
 	for i := 0; i < 202; i++ {
 		ws := "other"
 		if i < 2 {
 			ws = "mine"
 		}
-		op, _, err := s.BeginCatalogDeletion(context.Background(), store.DeletionPlan{Scope: store.DeletionScopeService, WorkspaceID: ws, Target: store.DeletionRef{ID: fmt.Sprint(i), Name: fmt.Sprint(i)}})
+		service, err := s.CreateService(context.Background(), store.CreateServiceInput{WorkspaceID: workspaceIDs[ws], Name: fmt.Sprint(i), Type: store.ServiceTypePostGIS})
+		if err != nil {
+			t.Fatal(err)
+		}
+		op, _, err := s.BeginCatalogDeletion(context.Background(), store.DeletionPlan{Scope: store.DeletionScopeService, WorkspaceID: workspaceIDs[ws], Target: store.DeletionRef{ID: service.ID, Name: service.Name}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -47,6 +60,13 @@ func TestDeletionHistoryAuthorizationAndValidation(t *testing.T) {
 		{"invalid status", "?status=oops", nil, 400, 0}, {"invalid cursor", "?cursor=oops", nil, 400, 0}, {"offset", "?offset=1", nil, 400, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			for name, id := range workspaceIDs {
+				tc.query = strings.ReplaceAll(tc.query, "workspace="+name, "workspace="+id)
+				if role, ok := tc.roles[name]; ok {
+					delete(tc.roles, name)
+					tc.roles[id] = role
+				}
+			}
 			r := httptest.NewRequest("GET", "/api/v1/deletions"+tc.query, nil)
 			r = r.WithContext(identity.WithIdentity(r.Context(), &identity.Identity{Roles: tc.roles}))
 			w := httptest.NewRecorder()

@@ -85,6 +85,11 @@
       "provider_name": { "type": "string" },
       "provider_site": { "format": "uri", "type": "string" },
       "public": { "type": "boolean" },
+      "tile_matrix_limits_enabled": {
+        "default": false,
+        "description": "Advertise and enforce tile bounds from published resource extents.",
+        "type": "boolean"
+      },
       "title": { "type": "string" },
       "vector_tiles_enabled": { "type": "boolean" }
     },
@@ -112,6 +117,10 @@
       "settings": {
         "properties": {
           "cache_enabled": { "type": "boolean" },
+          "dataset_map_layer_group_id": {
+            "description": "Existing layer group UUID for the workspace map. Empty clears the selection; omission preserves it.",
+            "type": "string"
+          },
           "map_tiles": {
             "properties": {
               "enabled": { "type": "boolean" },

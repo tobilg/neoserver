@@ -198,6 +198,11 @@ func (c *Coordinator) RepairIntegrity(ctx context.Context) (*IntegrityReport, er
 	if err != nil {
 		return nil, err
 	}
+	for workspaceID := range ownership.Workspaces {
+		if err := c.deps.Registry.RefreshOGCTilesAPISettings(ctx, workspaceID); err != nil && !errors.Is(err, store.ErrNotFound) {
+			return nil, err
+		}
+	}
 	repaired += catalogRepairs
 	report, err := c.AuditIntegrity(ctx)
 	if err != nil {

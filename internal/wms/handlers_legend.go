@@ -64,35 +64,12 @@ func (h *workspaceHandler) handleGetLegendGraphic(w http.ResponseWriter, r *http
 			WriteException(w, ExceptionStyleNotDefined, err.Error())
 			return
 		}
-		var rasterStyle *sld.RasterStyle
-		if style != nil {
-			for _, rule := range style.Rules {
-				for _, symbolizer := range rule.Symbolizers {
-					if symbolizer.Raster != nil {
-						rasterStyle = symbolizer.Raster
-						break
-					}
-				}
-				if rasterStyle != nil {
-					break
-				}
-			}
-		}
-		if style != nil && rasterStyle == nil {
-			WriteException(w, ExceptionStyleNotDefined, "Style has no RasterSymbolizer")
+		rasterStyle, err := h.resolveRasterLegendStyle(ws, style, req.Environment)
+		if err != nil {
+			WriteException(w, ExceptionStyleNotDefined, err.Error())
 			return
 		}
-		if sld.RasterStyleUsesEnvironment(rasterStyle) {
-			if !h.extensionEnabled(ws, "dynamic-raster") {
-				WriteException(w, ExceptionStyleNotDefined, "Style requires the disabled dynamic-raster extension")
-				return
-			}
-			rasterStyle, err = sld.ResolveRasterEnvironment(rasterStyle, req.Environment)
-			if err != nil {
-				WriteException(w, ExceptionStyleNotDefined, err.Error())
-				return
-			}
-		}
+
 		w.Header().Set("Content-Type", FormatPNG)
 		w.WriteHeader(http.StatusOK)
 		_ = png.Encode(w, renderer.RasterLegend(rasterStyle, req.Width, req.Height))

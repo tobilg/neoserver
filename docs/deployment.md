@@ -42,7 +42,7 @@ these three grid installation methods:
    mkdir -p proj-grids
    sudo chown 65532:65532 proj-grids
    docker run --rm --entrypoint projsync \
-     -v "$PWD/proj-grids:/proj-grids" tobilg/neoserver:0.1.1 \
+     -v "$PWD/proj-grids:/proj-grids" tobilg/neoserver:0.1.2 \
      --file us_noaa_conus.tif --target-dir /proj-grids
    ```
 
@@ -59,7 +59,7 @@ these three grid installation methods:
 3. **Build an image with your grids.** Download the grids first, then build:
 
    ```dockerfile
-   FROM tobilg/neoserver:0.1.1
+   FROM tobilg/neoserver:0.1.2
    COPY proj-grids/ /usr/local/gdal-internal/share/proj/
    ```
 
@@ -212,7 +212,8 @@ deployment, then work through this checklist.
 
 1. Stop writes, capture the complete consistency set, retain the original
    encryption key separately, and test restore.
-2. The catalog schema is **25**, persistent-cache schema **2**. Never force an
+2. The catalog schema is **26**, persistent-cache schema **2**. Catalogs at the
+   released baseline 25 upgrade automatically, adding the WMTS metadata sequence. Never force an
    older binary to open newer state by editing `schema_info`. Restore a compatible
    backup, review integrity, and reapply revocations made after it.
 3. Containers use UID/GID **65532** and `/data`. Compose uses a named volume;
@@ -259,9 +260,10 @@ Before upgrading:
 
 A binary refuses a state database whose schema is older than its baseline or newer than it supports; it never modifies a database it refuses. Avoid rolling back to an older binary without a compatible backup.
 
-Version 0.1.0 already uses the supported catalog (25), tile-cache (2), and
-mosaic (1) schemas. No schema upgrade is required for 0.1.1. Its unversioned
-audit log is recognized and stamped at baseline 1. DuckDB 1.5.5 can update
+In neoserver 0.1.2, catalogs at the released 0.1.0 baseline (25) upgrade
+transactionally to schema 26. Tile-cache (2) and mosaic (1) schemas already
+match the supported versions. The unversioned 0.1.0 audit log is recognized
+and stamped at baseline 1. DuckDB 1.5.5 can update
 the storage format of encrypted files on write, however: rolling back to
 0.1.0 requires restoring the pre-upgrade catalog and audit backup.
 

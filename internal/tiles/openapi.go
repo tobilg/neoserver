@@ -42,7 +42,7 @@ func tileOperation(id, summary string, parameters openapi3.Parameters, response 
 	return &openapi3.Operation{OperationID: id, Summary: summary, Parameters: parameters, Responses: tileResponses(response)}
 }
 
-func (h *workspaceHandler) buildWorkspaceOpenAPI(ws *workspace.Workspace) *openapi3.T {
+func (h *workspaceHandler) buildWorkspaceOpenAPI(ws *workspace.Workspace, role string) *openapi3.T {
 	object := func() *openapi3.SchemaRef { return &openapi3.SchemaRef{Value: openapi3.NewObjectSchema()} }
 	components := &openapi3.Components{Schemas: openapi3.Schemas{
 		"LandingPage": object(), "Conformance": object(), "TileMatrixSets": object(),
@@ -76,6 +76,23 @@ func (h *workspaceHandler) buildWorkspaceOpenAPI(ws *workspace.Workspace) *opena
 	paths.Set("/collections/{collectionId}/map/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}", &openapi3.PathItem{Get: tileOperation("collectionMap.getTile", "Get a map tile", openapi3.Parameters{collectionID, tileMatrixSetID, tileMatrix, tileRow, tileCol}, tileResponse("Map tile", MediaTypePNG, "Binary"))})
 	paths.Set("/collections/{collectionId}/tilejson.json", &openapi3.PathItem{Get: tileOperation("getTileJSON", "Get TileJSON metadata", openapi3.Parameters{collectionID}, tileResponse("TileJSON metadata", MediaTypeJSON, "TileJSON"))})
 
+	if datasetMapResource(ws, role) != nil {
+		paths.Set("/map/tiles", &openapi3.PathItem{Get: tileOperation("getDatasetMapTilesets", "List workspace map tilesets", nil, tileResponse("Map tilesets", MediaTypeJSON, "TileSets"))})
+		paths.Set("/map/tiles/{tileMatrixSetId}", &openapi3.PathItem{Get: tileOperation("getDatasetMapTileset", "Describe a workspace map tileset", openapi3.Parameters{tileMatrixSetID}, tileResponse("Map tileset", MediaTypeJSON, "TileSet"))})
+		response := tileResponse("Workspace map tile", MediaTypePNG, "Binary")
+		response.Value.Content = openapi3.Content{}
+		for _, format := range ws.Settings.OGCTilesAPI.Settings.MapTiles.Formats {
+			response.Value.Content[format] = &openapi3.MediaType{Schema: tileSchemaRef("Binary")}
+		}
+		parameters := openapi3.Parameters{tileMatrixSetID, tileMatrix, tileRow, tileCol}
+		for _, name := range []string{"f", "style", "datetime", "time", "elevation"} {
+			parameters = append(parameters, &openapi3.ParameterRef{Value: &openapi3.Parameter{Name: name, In: "query", Schema: &openapi3.SchemaRef{Value: openapi3.NewStringSchema()}}})
+		}
+		op := tileOperation("datasetMap.getTile", "Get a workspace map tile", parameters, response)
+		op.Responses.Set("503", tileResponse("Tile service unavailable or render queue full", MediaTypeJSON, "Error"))
+		paths.Set("/map/tiles/{tileMatrixSetId}/{tileMatrix}/{tileRow}/{tileCol}", &openapi3.PathItem{Get: op})
+	}
+
 	doc := &openapi3.T{
 		OpenAPI: "3.0.3",
 		Info:    &openapi3.Info{Title: fmt.Sprintf("%s - %s Tiles", h.cfg.Metadata.Title, ws.Name), Description: ws.Description, Version: "1.0.0"},
@@ -99,7 +116,7 @@ func (h *workspaceHandler) api(w http.ResponseWriter, r *http.Request) {
 	if h.requireAuth(w, r, ws, ws.Settings.OGCTilesAPI.Public) {
 		return
 	}
-	doc := h.buildWorkspaceOpenAPI(ws)
+	doc := h.buildWorkspaceOpenAPI(ws, workspaceRole(r, ws.ID))
 	doc.Servers = openapi3.Servers{{URL: h.workspaceBaseURL(r, ws.Name)}}
 	data, err := json.Marshal(doc)
 	if err != nil {

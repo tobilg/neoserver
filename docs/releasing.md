@@ -10,7 +10,7 @@ Native builds require GDAL and a matching C/C++ runtime; they are not portable
 standalone binaries. macOS arm64 is a development/test platform. Other OS/CPU
 targets are not release-certified until their native and container suites run.
 
-`make release-build VERSION=v0.1.0` requires the real console build and stamps
+`make release-build VERSION=v0.1.2` requires the real console build and stamps
 the native binary. Container builds accept `VERSION` and `COMMIT` build args.
 `neoserver version`, console config and image labels expose release identity.
 
@@ -18,15 +18,23 @@ A release build takes its version from those flags, so the literals in the tree
 are what an unstamped development build reports. Keep them in step with:
 
 ```sh
-make set-version VERSION=v0.1.0   # rewrites the literals, then regenerates openapi.json
+make set-version VERSION=v0.1.2   # rewrites the literals, then regenerates openapi.json
 make check-version                # what CI enforces
 ```
 
-That covers the Go fallback, both Dockerfile build args, the console package and
-the release-container smoke test. It deliberately leaves documentation alone and
-instead lists the prose that mentions the old version: some of it records the
-version a build was actually tested at and must not be rewritten. Update the
-release notes by hand.
+That updates the Go fallback, both Dockerfile build args, the console package,
+the release-container smoke test, the README version and image example,
+deployment examples and upgrade target, release-command examples, and the current
+release-note heading. It also repairs stale documentation when the code already
+has the requested version. `make check-version` verifies these documentation
+targets alongside the code and generated OpenAPI version.
+
+An unreleased heading advances to the requested version. If the newest notes
+are already dated, bumping creates a new unreleased section and preserves the
+published notes. Fill in the release changes and date when publishing. Historical
+upgrade sources, measured image-size baselines, dependency versions, and published
+release notes keep their original versions. Add new current-release references
+to the targets in `scripts/set-version.mjs` so they are updated and checked too.
 
 The release-candidate workflow builds, tests and scans the exact image, exports
 a CycloneDX SBOM, image archive, copyright notices, runtime evidence and SHA256
@@ -129,15 +137,16 @@ the complete backed-up data into the named volume and preserve UID/GID 65532.
 Do not merge a live old catalog into a newly initialized one. Test restore in a
 separate volume and keep the backup until the upgraded service is verified.
 
-Each state database records its schema version: the catalog is at 25, the
+Each state database records its schema version: the catalog is at 26 (released baseline 25), the
 persistent-cache index at 2, the mosaic index at 1 and the audit log at 1. These
-are the baselines; a database at an older version is refused rather than
-upgraded, and so is one newer than the binary, including by `serve` and the
+are the supported versions; catalogs at baseline 25 upgrade transactionally
+to 26. A database older than its released baseline is refused, and so is one newer than the binary, including by `serve` and the
 administration commands. A future schema change adds an upgrade step from the
 current version. Use a compatible binary or restore a consistent backup; never
 edit a version table to bypass the check.
 
-Released 0.1.0 catalogs, cache indexes and mosaics are already at these baselines.
+Released 0.1.0 catalogs start at baseline 25; cache indexes and mosaics are
+already at their current baselines.
 The unversioned 0.1.0 audit schema is validated and stamped as version 1. Encrypted
 DuckDB files can change storage format on write with DuckDB 1.5.5; restore the
 pre-upgrade consistency set when rolling back to 0.1.0.

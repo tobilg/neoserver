@@ -69,8 +69,8 @@ func Generate(input, output, manifestPath string, run Run, prefix string) (Repor
 	if within(output, input) || within(output, manifestPath) {
 		return r, fmt.Errorf("output must not contain input evidence or its manifest")
 	}
-	for _, p := range doc.Profiles {
-		if within(SuiteRoot(input, p.Suite, p.EvidenceKind), output) {
+	for key, p := range doc.Profiles {
+		if within(SuiteRoot(input, p.Suite, p.EvidenceKind, strings.Split(key, "/")[1]), output) {
 			return r, fmt.Errorf("output must not be inside a suite's evidence directory")
 		}
 	}
@@ -99,8 +99,8 @@ func Generate(input, output, manifestPath string, run Run, prefix string) (Repor
 			continue
 		}
 		seen[p.Evidence] = true
-		root := SuiteRoot(input, p.Suite, p.Kind)
-		dest := filepath.Join(output, "inputs", artifactName(p.Suite, p.Kind))
+		root := SuiteRoot(input, p.Suite, p.Kind, p.Name)
+		dest := filepath.Join(output, "inputs", artifactName(p.Suite, p.Kind, p.Name))
 		if err := copyTree(root, dest); err != nil {
 			return r, err
 		}

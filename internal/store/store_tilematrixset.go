@@ -63,7 +63,7 @@ func (s *DuckDBStore) GetTileMatrixSet(ctx context.Context, id string) (*TileMat
 
 func (s *DuckDBStore) UpsertTileMatrixSet(ctx context.Context, id string, definition json.RawMessage, digest string) (*TileMatrixSetRecord, error) {
 	now := time.Now().UTC()
-	_, err := s.db.ExecContext(ctx, `INSERT INTO tile_matrix_sets(id,definition_json,revision,digest,created_at,updated_at)
+	_, err := s.execCapabilitiesMutation(ctx, "", nil, `INSERT INTO tile_matrix_sets(id,definition_json,revision,digest,created_at,updated_at)
 		VALUES(?,?,1,?,?,?) ON CONFLICT(id) DO UPDATE SET definition_json=excluded.definition_json,
 		revision=tile_matrix_sets.revision+1,digest=excluded.digest,updated_at=excluded.updated_at`, id, string(definition), digest, now, now)
 	if err != nil {
@@ -73,7 +73,7 @@ func (s *DuckDBStore) UpsertTileMatrixSet(ctx context.Context, id string, defini
 }
 
 func (s *DuckDBStore) DeleteTileMatrixSet(ctx context.Context, id string) error {
-	result, err := s.db.ExecContext(ctx, `DELETE FROM tile_matrix_sets WHERE id=?`, id)
+	result, err := s.execCapabilitiesMutation(ctx, "", nil, `DELETE FROM tile_matrix_sets WHERE id=?`, id)
 	if err != nil {
 		return fmt.Errorf("delete tile matrix set: %w", err)
 	}

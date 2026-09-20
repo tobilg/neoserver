@@ -330,7 +330,9 @@ function SchemaField({
             onChange={(e) =>
               onChange(
                 e.target.value === ""
-                  ? undefined
+                  ? name === "dataset_map_layer_group_id"
+                    ? ""
+                    : undefined
                   : schema.type === "number" || schema.type === "integer"
                     ? Number(e.target.value)
                     : e.target.value,
@@ -405,7 +407,9 @@ function SchemaField({
             onChange(
               schema.type === "number" || schema.type === "integer"
                 ? e.target.value === ""
-                  ? undefined
+                  ? name === "dataset_map_layer_group_id"
+                    ? ""
+                    : undefined
                   : Number(e.target.value)
                 : e.target.value,
             )

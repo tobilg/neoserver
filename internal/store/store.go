@@ -182,6 +182,7 @@ type CatalogIntegrityStore interface {
 
 // DuckDBStore implements Store using an encrypted DuckDB database.
 type DuckDBStore struct {
+	datasetMapMu  sync.Mutex   // Serializes map references with group mutations and deletion registration.
 	sessionMu     sync.Mutex   // Serializes conditional token rotations.
 	roleMu        sync.RWMutex // Serializes role deletion against new assignments.
 	db            *sql.DB

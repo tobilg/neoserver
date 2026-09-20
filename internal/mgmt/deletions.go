@@ -85,6 +85,10 @@ func recursiveDeleteRequested(r *http.Request) (bool, error) {
 }
 
 func (h *handler) writeDeletionConflict(w http.ResponseWriter, err error) bool {
+	if errors.Is(err, store.ErrDatasetMapInUse) {
+		writeError(w, http.StatusConflict, "Conflict", err.Error())
+		return true
+	}
 	var conflict *store.DeletionConflictError
 	if !errors.As(err, &conflict) {
 		return false

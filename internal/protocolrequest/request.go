@@ -85,6 +85,8 @@ func resolve(r *http.Request, service, path string) Descriptor {
 			d.Name = "GETFEATURES"
 		case len(tail) == 1 && tail[0] == "collections":
 			d.Name = "LISTCOLLECTIONS"
+		case service == "ogc-tiles" && len(tail) == 6 && tail[0] == "map" && tail[1] == "tiles":
+			d.Name = "GETTILE"
 		case service == "ogc-tiles" && len(tail) == 7 && tail[0] == "collections" && tail[2] == "tiles":
 			d.Name = "GETTILE"
 		case service == "ogc-tiles" && len(tail) == 8 && tail[0] == "collections" && tail[2] == "map" && tail[3] == "tiles":

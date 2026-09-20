@@ -57,7 +57,7 @@ jobs:
       - run: npm run test:build-tools
       - name: Test contributor tooling
         working-directory: .
-        run: node --test scripts/dev.test.mjs
+        run: node --test scripts/dev.test.mjs scripts/set-version.test.mjs
 
   # End-to-end runs against a real neoserver rather than route mocks, so it
   # needs Docker and is slower. Kept separate from the fast console lane: a
@@ -175,7 +175,7 @@ jobs:
           node-version: 24
       - run: node --test scripts/release-evidence.test.mjs
       - run: docker build -t neoserver:candidate .
-      - run: ./scripts/test-release-container.sh neoserver:candidate 0.1.1
+      - run: ./scripts/test-release-container.sh neoserver:candidate 0.1.2
       - name: Offline queries, released schema and format parity
         run: node scripts/test-runtime-container.mjs neoserver:candidate
       - name: Datum grids and image size budget

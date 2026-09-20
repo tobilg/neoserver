@@ -44,7 +44,7 @@ COPY config ./config
 COPY --from=ui /internal/admin/dist ./internal/admin/dist
 
 # Build with CGO enabled for DuckDB support
-ARG VERSION=0.1.1
+ARG VERSION=0.1.2
 ARG COMMIT=unknown
 # Bound compiler concurrency on small/emulated builders. This only affects the
 # build processes, not the server's runtime GOMAXPROCS or container CPU limits.
@@ -65,7 +65,7 @@ RUN python3 /build/runtime-closure.py
 
 FROM ubuntu:26.04@sha256:da6fc2be547864451aa253836dd926da33623312df4a9a243e35dc877c378a78 AS runtime
 
-ARG VERSION=0.1.1
+ARG VERSION=0.1.2
 ARG COMMIT=unknown
 LABEL org.opencontainers.image.version=$VERSION \
       org.opencontainers.image.revision=$COMMIT \

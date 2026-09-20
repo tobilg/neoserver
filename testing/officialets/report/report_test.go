@@ -197,34 +197,49 @@ func TestTestNGAndInfrastructureFailure(t *testing.T) {
 }
 
 func TestDerivedProvenance(t *testing.T) {
-	root, _, doc, run := fixture(t)
-	doc.Suites["wcs20"] = doc.Suites["wms13"]
-	doc.Profiles["wcs20/interpolation"] = manifest.Profile{Suite: "wcs20", EvidenceKind: "official-derived", PatchSet: "patch", PatchSHA256: "sha"}
-	run.Selected = append(run.Selected, "wcs20")
-	var m Metadata
-	readJSON(filepath.Join(root, "conformance/wms13/core/metadata.json"), &m)
-	m.Suite = "wcs20-interpolation"
-	m.EvidenceKind = "official-derived"
-	m.PatchSet = "patch"
-	m.PatchSHA256 = "sha"
-	m.DerivedImageID = "sha256:derived"
-	dir := filepath.Join(root, "conformance-derived/wcs20/interpolation")
-	writeTestJSON(t, filepath.Join(dir, "metadata.json"), m)
-	data, _ := os.ReadFile(filepath.Join(root, "conformance/wms13/core/junit.xml"))
-	writeTestFile(t, filepath.Join(dir, "junit.xml"), string(data))
-	writeTestFile(t, filepath.Join(dir, "result.xml"), "<execution/>")
-	r, err := Load(root, doc, run)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if r.Status != "Passed with skips" || r.Profiles[1].Kind != "official-derived" {
-		t.Fatal("derived profile missing")
-	}
-	m.PatchSHA256 = "wrong"
-	writeTestJSON(t, filepath.Join(dir, "metadata.json"), m)
-	r, _ = Load(root, doc, run)
-	if r.Status != "Incomplete" {
-		t.Fatal("derived mismatch accepted")
+	for _, pair := range [][2]string{{"wcs20", "interpolation"}, {"wfs20", "core202"}} {
+		suite, profile := pair[0], pair[1]
+		t.Run(suite+"/"+profile, func(t *testing.T) {
+			root, _, doc, run := fixture(t)
+			doc.Suites[suite] = doc.Suites["wms13"]
+			doc.Profiles[suite+"/"+profile] = manifest.Profile{Suite: suite, EvidenceKind: "official-derived", PatchSet: "patch", PatchSHA256: "sha"}
+			run.Selected = append(run.Selected, suite)
+			var m Metadata
+			readJSON(filepath.Join(root, "conformance/wms13/core/metadata.json"), &m)
+			m.Suite = suite + "-" + profile
+			m.EvidenceKind = "official-derived"
+			m.PatchSet = "patch"
+			m.PatchSHA256 = "sha"
+			m.DerivedImageID = "sha256:derived"
+			dir := filepath.Join(root, "conformance-derived", suite, profile)
+			writeTestJSON(t, filepath.Join(dir, "metadata.json"), m)
+			data, _ := os.ReadFile(filepath.Join(root, "conformance/wms13/core/junit.xml"))
+			writeTestFile(t, filepath.Join(dir, "junit.xml"), string(data))
+			writeTestFile(t, filepath.Join(dir, "result.xml"), "<execution/>")
+			r, err := Load(root, doc, run)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if r.Status != "Passed with skips" || r.Profiles[1].Kind != "official-derived" {
+				t.Fatal("derived profile missing")
+			}
+			// Actions downloads use one artifact directory per derived profile.
+			artifact := filepath.Join(root, artifactName(suite, "official-derived", profile))
+			if err := os.Rename(dir, artifact); err != nil {
+				t.Fatal(err)
+			}
+			dir = artifact
+			r, err = Load(root, doc, run)
+			if err != nil || r.Status != "Passed with skips" {
+				t.Fatalf("artifact layout: %v, %s", err, r.Status)
+			}
+			m.PatchSHA256 = "wrong"
+			writeTestJSON(t, filepath.Join(dir, "metadata.json"), m)
+			r, _ = Load(root, doc, run)
+			if r.Status != "Incomplete" {
+				t.Fatal("derived mismatch accepted")
+			}
+		})
 	}
 }
 
