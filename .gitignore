@@ -57,3 +57,5 @@ data/*.db
 data/*.wal
 
 .agents/
+
+.DS_Store

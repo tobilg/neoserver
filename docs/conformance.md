@@ -133,5 +133,137 @@ The complete stock and derived matrices run on `main`, version tags, manual
 dispatch, and nightly at 02:17 UTC. Matrix jobs are failure-independent and
 always upload their available evidence.
 
+## Conformance dashboard
+
+The public dashboard is hosted by GitHub Pages at
+[conformance.neoserver.cloud](https://conformance.neoserver.cloud/). It includes
+the six stock official suites and the separately labelled derived WCS
+Interpolation profile. Native protocol integration remains a separate CI lane.
+
+`/latest/` shows the most recent eligible main-branch conformance run, including
+failures. `/releases/<tag>/` retains evidence from the successful release workflow
+that published that tag. Prereleases are labelled. The recorded server image ID
+identifies the image used by the suite; it does not identify the release image
+built later in the release workflow.
+
+Profile pages provide searchable test executions, outcome and skip-category
+filters, build provenance, and downloadable ZIP archives. The archives retain
+the original XML, metadata, and available diagnostic logs and TEAM Engine session
+records. Repeated assertions remain separate executions. Missing or malformed
+expected evidence appears as **Incomplete**, unselected PR suites as **Not run**,
+and successful profiles containing skips as **Passed with skips**. Counts remain
+per profile, with assertions, wrappers, infrastructure, and upstream totals
+identified separately.
+
+Each suite writes a short Actions summary, including on failure. The final
+`conformance-dashboard` artifact contains `site/` (open `site/index.html`) and
+`inputs/` (the source manifest, run context, and original evidence). These reports
+work locally without a web server; filtering is optional JavaScript. Reporting
+errors do not change test outcomes or become release qualification gates.
+
+### Generate a report locally
+
+After collecting conformance evidence:
+
+~~~bash
+make conformance-report
+# Open test-results/conformance-dashboard/site/index.html
+
+# Existing download-artifact directories are supported too:
+make conformance-report CONFORMANCE_REPORT_INPUT=/path/to/downloaded-artifacts \
+  CONFORMANCE_REPORT_OUTPUT=.cache/conformance-dashboard
+
+# Re-render a downloaded bundle using its original manifest and run context:
+go run ./testing/officialets/cmd/etsreport \
+  --input /path/to/bundle/inputs \
+  --manifest /path/to/bundle/inputs/manifest.json \
+  --context /path/to/bundle/inputs/run.json \
+  --output .cache/conformance-rebuilt
+
+make test-conformance-report
+# Requires the existing console dependencies and Playwright Chromium:
+node --test scripts/conformance/report-browser.test.mjs
+~~~
+
+The generator marks its output directory so subsequent runs can replace its
+generated files safely. It refuses to overwrite an unrelated nonempty directory.
+Keep output separate from input evidence. Local evidence may describe a dirty
+checkout; the profile provenance retains that original value.
+
+### Configure GitHub Pages and Cloudflare
+
+1. In the **tobilg account settings → Pages**, verify
+   `conformance.neoserver.cloud`, unless an existing verification of
+   `neoserver.cloud` already covers it. GitHub supplies the TXT record name and
+   value to add in Cloudflare. Retain that TXT record after verification.
+2. In **tobilg/neoserver → Settings → Pages**, choose **GitHub Actions** as the
+   source, then set **Custom domain** to `conformance.neoserver.cloud`.
+   Configure the repository domain before adding the routing record.
+3. In the Cloudflare `neoserver.cloud` zone, add:
+
+   | Field | Value |
+   | --- | --- |
+   | Type | `CNAME` |
+   | Name | `conformance` |
+   | Target | `tobilg.github.io` |
+   | Proxy status | **DNS only** |
+   | TTL | **Auto** |
+
+4. Once GitHub validates DNS and provisions the certificate, enable **Enforce
+   HTTPS** in the repository Pages settings. GitHub manages the certificate;
+   routine deployments require no Cloudflare credentials or DNS changes.
+5. Ensure the `github-pages` environment permits deployments from `main`, and
+   repository rules permit the publishing workflow to update the generated
+   `conformance-pages` branch with its `GITHUB_TOKEN`.
+
+GitHub Actions deployments use the repository Pages domain configuration, not
+a `CNAME` file. See GitHub's [custom-domain instructions](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)
+and [domain verification instructions](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/verifying-your-custom-domain-for-github-pages).
+DNS-only mode sends traffic directly to GitHub Pages; see
+[Cloudflare proxy status](https://developers.cloudflare.com/dns/proxy-status/).
+
+Verify DNS and HTTPS after propagation:
+
+~~~bash
+dig +short CNAME conformance.neoserver.cloud
+curl -I https://conformance.neoserver.cloud/
+curl -I http://conformance.neoserver.cloud/
+~~~
+
+The CNAME should resolve to `tobilg.github.io`, HTTPS should have a valid
+certificate, and HTTP should redirect to HTTPS. Check `/latest/`, a retained
+release report, its assets, and its evidence download after the first deployment.
+
+### Publishing, history, and retries
+
+The **Publish conformance dashboard** workflow runs independently after the
+conformance or release workflow finishes. It executes trusted default-branch
+code, downloads evidence only from the verified source run, and rebuilds HTML
+from that evidence. PR runs and manual release candidates never update Pages.
+Successful jobs retained from an earlier attempt of the same CI run remain valid
+inputs when failed jobs are rerun.
+
+The `conformance-pages` branch contains the deployed report tree and publication
+state. Main reports replace `/latest/`; published release reports are retained.
+Newer commits take precedence over reruns of older commits. Concurrent publishing
+is serialized, and each eligible invocation reconciles unarchived release and
+main completions since reporting was enabled. Cancelled runs leave the previous
+report in place. Existing releases are not automatically backfilled.
+
+To retry publishing or explicitly backfill an available historical run, dispatch
+**Publish conformance dashboard** with its `source_run_id`. The run must be an
+eligible main conformance run or a successful tag-triggered release run with an
+existing published GitHub release. No tests are rerun. Release evidence must
+still be available; expired or missing release artifacts produce an error.
+An already retained release is immutable. Manual retries also redeploy unchanged
+history after a Pages deployment failure.
+
+Publication validates the entire staged tree before committing it. The site
+budget is 900 MiB, below GitHub Pages' 1 GB limit, and individual generated files
+must be below 95 MiB. Exceeding a budget fails publication and preserves release
+history; it does not silently prune reports. Reporting errors appear in the
+publishing workflow's logs and summary. Inspect that workflow independently of
+the source test or release outcome.
+
 Related: [Development](development.md) · [WCS](wcs.md) ·
 [OGC API - Tiles](ogc-api-tiles.md) · [WMTS](wmts.md)

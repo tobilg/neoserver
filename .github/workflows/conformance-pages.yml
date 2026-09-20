@@ -1,0 +1,110 @@
+name: Publish conformance dashboard
+
+on:
+  workflow_run:
+    workflows: ["Protocol integration and OGC conformance", "Release candidate"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Completed main conformance or published release workflow run ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# A surviving invocation reconciles any release/main events coalesced by Actions.
+concurrency:
+  group: conformance-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.repository == 'tobilg/neoserver' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.event != 'pull_request' &&
+        github.event.workflow_run.conclusion != 'cancelled'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: https://conformance.neoserver.cloud/
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN_ID: ${{ inputs.source_run_id || github.event.workflow_run.id }}
+      REPORT_HISTORY: ${{ github.workspace }}/.cache/conformance-pages-history
+      REPORT_GENERATOR: ${{ github.workspace }}/.cache/etsreport
+    steps:
+      # Never check out or execute code from the triggering run or its artifacts.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Build trusted report generator
+        run: |
+          mkdir -p .cache
+          go build -o "$REPORT_GENERATOR" ./testing/officialets/cmd/etsreport
+      - name: Open retained report history
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code origin refs/heads/conformance-pages >/dev/null; then
+            git fetch origin conformance-pages
+            git worktree add --detach "$REPORT_HISTORY" FETCH_HEAD
+          else
+            git worktree add --detach "$REPORT_HISTORY" HEAD
+            git -C "$REPORT_HISTORY" checkout --orphan conformance-pages
+            git -C "$REPORT_HISTORY" rm -rf --quiet .
+          fi
+      - name: Generate and validate retained reports
+        id: reports
+        run: python3 scripts/conformance/publish-pages.py --run-id "$SOURCE_RUN_ID" --history "$REPORT_HISTORY" --generator "$REPORT_GENERATOR"
+      - name: Retain validated report history
+        if: steps.reports.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git -C "$REPORT_HISTORY" config user.name github-actions[bot]
+          git -C "$REPORT_HISTORY" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C "$REPORT_HISTORY" add --all
+          if ! git -C "$REPORT_HISTORY" diff --cached --quiet; then
+            git -C "$REPORT_HISTORY" commit -m "Update conformance evidence"
+            git -C "$REPORT_HISTORY" push origin HEAD:refs/heads/conformance-pages
+          fi
+      # Also deploy an unchanged tree on manual retry after a deployment failure.
+      - name: Check for a deployable site
+        id: site
+        run: |
+          if [[ -f "$REPORT_HISTORY/index.html" ]]; then echo 'exists=true' >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/configure-pages@v5
+        if: steps.site.outputs.exists == 'true'
+      - name: Package Pages site
+        if: steps.site.outputs.exists == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ github.workspace }}/.cache/conformance-pages-history
+      - name: Deploy dashboard
+        if: steps.site.outputs.exists == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Publishing summary
+        if: always()
+        env:
+          DEPLOYMENT_OUTCOME: ${{ steps.deployment.outcome }}
+        run: |
+          {
+            echo '## Conformance dashboard'
+            echo
+            echo "Deployment: $DEPLOYMENT_OUTCOME"
+            echo
+            echo '[Open dashboard](https://conformance.neoserver.cloud/)'
+          } >> "$GITHUB_STEP_SUMMARY"

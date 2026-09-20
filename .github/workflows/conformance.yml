@@ -78,6 +78,9 @@ jobs:
         suite: ${{ fromJSON(needs.select-official-suites.outputs.suites) }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
       - name: Run digest-pinned stock TEAM Engine suite
         run: make test-conformance-${{ matrix.suite }}
       - name: Upload stock official ETS evidence
@@ -87,6 +90,15 @@ jobs:
           name: official-ets-${{ matrix.suite }}
           path: test-results/conformance/${{ matrix.suite }}
           if-no-files-found: warn
+      - name: Summarize official ETS results
+        if: always()
+        continue-on-error: true
+        env:
+          ETS_REPORT_SELECTED: ${{ toJSON(matrix.suite) }}
+          REPORT_SUITE: ${{ matrix.suite }}
+        run: |
+          ETS_REPORT_SELECTED="[$ETS_REPORT_SELECTED]" go run ./testing/officialets/cmd/etsreport \
+            --summary-only --suite "$REPORT_SUITE" --kind official --summary "$GITHUB_STEP_SUMMARY"
 
   official-derived-wcs-interpolation:
     name: Official-derived ETS - WCS 2.0 Interpolation
@@ -96,6 +108,9 @@ jobs:
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
       - name: Run pinned WCS Interpolation compatibility profile
         run: make test-conformance-derived-wcs20-interpolation
       - name: Upload official-derived ETS evidence
@@ -105,3 +120,41 @@ jobs:
           name: official-derived-ets-wcs20-interpolation
           path: test-results/conformance-derived/wcs20/interpolation
           if-no-files-found: warn
+      - name: Summarize derived ETS results
+        if: always()
+        continue-on-error: true
+        env:
+          ETS_REPORT_SELECTED: '["wcs20"]'
+        run: go run ./testing/officialets/cmd/etsreport --summary-only --suite wcs20 --kind official-derived --summary "$GITHUB_STEP_SUMMARY"
+
+  conformance-report:
+    name: Conformance report and evidence bundle
+    needs: [select-official-suites, official-conformance, official-derived-wcs-interpolation]
+    if: always()
+    # Reporting must neither mask failed suites nor become a release gate.
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Download conformance evidence
+        uses: actions/download-artifact@v6
+        with:
+          pattern: official-*
+          path: ${{ runner.temp }}/conformance-artifacts
+      - name: Generate portable dashboard and summary
+        env:
+          ETS_REPORT_SELECTED: ${{ needs.select-official-suites.outputs.suites }}
+          ETS_REPORT_JOBS: ${{ toJSON(needs) }}
+        run: |
+          go run ./testing/officialets/cmd/etsreport --input "$RUNNER_TEMP/conformance-artifacts" \
+            --output "$RUNNER_TEMP/conformance-dashboard" --summary "$GITHUB_STEP_SUMMARY"
+      - name: Upload dashboard and reproducible inputs
+        uses: actions/upload-artifact@v7
+        with:
+          name: conformance-dashboard
+          path: ${{ runner.temp }}/conformance-dashboard
+          if-no-files-found: error

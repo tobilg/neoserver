@@ -147,6 +147,7 @@ For containers and production deployments, persist the backing-store path, suppl
 
 - [Development](docs/development.md) — architecture, builds, tests, and conformance suites
 - [Protocol testing and OGC conformance](docs/conformance.md) — native integration, stock official TEAM Engine, and explicitly derived evidence
+- [Conformance dashboard](https://conformance.neoserver.cloud/) — latest protocol results, release reports, and downloadable test evidence
 - [Release notes](docs/release-notes.md) — breaking changes and upgrade notes
 
 ## API reference and UI

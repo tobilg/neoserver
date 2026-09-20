@@ -222,6 +222,17 @@ test-conformance-derived:
 test-conformance-derived-wcs20-interpolation:
 	./scripts/conformance/run-derived.sh wcs20-interpolation
 
+# Render previously collected evidence without starting Docker or TEAM Engine.
+CONFORMANCE_REPORT_INPUT ?= test-results
+CONFORMANCE_REPORT_OUTPUT ?= test-results/conformance-dashboard
+.PHONY: conformance-report test-conformance-report
+conformance-report:
+	go run ./testing/officialets/cmd/etsreport --input "$(CONFORMANCE_REPORT_INPUT)" --output "$(CONFORMANCE_REPORT_OUTPUT)"
+
+test-conformance-report:
+	go test -ldflags='$(GO_APP_LINK_FLAGS)' -count=1 ./testing/officialets/report ./testing/officialets/cmd/etsreport
+	python3 -B -m unittest discover -s scripts/conformance -p '*_test.py'
+
 .PHONY: test-assurance-all
 test-assurance-all:
 	./scripts/conformance/run-assurance-all.sh

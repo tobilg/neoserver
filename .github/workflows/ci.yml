@@ -45,6 +45,14 @@ jobs:
       - run: npm run test:browser
       - run: npm run build
       - run: UI_TEST_BUILD=true npm run test:browser
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Test conformance reporting and browser accessibility
+        working-directory: .
+        run: |
+          make test-conformance-report
+          node --test scripts/conformance/report-browser.test.mjs
       - run: npm run check:budget
       - run: npm run test:build-tools
       - name: Test contributor tooling
