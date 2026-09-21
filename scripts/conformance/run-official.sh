@@ -61,7 +61,9 @@ run_controller() {
     local args_json="$5"
     local result_dir="/results/conformance/$suite/$profile"
     local teamengine_url="http://$CURRENT_TEAMENGINE:8080/teamengine"
-    mkdir -p "$RESULT_ROOT/$suite"
+    # The root-running controller must not create the profile directory on the
+    # bind mount: the host coverage checker needs to write beside its results.
+    mkdir -p "$RESULT_ROOT/$suite/$profile"
 
     # Disable container stdin so a controller launched inside the manifest
     # read-loop cannot consume the remaining profile records.
