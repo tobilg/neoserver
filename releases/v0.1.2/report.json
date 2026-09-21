@@ -1,0 +1,37 @@
+{
+  "run": {
+    "schema_version": 1,
+    "repository": "tobilg/neoserver",
+    "run_id": "35575448537",
+    "run_attempt": 1,
+    "run_number": 4,
+    "commit": "13fe0143c490ded943752de56e840e8c11c4c9c7",
+    "ref": "refs/tags/v0.1.2",
+    "event": "push",
+    "url": "https://github.com/tobilg/neoserver/actions/runs/35575448537",
+    "created_at": "2026-09-21T07:57:44Z",
+    "selected_suites": [
+      "ogcapi-features10",
+      "ogcapi-tiles10",
+      "wcs20",
+      "wfs20",
+      "wms13",
+      "wmts10"
+    ],
+    "selection_known": true,
+    "jobs": {
+      "conformance / Official ETS - ogcapi-features10": "success",
+      "conformance / Official ETS - ogcapi-tiles10": "success",
+      "conformance / Official ETS - wcs20": "success",
+      "conformance / Official ETS - wfs20": "success",
+      "conformance / Official ETS - wms13": "success",
+      "conformance / Official ETS - wmts10": "success",
+      "conformance / Official-derived ETS - WCS 2.0 Interpolation": "success",
+      "conformance / Official-derived ETS - WFS 2.0.2": "success",
+      "conformance / Select official ETS suites": "success"
+    },
+    "release": "v0.1.2"
+  },
+  "status": "Passed with skips",
+  "date": "2026-09-21T08:07:33Z"
+}

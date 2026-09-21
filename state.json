@@ -1,7 +1,14 @@
 {
   "schema_version": 1,
   "since": "2026-09-20T07:43:21.000Z",
-  "releases": {},
+  "releases": {
+    "v0.1.2": {
+      "commit": "13fe0143c490ded943752de56e840e8c11c4c9c7",
+      "run_id": "35575448537",
+      "run_number": 4,
+      "run_attempt": 1
+    }
+  },
   "latest": {
     "commit": "a4dec060b7c925b9ccd134a9f8edbffb367f733a",
     "run_id": "35554904844",
