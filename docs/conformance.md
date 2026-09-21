@@ -289,7 +289,7 @@ retained in normalized results. Rendering assessment remains advisory.
 ### WFS 2.0.2 compatibility profile
 
 `make test-conformance-derived-wfs20-core202` runs WFS 2.0.2 against the pinned
-WFS ETS image with one correction: the locking test reads the lock ID from
+WFS ETS image with two corrections. The locking test reads the lock ID from
 `LockFeatureResponse`. The stock test incorrectly looks for `FeatureCollection`,
 throws a null-pointer exception, and leaves the acquired lock out of its cleanup
 list. This defect was also reproduced in the latest published Docker image,
@@ -297,8 +297,16 @@ list. This defect was also reproduced in the latest published Docker image,
 `sha256:101ff2737a36b1b8f7ac6e6bc2347fc4e0132b48ef66c5ab349bb122aeac1878`),
 and is tracked in [upstream issue #288](https://github.com/opengeospatial/ets-wfs20/issues/288).
 
-The patch verifies the original class checksum and changes only the response
-element constant. Assertions, test selection, and skip accounting are preserved.
+The destructive transaction group runs last. Its delete tests restore features
+by inserting them with new IDs, but the suite retains the original sampled IDs.
+Running locking tests afterward can therefore randomly select a deleted feature.
+Moving the intact transaction group after all consumers of that snapshot avoids
+this stale-data failure, tracked in
+[upstream issue #289](https://github.com/opengeospatial/ets-wfs20/issues/289).
+
+The `wfs202-locking-v2` patch verifies the original class and suite XML checksums,
+changes the response element constant, and moves the transaction group.
+Assertions, test selection, and skip accounting are preserved.
 CI and the dashboard label these results **official-derived**, record the base
 image and patch identity, and keep them separate from stock WFS 2.0.0 evidence.
 The 2.0.2-only assertion remains an explicit version-applicability skip in the

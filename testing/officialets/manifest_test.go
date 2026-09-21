@@ -26,9 +26,13 @@ func TestOfficialSuitePinsAndClaimMappingsStayAligned(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	const derivedImageRef = "neoserver/ets-wcs20-interpolation-derived:wcs20-1.21-uri-xpath-v1"
-	if !strings.Contains(string(compose), derivedImageRef) || !strings.Contains(string(derivedRunner), derivedImageRef) {
-		t.Fatal("official-derived image reference is not synchronized between Compose and its runner")
+	for _, derivedImageRef := range []string{
+		"neoserver/ets-wcs20-interpolation-derived:wcs20-1.21-uri-xpath-v1",
+		"neoserver/ets-wfs202-derived:wfs20-1.42-locking-v2",
+	} {
+		if !strings.Contains(string(compose), derivedImageRef) || !strings.Contains(string(derivedRunner), derivedImageRef) {
+			t.Fatalf("official-derived image %s is not synchronized between Compose and its runner", derivedImageRef)
+		}
 	}
 	for name, suite := range document.Suites {
 		if !strings.Contains(suite.Image, "@sha256:") || len(strings.Split(suite.Image, "@sha256:")[1]) != 64 {
@@ -61,13 +65,13 @@ func TestOfficialSuitePinsAndClaimMappingsStayAligned(t *testing.T) {
 			}
 			dockerfile := map[string]string{
 				"wcs20/interpolation": "patches/wcs20-interpolation.Dockerfile",
-				"wfs20/core202":       "patches/wfs202-lock-response.Dockerfile",
+				"wfs20/core202":       "patches/wfs202-locking.Dockerfile",
 			}[name]
 			derivedDockerfile, err := os.ReadFile(dockerfile)
 			if err != nil {
 				t.Fatalf("read derived Dockerfile for %s: %v", name, err)
 			}
-			if !strings.Contains(string(compose), profile.PatchSet) || !strings.Contains(string(derivedDockerfile), profile.Patch) || !strings.Contains(string(derivedDockerfile), document.Suites[profile.Suite].Image) {
+			if !strings.Contains(string(compose), profile.PatchSet) || !strings.Contains(string(derivedDockerfile), profile.PatchSet) || !strings.Contains(string(derivedDockerfile), profile.Patch) || !strings.Contains(string(derivedDockerfile), document.Suites[profile.Suite].Image) {
 				t.Errorf("derived profile %s is not synchronized with Compose and its Dockerfile", name)
 			}
 		default:

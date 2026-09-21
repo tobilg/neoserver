@@ -117,13 +117,13 @@ services:
 
   teamengine-wfs20-derived:
     profiles: ["wfs20-derived"]
-    image: "neoserver/ets-wfs202-derived:wfs20-1.42-lock-response-v1"
+    image: "neoserver/ets-wfs202-derived:wfs20-1.42-locking-v2"
     build:
       context: .
-      dockerfile: testing/officialets/patches/wfs202-lock-response.Dockerfile
+      dockerfile: testing/officialets/patches/wfs202-locking.Dockerfile
     labels:
       org.neoserver.ets-evidence: "official-derived"
-      org.neoserver.ets-patch: "wfs202-lock-response-v1"
+      org.neoserver.ets-patch: "wfs202-locking-v2"
     tmpfs:
       - /root/te_base/users/ogctest/rest
 

@@ -131,9 +131,9 @@
       "arguments": {
         "wfs": "${SERVER}/workspaces/demo/wfs?SERVICE=WFS&REQUEST=GetCapabilities&VERSION=2.0.2"
       },
-      "patch_set": "wfs202-lock-response-v1",
-      "patch": "testing/officialets/patches/wfs202-lock-response.go",
-      "patch_sha256": "bc4054bf20325ced6111ca503908bb6a0ca9ead6573e9343f4c3b30fa017eea9"
+      "patch_set": "wfs202-locking-v2",
+      "patch": "testing/officialets/patches/wfs202-locking.go",
+      "patch_sha256": "874a346949311973dacef974f353b25b255ca7efd0db78a64e3b4374ff717eee"
     }
   }
 }

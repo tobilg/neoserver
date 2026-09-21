@@ -23,7 +23,7 @@ run_profile() {
             teamengine="teamengine-wcs20-derived"
             ;;
         wfs20/core202)
-            derived_image_ref="neoserver/ets-wfs202-derived:wfs20-1.42-lock-response-v1"
+            derived_image_ref="neoserver/ets-wfs202-derived:wfs20-1.42-locking-v2"
             teamengine="teamengine-wfs20-derived"
             ;;
         *) return 2 ;;
