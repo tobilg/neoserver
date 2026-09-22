@@ -2,14 +2,14 @@
   "run": {
     "schema_version": 1,
     "repository": "tobilg/neoserver",
-    "run_id": "35554904844",
+    "run_id": "35680022507",
     "run_attempt": 1,
-    "run_number": 15,
-    "commit": "a4dec060b7c925b9ccd134a9f8edbffb367f733a",
+    "run_number": 20,
+    "commit": "13fe0143c490ded943752de56e840e8c11c4c9c7",
     "ref": "refs/heads/main",
     "event": "schedule",
-    "url": "https://github.com/tobilg/neoserver/actions/runs/35554904844",
-    "created_at": "2026-09-21T02:39:34Z",
+    "url": "https://github.com/tobilg/neoserver/actions/runs/35680022507",
+    "created_at": "2026-09-22T02:35:25Z",
     "selected_suites": [
       "ogcapi-features10",
       "ogcapi-tiles10",
@@ -20,17 +20,17 @@
     ],
     "selection_known": true,
     "jobs": {
-      "Official ETS - ogcapi-features10": "failure",
-      "Official ETS - ogcapi-tiles10": "failure",
-      "Official ETS - wcs20": "failure",
-      "Official ETS - wfs20": "failure",
-      "Official ETS - wms13": "failure",
-      "Official ETS - wmts10": "failure",
+      "Official ETS - ogcapi-features10": "success",
+      "Official ETS - ogcapi-tiles10": "success",
+      "Official ETS - wcs20": "success",
+      "Official ETS - wfs20": "success",
+      "Official ETS - wms13": "success",
+      "Official ETS - wmts10": "success",
       "Official-derived ETS - WCS 2.0 Interpolation": "success",
       "Official-derived ETS - WFS 2.0.2": "success",
       "Select official ETS suites": "success"
     }
   },
-  "status": "Incomplete",
-  "date": "2026-09-21T02:49:09Z"
+  "status": "Passed with skips",
+  "date": "2026-09-22T02:43:36Z"
 }
