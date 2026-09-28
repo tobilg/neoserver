@@ -13,8 +13,7 @@ the [release notes](docs/release-notes.md). Older releases have no LTS guarantee
 
 ## What to expect
 
-Reports are acknowledged within a few days. Confirmed vulnerabilities are fixed
-in a new release and disclosed through a
+Confirmed vulnerabilities are fixed in a new release and disclosed through a
 [GitHub security advisory](https://github.com/tobilg/neoserver/security/advisories)
 that names affected versions and any credential rotation or migration needed.
 

@@ -1,6 +1,6 @@
 # Release notes
 
-## Unreleased
+## 0.2.0 — 28 September 2026
 
 **Breaking:** self-signed JWTs for `admin`, `editor`, and `viewer` are now
 bound to one workspace. `create-token` requires `--workspace ID|NAME` for these
@@ -71,8 +71,6 @@ and mosaic databases. Move source files directly under `./data` into
 - Workspace OGC API and OGC API - Tiles OpenAPI documents declare their bearer
   and API-key security schemes for non-public workspaces even when
   `Auth.Enabled` is false, since those workspaces require credentials either way.
-
-## 0.2.0 — unreleased
 
 ## 0.1.2 — 21 September 2026
 
