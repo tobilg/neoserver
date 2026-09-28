@@ -207,3 +207,41 @@ func FuzzBuildTransformSQLIdentifiers(f *testing.F) {
 		_, _, _ = buildTransformSQL("source.gpkg", store.ImportDiscoveredLayer{Name: layer, GeometryColumn: "geom", Properties: []store.ImportProperty{{Name: sourceField}}}, store.ImportLayerPlan{PublicID: "published", TargetGeometry: "geom", SourceSRID: 4326, TargetSRID: 4326, Fields: []store.ImportFieldMapping{{Source: sourceField, Target: target, Include: true}}})
 	})
 }
+
+func TestAdoptRemoteSourceGivesJobItsOwnCopy(t *testing.T) {
+	temporary, cache := t.TempDir(), t.TempDir()
+	cached := filepath.Join(cache, "0123abcd.parquet")
+	if err := os.WriteFile(cached, []byte("parquet"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	manager := &Manager{cfg: conf.Importer{TemporaryDirectory: temporary, MaxRetainedSourceBytes: 100}}
+	job := &store.ImportJob{SourceFilename: "roads.parquet"}
+	path, relative, err := manager.adoptRemoteSource(job, cached)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Join(temporary, relative) != path || !strings.HasPrefix(relative, "upload-") || filepath.Base(path) != "roads.parquet" {
+		t.Fatalf("adopted %q (%q)", path, relative)
+	}
+	// Evicting the cache entry must not affect the job's source.
+	if err := os.Remove(cached); err != nil {
+		t.Fatal(err)
+	}
+	if body, err := os.ReadFile(path); err != nil || string(body) != "parquet" {
+		t.Fatalf("adopted source after eviction: %q %v", body, err)
+	}
+	if err := manager.cleanupTemporarySource(path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Dir(path)); !os.IsNotExist(err) {
+		t.Fatal("cleanup kept the adopted source directory")
+	}
+
+	manager.cfg.MaxRetainedSourceBytes = 3
+	if err := os.WriteFile(cached, []byte("parquet"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := manager.adoptRemoteSource(job, cached); err == nil {
+		t.Fatal("adopted a source larger than the retained-source budget")
+	}
+}

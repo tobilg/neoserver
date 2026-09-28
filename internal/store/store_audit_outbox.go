@@ -39,7 +39,7 @@ func (s *DuckDBStore) ListAuditOutbox(ctx context.Context, limit int) ([]AuditOu
 	if limit <= 0 || limit > 1000 {
 		limit = 100
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id,occurred_at,CAST(payload AS VARCHAR),attempt_count,last_error,created_at,updated_at
+	rows, err := s.read.QueryContext(ctx, `SELECT id,occurred_at,CAST(payload AS VARCHAR),attempt_count,last_error,created_at,updated_at
 		FROM audit_outbox ORDER BY occurred_at,id LIMIT ?`, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list audit outbox: %w", err)
@@ -82,7 +82,7 @@ func (s *DuckDBStore) DeleteAuditOutboxEvent(ctx context.Context, id string) err
 
 func (s *DuckDBStore) CountAuditOutbox(ctx context.Context) (int64, error) {
 	var count int64
-	if err := s.db.QueryRowContext(ctx, `SELECT count(*) FROM audit_outbox`).Scan(&count); err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err := s.read.QueryRowContext(ctx, `SELECT count(*) FROM audit_outbox`).Scan(&count); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, fmt.Errorf("count audit outbox: %w", err)
 	}
 	return count, nil

@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/tobilg/neoserver/internal/datasource"
 	"github.com/tobilg/neoserver/internal/filter"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/store"
 )
 
@@ -377,9 +378,9 @@ func (ds *DataSource) QueryWKBStream(ctx context.Context, layer string, params d
 // buildWKBSQL builds a SQL query that returns WKB geometry and properties JSON.
 func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.QueryParams) (string, []any, error) {
 	p = p.WithDateTimeFilter()
-	schema := quoteIdent(info.Schema)
-	table := quoteIdent(info.Name[len(info.Schema)+1:]) // Remove schema prefix
-	geom := quoteIdent(info.GeometryColumn)
+	schema := sqlutil.QuoteIdent(info.Schema)
+	table := sqlutil.QuoteIdent(info.Name[len(info.Schema)+1:]) // Remove schema prefix
+	geom := sqlutil.QuoteIdent(info.GeometryColumn)
 
 	geomExpr := fmt.Sprintf("(%s.%s)::geometry", "t", geom)
 	outSRID := p.OutputSRID
@@ -397,7 +398,7 @@ func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.Query
 	propExpr := buildProjectedProperties(info, p.Properties, "t")
 	idExpr := "NULL::text"
 	if info.IDColumn != "" {
-		idExpr = fmt.Sprintf("t.%s::text", quoteIdent(info.IDColumn))
+		idExpr = fmt.Sprintf("t.%s::text", sqlutil.QuoteIdent(info.IDColumn))
 	}
 
 	var whereParts []string
@@ -412,7 +413,7 @@ func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.Query
 	}
 
 	// Use pre-compiled filter if provided (e.g., from FES XML)
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "t", GeometryExpression: "t." + quoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "t", GeometryExpression: "t." + sqlutil.QuoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && strings.TrimSpace(p.Filter) != "" {
@@ -441,10 +442,7 @@ func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.Query
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	limitSQL := ""
 	if p.Limit > 0 {
@@ -531,7 +529,7 @@ func (ds *DataSource) GetLayerExtent(ctx context.Context, layer string) (*dataso
 	var extent datasource.Extent
 	extent.SRID = info.SRID
 	query := fmt.Sprintf(`SELECT ST_XMin(e), ST_YMin(e), ST_XMax(e), ST_YMax(e)
-		FROM (SELECT ST_Extent(%s) AS e FROM %s.%s) bounds`, quoteIdent(info.GeometryColumn), quoteIdent(schema), quoteIdent(table))
+		FROM (SELECT ST_Extent(%s) AS e FROM %s.%s) bounds`, sqlutil.QuoteIdent(info.GeometryColumn), sqlutil.QuoteIdent(schema), sqlutil.QuoteIdent(table))
 	if err := ds.pool.QueryRow(ctx, query).Scan(&extent.MinX, &extent.MinY, &extent.MaxX, &extent.MaxY); err != nil {
 		return nil, fmt.Errorf("layer extent: %w", err)
 	}
@@ -603,9 +601,9 @@ func (ds *DataSource) queryLayerInfoUsing(ctx context.Context, exec writeExecuto
 func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.QueryParams) (string, []any, error) {
 	p = p.WithDateTimeFilter()
 	p.SortBy = datasource.StableSort(p.SortBy, info.IDColumn)
-	schema := quoteIdent(info.Schema)
-	table := quoteIdent(info.Name[len(info.Schema)+1:]) // Remove schema prefix
-	geom := quoteIdent(info.GeometryColumn)
+	schema := sqlutil.QuoteIdent(info.Schema)
+	table := sqlutil.QuoteIdent(info.Name[len(info.Schema)+1:]) // Remove schema prefix
+	geom := sqlutil.QuoteIdent(info.GeometryColumn)
 
 	geomExpr := fmt.Sprintf("(%s.%s)::geometry", "t", geom)
 	outSRID := p.OutputSRID
@@ -619,7 +617,7 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 
 	var idExpr string
 	if info.IDColumn != "" {
-		idCol := quoteIdent(info.IDColumn)
+		idCol := sqlutil.QuoteIdent(info.IDColumn)
 		idExpr = fmt.Sprintf("%s.%s", "t", idCol)
 	} else {
 		idExpr = "NULL"
@@ -638,7 +636,7 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 	}
 
 	// Use pre-compiled filter if provided (e.g., from FES XML)
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "t", GeometryExpression: "t." + quoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "t", GeometryExpression: "t." + sqlutil.QuoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && strings.TrimSpace(p.Filter) != "" {
@@ -668,33 +666,9 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 		}
 	}
 
-	orderSQL := ""
-	if len(p.SortBy) > 0 {
-		var orderItems []string
-		for _, s := range p.SortBy {
-			if s.Name == "" {
-				continue
-			}
-			if s.Name != info.IDColumn {
-				if _, ok := info.PGTypes[s.Name]; !ok {
-					continue
-				}
-			}
-			dir := "ASC"
-			if s.Desc {
-				dir = "DESC"
-			}
-			orderItems = append(orderItems, fmt.Sprintf("%s.%s %s", "t", quoteIdent(s.Name), dir))
-		}
-		if len(orderItems) > 0 {
-			orderSQL = "ORDER BY " + strings.Join(orderItems, ",")
-		}
-	} else if info.IDColumn != "" {
-		orderSQL = fmt.Sprintf("ORDER BY %s.%s", "t", quoteIdent(info.IDColumn))
-	}
+	orderSQL := datasource.OrderByClause("t", p.SortBy, datasource.LayerSortable(info), info.IDColumn)
 
-	limitSQL := fmt.Sprintf("LIMIT $%d OFFSET $%d", argPos, argPos+1)
-	args = append(args, p.Limit, p.Offset)
+	limitSQL := datasource.LimitOffsetClause(&args, argPos, p.Limit, p.Offset)
 
 	featureExpr := fmt.Sprintf(
 		`jsonb_build_object('type','Feature','id',%s,'geometry',ST_AsGeoJSON(%s)::jsonb,'properties',%s)`,
@@ -703,20 +677,17 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 		propExpr,
 	)
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	sql := fmt.Sprintf(`SELECT %s AS feature FROM %s.%s t %s %s %s`, featureExpr, schema, table, whereSQL, orderSQL, limitSQL)
 	return sql, args, nil
 }
 
 func (ds *DataSource) buildFeatureByIDSQL(info *datasource.LayerInfo, outSRID int) string {
-	schema := quoteIdent(info.Schema)
-	table := quoteIdent(info.Name[len(info.Schema)+1:])
-	geom := quoteIdent(info.GeometryColumn)
-	idCol := quoteIdent(info.IDColumn)
+	schema := sqlutil.QuoteIdent(info.Schema)
+	table := sqlutil.QuoteIdent(info.Name[len(info.Schema)+1:])
+	geom := sqlutil.QuoteIdent(info.GeometryColumn)
+	idCol := sqlutil.QuoteIdent(info.IDColumn)
 
 	geomExpr := fmt.Sprintf("(%s.%s)::geometry", "t", geom)
 	geomOut := geomExpr
@@ -724,7 +695,7 @@ func (ds *DataSource) buildFeatureByIDSQL(info *datasource.LayerInfo, outSRID in
 		geomOut = fmt.Sprintf("ST_Transform(%s, %d)", geomExpr, outSRID)
 	}
 
-	propExpr := fmt.Sprintf("(to_jsonb(t) - %s - %s)", quoteLiteral(info.GeometryColumn), quoteLiteral(info.IDColumn))
+	propExpr := fmt.Sprintf("(to_jsonb(t) - %s - %s)", sqlutil.QuoteLiteral(info.GeometryColumn), sqlutil.QuoteLiteral(info.IDColumn))
 	featureExpr := fmt.Sprintf(
 		`jsonb_build_object('type','Feature','id',t.%s,'geometry',ST_AsGeoJSON(%s)::jsonb,'properties',%s)`,
 		idCol,
@@ -737,9 +708,9 @@ func (ds *DataSource) buildFeatureByIDSQL(info *datasource.LayerInfo, outSRID in
 
 func (ds *DataSource) buildCountSQL(info *datasource.LayerInfo, p datasource.QueryParams) (string, []any, error) {
 	p = p.WithDateTimeFilter()
-	schema := quoteIdent(info.Schema)
-	table := quoteIdent(info.Name[len(info.Schema)+1:])
-	geom := quoteIdent(info.GeometryColumn)
+	schema := sqlutil.QuoteIdent(info.Schema)
+	table := sqlutil.QuoteIdent(info.Name[len(info.Schema)+1:])
+	geom := sqlutil.QuoteIdent(info.GeometryColumn)
 
 	var whereParts []string
 	var args []any
@@ -753,7 +724,7 @@ func (ds *DataSource) buildCountSQL(info *datasource.LayerInfo, p datasource.Que
 	}
 
 	// Use pre-compiled filter if provided (e.g., from FES XML)
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "t", GeometryExpression: "t." + quoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "t", GeometryExpression: "t." + sqlutil.QuoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && strings.TrimSpace(p.Filter) != "" {
@@ -782,10 +753,7 @@ func (ds *DataSource) buildCountSQL(info *datasource.LayerInfo, p datasource.Que
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s.%s t %s`, schema, table, whereSQL)
 	return sql, args, nil
@@ -920,14 +888,6 @@ func pgTypeToJSON(pgType string) datasource.JSONType {
 	}
 }
 
-func quoteIdent(s string) string {
-	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
-}
-
-func quoteLiteral(s string) string {
-	return `'` + strings.ReplaceAll(s, `'`, `''`) + `'`
-}
-
 func buildBBoxPredicate(geomExpr string, sourceSRID, bboxSRID, argPos int, bbox *datasource.BBox) (string, []any, int) {
 	bboxSRID = nonZero(bboxSRID, 4326)
 	sourceSRID = nonZero(sourceSRID, 4326)
@@ -953,16 +913,16 @@ func buildBBoxPredicate(geomExpr string, sourceSRID, bboxSRID, argPos int, bbox 
 func buildProjectedProperties(info *datasource.LayerInfo, requested []string, alias string) string {
 	if len(requested) == 0 {
 		if info.IDColumn != "" {
-			return fmt.Sprintf("(to_jsonb(%s) - %s - %s)", alias, quoteLiteral(info.GeometryColumn), quoteLiteral(info.IDColumn))
+			return fmt.Sprintf("(to_jsonb(%s) - %s - %s)", alias, sqlutil.QuoteLiteral(info.GeometryColumn), sqlutil.QuoteLiteral(info.IDColumn))
 		}
-		return fmt.Sprintf("(to_jsonb(%s) - %s)", alias, quoteLiteral(info.GeometryColumn))
+		return fmt.Sprintf("(to_jsonb(%s) - %s)", alias, sqlutil.QuoteLiteral(info.GeometryColumn))
 	}
 	parts := make([]string, 0, len(requested)*2)
 	for _, prop := range info.Properties {
 		if prop.Name == info.IDColumn || !datasource.PropertySelected(prop.Name, requested) {
 			continue
 		}
-		parts = append(parts, quoteLiteral(prop.Name), alias+"."+quoteIdent(prop.Name))
+		parts = append(parts, sqlutil.QuoteLiteral(prop.Name), alias+"."+sqlutil.QuoteIdent(prop.Name))
 	}
 	if len(parts) == 0 {
 		return "'{}'::jsonb"
@@ -1016,8 +976,8 @@ func (ds *DataSource) insert(ctx context.Context, exec writeExecutor, layer stri
 		return nil, err
 	}
 
-	schema := quoteIdent(info.Schema)
-	table := quoteIdent(info.Name[len(info.Schema)+1:])
+	schema := sqlutil.QuoteIdent(info.Schema)
+	table := sqlutil.QuoteIdent(info.Name[len(info.Schema)+1:])
 
 	var ids []string
 
@@ -1034,7 +994,7 @@ func (ds *DataSource) insert(ctx context.Context, exec writeExecutor, layer stri
 			if _, ok := info.PGTypes[propName]; !ok {
 				continue // Skip unknown properties
 			}
-			columns = append(columns, quoteIdent(propName))
+			columns = append(columns, sqlutil.QuoteIdent(propName))
 			placeholders = append(placeholders, fmt.Sprintf("$%d", argPos))
 			args = append(args, propValue)
 			argPos++
@@ -1042,7 +1002,7 @@ func (ds *DataSource) insert(ctx context.Context, exec writeExecutor, layer stri
 
 		// Add geometry if provided
 		if feature.Geometry != "" {
-			columns = append(columns, quoteIdent(info.GeometryColumn))
+			columns = append(columns, sqlutil.QuoteIdent(info.GeometryColumn))
 			// Parse GML geometry and convert to PostGIS
 			placeholders = append(placeholders, geometryExpression(argPos, feature.GeometrySRID, info.SRID))
 			args = append(args, feature.Geometry)
@@ -1061,7 +1021,7 @@ func (ds *DataSource) insert(ctx context.Context, exec writeExecutor, layer stri
 				schema, table,
 				strings.Join(columns, ", "),
 				strings.Join(placeholders, ", "),
-				quoteIdent(info.IDColumn),
+				sqlutil.QuoteIdent(info.IDColumn),
 			)
 		} else {
 			sql = fmt.Sprintf(
@@ -1106,8 +1066,8 @@ func (ds *DataSource) update(ctx context.Context, exec writeExecutor, layer stri
 		return nil, err
 	}
 
-	schema := quoteIdent(info.Schema)
-	table := quoteIdent(info.Name[len(info.Schema)+1:])
+	schema := sqlutil.QuoteIdent(info.Schema)
+	table := sqlutil.QuoteIdent(info.Name[len(info.Schema)+1:])
 
 	// Build SET clause
 	var setClauses []string
@@ -1120,14 +1080,14 @@ func (ds *DataSource) update(ctx context.Context, exec writeExecutor, layer stri
 		}
 		if propName == info.GeometryColumn {
 			if propValue == nil {
-				setClauses = append(setClauses, quoteIdent(propName)+" = NULL")
+				setClauses = append(setClauses, sqlutil.QuoteIdent(propName)+" = NULL")
 				continue
 			}
 			geometry, ok := propValue.(datasource.GeometryValue)
 			if !ok {
 				return nil, fmt.Errorf("geometry requires validated GML and an input CRS")
 			}
-			setClauses = append(setClauses, fmt.Sprintf("%s = %s", quoteIdent(propName), geometryExpression(argPos, geometry.SRID, info.SRID)))
+			setClauses = append(setClauses, fmt.Sprintf("%s = %s", sqlutil.QuoteIdent(propName), geometryExpression(argPos, geometry.SRID, info.SRID)))
 			updateArgs = append(updateArgs, geometry.GML)
 			argPos++
 			continue
@@ -1136,7 +1096,7 @@ func (ds *DataSource) update(ctx context.Context, exec writeExecutor, layer stri
 		if _, ok := info.PGTypes[propName]; !ok {
 			continue // Skip unknown properties
 		}
-		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", quoteIdent(propName), argPos))
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", sqlutil.QuoteIdent(propName), argPos))
 		updateArgs = append(updateArgs, propValue)
 		argPos++
 	}
@@ -1176,8 +1136,8 @@ func (ds *DataSource) delete(ctx context.Context, exec writeExecutor, layer stri
 		return nil, err
 	}
 
-	schema := quoteIdent(info.Schema)
-	table := quoteIdent(info.Name[len(info.Schema)+1:])
+	schema := sqlutil.QuoteIdent(info.Schema)
+	table := sqlutil.QuoteIdent(info.Name[len(info.Schema)+1:])
 
 	// Build WHERE clause
 	whereSQL := ""
@@ -1201,8 +1161,8 @@ func (ds *DataSource) replace(ctx context.Context, exec writeExecutor, layer str
 		return nil, err
 	}
 
-	schema := quoteIdent(info.Schema)
-	table := quoteIdent(info.Name[len(info.Schema)+1:])
+	schema := sqlutil.QuoteIdent(info.Schema)
+	table := sqlutil.QuoteIdent(info.Name[len(info.Schema)+1:])
 
 	// Build SET clause from feature properties
 	var setClauses []string
@@ -1217,14 +1177,14 @@ func (ds *DataSource) replace(ctx context.Context, exec writeExecutor, layer str
 		if _, ok := info.PGTypes[propName]; !ok {
 			continue // Skip unknown properties
 		}
-		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", quoteIdent(propName), argPos))
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", sqlutil.QuoteIdent(propName), argPos))
 		updateArgs = append(updateArgs, propValue)
 		argPos++
 	}
 
 	// Add geometry if provided
 	if feature.Geometry != "" {
-		setClauses = append(setClauses, fmt.Sprintf("%s = %s", quoteIdent(info.GeometryColumn), geometryExpression(argPos, feature.GeometrySRID, info.SRID)))
+		setClauses = append(setClauses, fmt.Sprintf("%s = %s", sqlutil.QuoteIdent(info.GeometryColumn), geometryExpression(argPos, feature.GeometrySRID, info.SRID)))
 		updateArgs = append(updateArgs, feature.Geometry)
 		argPos++
 	}
@@ -1251,7 +1211,7 @@ func (ds *DataSource) replace(ctx context.Context, exec writeExecutor, layer str
 			schema, table,
 			strings.Join(setClauses, ", "),
 			whereSQL,
-			quoteIdent(info.IDColumn),
+			sqlutil.QuoteIdent(info.IDColumn),
 		)
 
 		rows, err := exec.Query(ctx, sql, updateArgs...)
@@ -1436,7 +1396,7 @@ func (ds *DataSource) checkGeometryColumn(ctx context.Context, sql, colName stri
 		FROM (%s) AS _sqlview_check
 		WHERE %s IS NOT NULL
 		LIMIT 1
-	`, quoteIdent(colName), quoteIdent(colName), sql, quoteIdent(colName))
+	`, sqlutil.QuoteIdent(colName), sqlutil.QuoteIdent(colName), sql, sqlutil.QuoteIdent(colName))
 
 	var geomType string
 	var srid int
@@ -1567,7 +1527,7 @@ func (ds *DataSource) buildSQLViewListSQL(config *datasource.SQLViewConfig, p da
 	}
 	p = p.WithDateTimeFilter()
 	p.SortBy = datasource.StableSort(p.SortBy, config.IDColumn)
-	geom := quoteIdent(config.GeometryColumn)
+	geom := sqlutil.QuoteIdent(config.GeometryColumn)
 
 	outSRID := p.OutputSRID
 	if outSRID == 0 {
@@ -1586,7 +1546,7 @@ func (ds *DataSource) buildSQLViewListSQL(config *datasource.SQLViewConfig, p da
 	// Build ID expression
 	var idExpr string
 	if config.IDColumn != "" {
-		idExpr = fmt.Sprintf("v.%s", quoteIdent(config.IDColumn))
+		idExpr = fmt.Sprintf("v.%s", sqlutil.QuoteIdent(config.IDColumn))
 	} else {
 		idExpr = "NULL"
 	}
@@ -1595,7 +1555,7 @@ func (ds *DataSource) buildSQLViewListSQL(config *datasource.SQLViewConfig, p da
 	var propParts []string
 	for _, prop := range config.Properties {
 		if prop.Name != config.GeometryColumn && prop.Name != config.IDColumn && datasource.PropertySelected(prop.Name, p.Properties) {
-			propParts = append(propParts, fmt.Sprintf("%s, v.%s", quoteLiteral(prop.Name), quoteIdent(prop.Name)))
+			propParts = append(propParts, fmt.Sprintf("%s, v.%s", sqlutil.QuoteLiteral(prop.Name), sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propExpr := "'{}'::jsonb"
@@ -1611,7 +1571,7 @@ func (ds *DataSource) buildSQLViewListSQL(config *datasource.SQLViewConfig, p da
 		if config.IDColumn == "" {
 			return "", nil, fmt.Errorf("SQL view requires an id_column for item lookup")
 		}
-		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+quoteIdent(config.IDColumn), argPos)
+		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+sqlutil.QuoteIdent(config.IDColumn), argPos)
 		whereParts = append(whereParts, predicate)
 		args = append(args, idArgs...)
 		argPos = next
@@ -1626,7 +1586,7 @@ func (ds *DataSource) buildSQLViewListSQL(config *datasource.SQLViewConfig, p da
 	}
 
 	// CQL2 filter
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "v", GeometryExpression: "v." + quoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "v", GeometryExpression: "v." + sqlutil.QuoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && strings.TrimSpace(p.Filter) != "" {
@@ -1664,30 +1624,9 @@ func (ds *DataSource) buildSQLViewListSQL(config *datasource.SQLViewConfig, p da
 		}
 	}
 
-	// Build ORDER BY
-	orderSQL := ""
-	if len(p.SortBy) > 0 {
-		var orderItems []string
-		for _, s := range p.SortBy {
-			if s.Name == "" {
-				continue
-			}
-			dir := "ASC"
-			if s.Desc {
-				dir = "DESC"
-			}
-			orderItems = append(orderItems, fmt.Sprintf("v.%s %s", quoteIdent(s.Name), dir))
-		}
-		if len(orderItems) > 0 {
-			orderSQL = "ORDER BY " + strings.Join(orderItems, ",")
-		}
-	} else if config.IDColumn != "" {
-		orderSQL = fmt.Sprintf("ORDER BY v.%s", quoteIdent(config.IDColumn))
-	}
+	orderSQL := datasource.OrderByClause("v", p.SortBy, nil, config.IDColumn)
 
-	// Build LIMIT/OFFSET
-	limitSQL := fmt.Sprintf("LIMIT $%d OFFSET $%d", argPos, argPos+1)
-	args = append(args, p.Limit, p.Offset)
+	limitSQL := datasource.LimitOffsetClause(&args, argPos, p.Limit, p.Offset)
 
 	// Build feature JSON expression
 	featureExpr := fmt.Sprintf(
@@ -1697,10 +1636,7 @@ func (ds *DataSource) buildSQLViewListSQL(config *datasource.SQLViewConfig, p da
 		propExpr,
 	)
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	// Wrap user SQL in subquery
 	sql := fmt.Sprintf(`SELECT %s AS feature FROM (%s) v %s %s %s`, featureExpr, config.SQL, whereSQL, orderSQL, limitSQL)
@@ -1716,7 +1652,7 @@ func (ds *DataSource) buildSQLViewWKBSQL(config *datasource.SQLViewConfig, p dat
 		return "", nil, err
 	}
 	p = p.WithDateTimeFilter()
-	geom := quoteIdent(config.GeometryColumn)
+	geom := sqlutil.QuoteIdent(config.GeometryColumn)
 
 	outSRID := p.OutputSRID
 	if outSRID == 0 {
@@ -1736,7 +1672,7 @@ func (ds *DataSource) buildSQLViewWKBSQL(config *datasource.SQLViewConfig, p dat
 	var propParts []string
 	for _, prop := range config.Properties {
 		if prop.Name != config.GeometryColumn && prop.Name != config.IDColumn {
-			propParts = append(propParts, fmt.Sprintf("%s, v.%s", quoteLiteral(prop.Name), quoteIdent(prop.Name)))
+			propParts = append(propParts, fmt.Sprintf("%s, v.%s", sqlutil.QuoteLiteral(prop.Name), sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propExpr := "'{}'::jsonb"
@@ -1752,7 +1688,7 @@ func (ds *DataSource) buildSQLViewWKBSQL(config *datasource.SQLViewConfig, p dat
 		if config.IDColumn == "" {
 			return "", nil, fmt.Errorf("SQL view requires an id_column for item lookup")
 		}
-		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+quoteIdent(config.IDColumn), argPos)
+		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+sqlutil.QuoteIdent(config.IDColumn), argPos)
 		whereParts = append(whereParts, predicate)
 		args = append(args, idArgs...)
 		argPos = next
@@ -1767,7 +1703,7 @@ func (ds *DataSource) buildSQLViewWKBSQL(config *datasource.SQLViewConfig, p dat
 	}
 
 	// CQL2 filter
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "v", GeometryExpression: "v." + quoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "v", GeometryExpression: "v." + sqlutil.QuoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && strings.TrimSpace(p.Filter) != "" {
@@ -1804,10 +1740,7 @@ func (ds *DataSource) buildSQLViewWKBSQL(config *datasource.SQLViewConfig, p dat
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	limitSQL := ""
 	if p.Limit > 0 {
@@ -1815,7 +1748,7 @@ func (ds *DataSource) buildSQLViewWKBSQL(config *datasource.SQLViewConfig, p dat
 	}
 	idExpr := "NULL::text"
 	if config.IDColumn != "" {
-		idExpr = fmt.Sprintf("v.%s::text", quoteIdent(config.IDColumn))
+		idExpr = fmt.Sprintf("v.%s::text", sqlutil.QuoteIdent(config.IDColumn))
 	}
 	sql := fmt.Sprintf(`SELECT ST_AsBinary(%s) AS geom, %s AS props, %s AS feature_id FROM (%s) v %s %s`,
 		geomExpr, propExpr, idExpr, config.SQL, whereSQL, limitSQL)
@@ -1831,7 +1764,7 @@ func (ds *DataSource) buildSQLViewCountSQL(config *datasource.SQLViewConfig, p d
 		return "", nil, err
 	}
 	p = p.WithDateTimeFilter()
-	geom := quoteIdent(config.GeometryColumn)
+	geom := sqlutil.QuoteIdent(config.GeometryColumn)
 
 	var whereParts []string
 	var args []any
@@ -1841,7 +1774,7 @@ func (ds *DataSource) buildSQLViewCountSQL(config *datasource.SQLViewConfig, p d
 		if config.IDColumn == "" {
 			return "", nil, fmt.Errorf("SQL view requires an id_column for item lookup")
 		}
-		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+quoteIdent(config.IDColumn), argPos)
+		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+sqlutil.QuoteIdent(config.IDColumn), argPos)
 		whereParts = append(whereParts, predicate)
 		args = append(args, idArgs...)
 		argPos = next
@@ -1856,7 +1789,7 @@ func (ds *DataSource) buildSQLViewCountSQL(config *datasource.SQLViewConfig, p d
 	}
 
 	// CQL2 filter
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "v", GeometryExpression: "v." + quoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLPostGIS, TableAlias: "v", GeometryExpression: "v." + sqlutil.QuoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && strings.TrimSpace(p.Filter) != "" {
@@ -1893,10 +1826,7 @@ func (ds *DataSource) buildSQLViewCountSQL(config *datasource.SQLViewConfig, p d
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	sql := fmt.Sprintf(`SELECT COUNT(*) FROM (%s) v %s`, config.SQL, whereSQL)
 	return sql, args, nil

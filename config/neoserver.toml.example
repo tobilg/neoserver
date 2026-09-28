@@ -34,6 +34,11 @@ ReadTimeoutSec = 5
 # HTTP write timeout in seconds
 WriteTimeoutSec = 30
 
+# Write timeout for bulk data responses (WFS GetFeature/GetPropertyValue,
+# WCS GetCoverage, OGC API items) so slow clients can finish large downloads.
+# 0 keeps WriteTimeoutSec.
+ExportWriteTimeoutSec = 600
+
 # Maximum request body size in bytes
 MaxBodyBytes = 10485760
 
@@ -51,10 +56,18 @@ DisableUI = false
 # File and remote datasource policy
 # -----------------------------------------------------------------------------
 [Datasource]
-AllowedPaths = ["./data/**", "data/**"]
+AllowedPaths = ["./data/sources/**", "./data/imports/**"]
+# PostGIS endpoints ("host" or "host:port") workspace administrators may use.
+# Any other host requires super_admin. Empty reserves new hosts for super admins.
+DatabaseHosts = []
 RemoteCachePath = "./data/remote-cache"
 RemoteMaxBytes = 1073741824
 RemoteTimeoutSec = 60
+# Quota for all cached HTTPS downloads (0 disables). Least recently used
+# downloads are evicted first; files held by open datasources are never evicted.
+RemoteCacheMaxBytes = 10737418240
+# Evict downloads unused for longer than this many seconds (0 disables)
+RemoteCacheMaxAgeSec = 0
 # Maximum number of granules accepted by a managed raster_mosaic service
 MosaicMaxGranules = 100000
 

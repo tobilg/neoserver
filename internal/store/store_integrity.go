@@ -42,7 +42,7 @@ func (s *DuckDBStore) AuditCatalogOrphans(ctx context.Context) ([]CatalogOrphan,
 	}
 	var result []CatalogOrphan
 	for _, item := range queries {
-		rows, err := s.db.QueryContext(ctx, item.query)
+		rows, err := s.read.QueryContext(ctx, item.query)
 		if err != nil {
 			return nil, err
 		}

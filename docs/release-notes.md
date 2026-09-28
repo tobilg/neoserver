@@ -1,6 +1,80 @@
 # Release notes
 
-## 0.1.2 — unreleased
+## Unreleased
+
+**Breaking:** self-signed JWTs for `admin`, `editor`, and `viewer` are now
+bound to one workspace. `create-token` requires `--workspace ID|NAME` for these
+roles, and tokens minted by 0.1.2 or earlier for them are rejected because they
+granted the role in every workspace. `super_admin` tokens are unchanged.
+Console sessions opened with such a token keep their roles until they expire;
+revoke them, or rotate the signing key, to end them sooner.
+
+- The catalog serves reads from a connection pool beside its single serialized
+  writer. `Store.MaxConnections` (default 10, maximum 100) sets the total.
+- The HTTPS datasource cache has a size quota (`Datasource.RemoteCacheMaxBytes`,
+  default 10 GiB) and an optional idle-age limit (`RemoteCacheMaxAgeSec`).
+  Downloads held by open datasources are never evicted. An unreachable origin
+  or a 5xx response now serves the cached copy instead of failing.
+- Every DuckDB datasource now disables external access and locks its
+  configuration. Local GeoParquet and vector-file sources can read only their
+  own file or directory.
+- Outbound datasource and remote-graphic fetches refuse more non-public
+  addresses: carrier-grade NAT (including `100.100.100.200`), benchmarking,
+  documentation and reserved ranges, multicast, Teredo, and NAT64/6to4
+  addresses whose embedded IPv4 address is non-public. Remote style graphics
+  now use the same connect-time address check as datasources.
+- An expired or revoked browser session no longer causes 401 on public,
+  read-only protocol requests; they continue anonymously.
+- HTTP Basic credentials are throttled on every endpoint, sharing the console
+  sign-in failure budget. A username is blocked only after failures from many
+  addresses, so one client cannot lock another user out.
+- Session cookies are marked `Secure` behind a trusted TLS-terminating proxy,
+  and the console's OIDC redirect URI no longer trusts `X-Forwarded-Proto` from
+  untrusted peers.
+- DuckDB map rendering no longer transforms the bbox of a layer with an unknown
+  SRID to `EPSG:0`, and binds bbox coordinates as parameters.
+- `serve` warns when the store key holds fewer than 32 bytes, unless it runs
+  with `--devel` or `NEOSRV_SERVER_DEVEL=true`.
+
+**Breaking:** workspace administrators can no longer point PostGIS services at
+arbitrary hosts. Creating a PostGIS service, testing a connection, or changing
+a service's host or port now requires `super_admin` unless the endpoint is
+listed in the new `Datasource.DatabaseHosts` setting (`host` or `host:port`).
+Workspace administrators can still edit existing services that keep their host
+and port. Add your database endpoints to `DatabaseHosts` if workspace
+administrators create their own PostGIS services.
+
+**Breaking:** the native default for `Datasource.AllowedPaths` is now
+`["./data/sources/**", "./data/imports/**"]`, matching the container image. The
+previous `./data/**` also exposed the server's own catalog, audit, tile-cache
+and mosaic databases. Move source files directly under `./data` into
+`./data/sources`, or set `AllowedPaths` explicitly.
+
+- The repository's `docker-compose.yml` sets `NEOSRV_AUTH_REQUIREHTTPS=false`.
+  Behind Docker's port proxy every authenticated plain-HTTP request previously
+  failed with 426, which broke the README quickstart and console sign-in.
+- New `Server.ExportWriteTimeoutSec` (default 600) replaces
+  `Server.WriteTimeoutSec` for WFS GetFeature, GetFeatureWithLock and
+  GetPropertyValue, WCS GetCoverage, and OGC API Features items, so large
+  downloads to slow clients are no longer cut off after 30 seconds.
+- The workspace OGC API documentation page (`/ogc/api.html`) no longer loads
+  Swagger UI from unpkg; the Content-Security-Policy blocked it and the page
+  was blank. It now uses the same-origin assets of the management API page.
+- WMS PDF output is now written by neoserver itself instead of GDAL's PDF
+  driver, so it is always available. The container image no longer includes
+  that driver's plugin or its GPL-licensed poppler dependency (about 12 MB with
+  gpgme, NSS and lcms2), and therefore cannot read PDF files; no datasource
+  accepted them. PDFs remain georeferenced (ISO 32000) at 96 DPI.
+- The management OpenAPI document's `servers` URL comes from `Server.UrlBase`
+  (relative when unset) instead of the request's `Host` and
+  `X-Forwarded-Proto` headers.
+- Workspace OGC API and OGC API - Tiles OpenAPI documents declare their bearer
+  and API-key security schemes for non-public workspaces even when
+  `Auth.Enabled` is false, since those workspaces require credentials either way.
+
+## 0.2.0 — unreleased
+
+## 0.1.2 — 21 September 2026
 
 The container runtime now uses a minimal Ubuntu 26.04 image with the GDAL
 libraries and plugins neoserver needs. It bundles matching DuckDB 1.5.5 spatial

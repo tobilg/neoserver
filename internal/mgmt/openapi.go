@@ -6,6 +6,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/tobilg/neoserver/internal/conf"
+	"github.com/tobilg/neoserver/internal/httputil"
 )
 
 // BuildOpenAPI creates the deterministic OpenAPI 3.0 specification for the
@@ -56,67 +57,25 @@ func BuildOpenAPI(cfg conf.Config) *openapi3.T {
 
 func buildOpenAPI(cfg conf.Config) *openapi3.T { return BuildOpenAPI(cfg) }
 
-// swaggerUIHTML returns the HTML for the Swagger UI page.
-//
-// Every asset is same-origin. The server sends a restrictive
-// Content-Security-Policy (`default-src 'self'; script-src 'self'`), so a
-// CDN-hosted bundle or an inline initialiser is blocked and the page renders
-// blank. Swagger UI's runtime is copied into the embedded console build by
-// web/admin/scripts/copy-swagger-assets.mjs, and the initialiser is served
-// separately from apiInitJS below.
+// swaggerUIHTML returns the management Swagger UI page; see httputil.SwaggerUIPage.
 func swaggerUIHTML(basePath string) string {
-	vendor := basePath + "/admin/vendor/swagger"
-	return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Management API Docs</title>
-    <link rel="stylesheet" href="` + vendor + `/swagger-ui.css" />
-  </head>
-  <body>
-    <div id="swagger-ui"></div>
-    <script src="` + vendor + `/swagger-ui-bundle.js"></script>
-    <script src="` + basePath + `/api/v1/api.js"></script>
-  </body>
-</html>`
+	return httputil.SwaggerUIPage("Management API Docs", basePath, basePath+"/api/v1/api.js")
 }
 
 // apiInitJS boots Swagger UI, or explains itself when its runtime is missing.
-//
-// The runtime ships with the embedded console, so it is absent from a binary
-// built without Node and unreachable when the console is disabled. Both cases
-// would otherwise leave an empty page with only a console error.
-const apiInitJS = `(function () {
-  var mount = document.getElementById("swagger-ui");
-  if (typeof SwaggerUIBundle === "undefined") {
-    mount.innerHTML =
-      '<div style="font:14px system-ui;max-width:44rem;margin:3rem auto;padding:0 1rem">' +
-      "<h1>API documentation is unavailable</h1>" +
-      "<p>The Swagger UI runtime ships with the administration console. It is " +
-      "missing when the server was built without the console, or when the " +
-      "console is disabled with <code>Server.AdminUI=false</code>.</p>" +
-      '<p>Build it with <code>make ui-build</code>, or use the OpenAPI document ' +
-      'directly at <a href="./api">./api</a>.</p></div>';
-    return;
-  }
-  window.ui = SwaggerUIBundle({ url: "./api", dom_id: "#swagger-ui" });
-})();
-`
+const apiInitJS = httputil.SwaggerUIInitJS
 
 // api returns the OpenAPI JSON document.
 func (h *handler) api(w http.ResponseWriter, r *http.Request, cfg conf.Config) {
 	doc := buildOpenAPI(cfg)
 
-	// Update server URL based on request
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
+	// The public origin comes from configuration, never from request headers.
+	// UrlBase may be empty only on a loopback bind; a relative server URL then
+	// resolves against wherever the document was fetched.
+	serverURL := strings.TrimRight(cfg.Server.BasePath, "/") + "/api/v1"
+	if base := strings.TrimRight(cfg.Server.UrlBase, "/"); base != "" {
+		serverURL = base + serverURL
 	}
-	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	}
-	serverURL := scheme + "://" + r.Host + cfg.Server.BasePath + "/api/v1"
 	doc.Servers = openapi3.Servers{{URL: serverURL}}
 
 	writeJSON(w, http.StatusOK, doc)

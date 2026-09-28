@@ -655,11 +655,6 @@ func stripNSPrefix(name string) string {
 	return name
 }
 
-// quoteIdent quotes an identifier for use in SQL queries.
-func quoteIdent(s string) string {
-	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
-}
-
 // Temporal predicate compilation methods
 
 // validateTemporalProperty validates a temporal property and returns the column name.

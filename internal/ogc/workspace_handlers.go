@@ -17,6 +17,7 @@ import (
 	"github.com/tobilg/neoserver/internal/conf"
 	claim "github.com/tobilg/neoserver/internal/conformance"
 	"github.com/tobilg/neoserver/internal/datasource"
+	"github.com/tobilg/neoserver/internal/httputil"
 	"github.com/tobilg/neoserver/internal/identity"
 	"github.com/tobilg/neoserver/internal/query"
 	"github.com/tobilg/neoserver/internal/workspace"
@@ -100,6 +101,7 @@ func RegisterWorkspaceRoutes(r chi.Router, deps WorkspaceDependencies) {
 	r.Get("/collections/{collectionId}/items/{featureId}", h.item)
 	r.Get("/api", h.api)
 	r.Get("/api.html", h.apiHTML)
+	r.Get("/api.js", h.apiJS)
 }
 
 func (h *workspaceHandler) landing(w http.ResponseWriter, r *http.Request) {
@@ -783,7 +785,23 @@ func (h *workspaceHandler) apiHTML(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(swaggerUIHTML()))
+	_, _ = w.Write([]byte(swaggerUIHTML(h.cfg.Server.BasePath)))
+}
+
+// apiJS serves the Swagger UI initialiser for api.html under the same access
+// rules as the page itself.
+func (h *workspaceHandler) apiJS(w http.ResponseWriter, r *http.Request) {
+	ws, ok := workspace.FromContext(r.Context())
+	if !ok || ws.Settings == nil || !ws.Settings.OGCAPI.Enabled {
+		writeErr(w, http.StatusForbidden, "ServiceDisabled", "OGC API Features is not enabled for this workspace")
+		return
+	}
+	if h.requireAuth(w, r, ws, ws.Settings.OGCAPI.Public) {
+		return
+	}
+	w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(httputil.SwaggerUIInitJS))
 }
 
 func (h *workspaceHandler) workspaceBaseURL(r *http.Request, wsName string) string {

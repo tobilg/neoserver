@@ -17,6 +17,7 @@ import (
 	"github.com/tobilg/neoserver/internal/datasource/duckdbsqlview"
 	"github.com/tobilg/neoserver/internal/datasource/pathpolicy"
 	"github.com/tobilg/neoserver/internal/filter"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/store"
 )
 
@@ -62,6 +63,7 @@ func DefaultConfig() Config {
 type DataSource struct {
 	id            string
 	db            *sql.DB
+	lease         *pathpolicy.Lease // pins a cached HTTPS download
 	layerCache    map[string]*datasource.LayerInfo
 	cacheMu       sync.RWMutex
 	sqlViewHelper *duckdbsqlview.Helper
@@ -97,8 +99,8 @@ func New(id string, cfg Config) (*DataSource, error) {
 	db.SetMaxIdleConns(maxConns)
 
 	if cfg.EncryptionKey != "" {
-		path := strings.ReplaceAll(cfg.Path, "'", "''")
-		key := strings.ReplaceAll(cfg.EncryptionKey, "'", "''")
+		path := sqlutil.EscapeLiteral(cfg.Path)
+		key := sqlutil.EscapeLiteral(cfg.EncryptionKey)
 		readOnly := ""
 		if cfg.ReadOnly {
 			readOnly = ", READ_ONLY"
@@ -121,9 +123,9 @@ func New(id string, cfg Config) (*DataSource, error) {
 			return nil, fmt.Errorf("load extension %s: %w", ext, err)
 		}
 	}
-	if _, err = db.Exec("SET enable_external_access = false"); err != nil {
+	if err = datasource.RestrictDuckDBAccess(db, nil, nil); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("disable DuckDB external access: %w", err)
+		return nil, err
 	}
 
 	// Test connection
@@ -178,17 +180,22 @@ func NewFromService(svc *store.Service) (datasource.DataSource, error) {
 	}
 
 	// Enforce the datasource allowlist for operator-supplied database files.
-	if cfg.Path != "" && cfg.Path != ":memory:" {
-		if cfg.ManagedImportID == "" {
-			resolved, err := pathpolicy.Resolve(context.Background(), cfg.Path)
-			if err != nil {
-				return nil, err
-			}
-			cfg.Path = resolved
+	var lease *pathpolicy.Lease
+	if cfg.Path != ":memory:" && cfg.ManagedImportID == "" {
+		var err error
+		if lease, err = pathpolicy.Acquire(context.Background(), cfg.Path); err != nil {
+			return nil, err
 		}
+		cfg.Path = lease.Path
 	}
 
-	return New(svc.ID, cfg)
+	ds, err := New(svc.ID, cfg)
+	if err != nil {
+		lease.Release()
+		return nil, err
+	}
+	ds.lease = lease
+	return ds, nil
 }
 
 // Type returns the data source type.
@@ -383,7 +390,7 @@ func (ds *DataSource) findGeometryColumn(ctx context.Context, tableName string) 
 		SELECT column_name, data_type
 		FROM information_schema.columns
 		WHERE table_name = %s AND table_schema = 'main'
-	`, quoteLiteral(tableName))
+	`, sqlutil.QuoteLiteral(tableName))
 
 	rows, err := ds.db.QueryContext(ctx, query)
 	if err != nil {
@@ -433,7 +440,7 @@ func (ds *DataSource) getSRID(ctx context.Context, tableName, geomCol string) in
 		return ds.srid
 	}
 	// ST_CRS reads the logical geometry type, even for an empty table.
-	query := fmt.Sprintf(`SELECT ST_CRS((SELECT %s FROM %s LIMIT 1))`, quoteIdent(geomCol), quoteIdent(tableName))
+	query := fmt.Sprintf(`SELECT ST_CRS((SELECT %s FROM %s LIMIT 1))`, sqlutil.QuoteIdent(geomCol), sqlutil.QuoteIdent(tableName))
 	var crs sql.NullString
 	if err := ds.db.QueryRowContext(ctx, query).Scan(&crs); err != nil {
 		return 0
@@ -477,7 +484,7 @@ func (ds *DataSource) findIDColumn(ctx context.Context, tableName string) string
 			WHEN 'feature_id' THEN 6
 		END
 		LIMIT 1
-	`, quoteLiteral(tableName))
+	`, sqlutil.QuoteLiteral(tableName))
 
 	var idCol string
 	if err := ds.db.QueryRowContext(ctx, query).Scan(&idCol); err != nil {
@@ -662,8 +669,8 @@ func (ds *DataSource) QueryWKBStream(ctx context.Context, layer string, params d
 // buildWKBSQL builds a SQL query that returns WKB geometry and properties JSON.
 func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.QueryParams) (string, []any, error) {
 	p = p.WithDateTimeFilter()
-	table := quoteIdent(info.Name)
-	geom := quoteIdent(info.GeometryColumn)
+	table := sqlutil.QuoteIdent(info.Name)
+	geom := sqlutil.QuoteIdent(info.GeometryColumn)
 
 	outSRID := p.OutputSRID
 	if outSRID == 0 {
@@ -682,13 +689,13 @@ func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.Query
 	var propCols []string
 	for _, prop := range info.Properties {
 		if prop.Name != info.GeometryColumn && datasource.PropertySelected(prop.Name, p.Properties) {
-			propCols = append(propCols, fmt.Sprintf("%s, t.%s", quoteLiteral(prop.Name), quoteIdent(prop.Name)))
+			propCols = append(propCols, fmt.Sprintf("%s, t.%s", sqlutil.QuoteLiteral(prop.Name), sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propsExpr := "json_object(" + strings.Join(propCols, ", ") + ")"
 	idExpr := "NULL"
 	if info.IDColumn != "" {
-		idExpr = fmt.Sprintf("CAST(t.%s AS VARCHAR)", quoteIdent(info.IDColumn))
+		idExpr = fmt.Sprintf("CAST(t.%s AS VARCHAR)", sqlutil.QuoteIdent(info.IDColumn))
 	}
 
 	var whereParts []string
@@ -696,32 +703,14 @@ func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.Query
 	argPos := 1
 
 	if p.BBox != nil {
-		bboxSRID := p.BBoxSRID
-		if bboxSRID == 0 {
-			bboxSRID = 4326
-		}
-		var bboxClauses []string
-		for _, part := range p.BBox.Parts(bboxSRID) {
-			// DuckDB spatial uses ST_Intersects with ST_GeomFromText.
-			bboxWKT := fmt.Sprintf("POLYGON((%f %f, %f %f, %f %f, %f %f, %f %f))",
-				part.MinX, part.MinY,
-				part.MaxX, part.MinY,
-				part.MaxX, part.MaxY,
-				part.MinX, part.MaxY,
-				part.MinX, part.MinY)
-			if bboxSRID != info.SRID {
-				bboxClauses = append(bboxClauses, fmt.Sprintf("ST_Intersects(t.%s, ST_Transform(ST_GeomFromText('%s'), 'EPSG:%d', 'EPSG:%d', always_xy := true))",
-					geom, bboxWKT, bboxSRID, info.SRID))
-			} else {
-				bboxClauses = append(bboxClauses, fmt.Sprintf("ST_Intersects(t.%s, ST_GeomFromText('%s'))",
-					geom, bboxWKT))
-			}
-		}
-		whereParts = append(whereParts, "("+strings.Join(bboxClauses, " OR ")+")")
+		predicate, bboxArgs, nextArg := datasource.DuckDBBBoxPredicate("t."+geom, info.SRID, p.BBoxSRID, argPos, p.BBox)
+		whereParts = append(whereParts, predicate)
+		args = append(args, bboxArgs...)
+		argPos = nextArg
 	}
 
 	// Use pre-compiled filter if provided (e.g., from FES XML)
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "t", GeometryExpression: "t." + quoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "t", GeometryExpression: "t." + sqlutil.QuoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && strings.TrimSpace(p.Filter) != "" {
@@ -755,10 +744,7 @@ func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.Query
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	limitSQL := ""
 	if p.Limit > 0 {
@@ -823,7 +809,7 @@ func (ds *DataSource) GetLayerExtent(ctx context.Context, layer string) (*dataso
 	if err != nil {
 		return nil, err
 	}
-	query := fmt.Sprintf(`SELECT ST_AsText(ST_Extent_Agg(%s)) FROM %s WHERE %s IS NOT NULL`, quoteIdent(info.GeometryColumn), quoteIdent(info.Name), quoteIdent(info.GeometryColumn))
+	query := fmt.Sprintf(`SELECT ST_AsText(ST_Extent_Agg(%s)) FROM %s WHERE %s IS NOT NULL`, sqlutil.QuoteIdent(info.GeometryColumn), sqlutil.QuoteIdent(info.Name), sqlutil.QuoteIdent(info.GeometryColumn))
 	var wkt string
 	if err := ds.db.QueryRowContext(ctx, query).Scan(&wkt); err != nil {
 		return nil, fmt.Errorf("layer extent: %w", err)
@@ -838,6 +824,7 @@ func (ds *DataSource) Health(ctx context.Context) error {
 
 // Close releases resources.
 func (ds *DataSource) Close() error {
+	defer ds.lease.Release()
 	return ds.db.Close()
 }
 
@@ -845,7 +832,7 @@ func (ds *DataSource) Close() error {
 func (ds *DataSource) queryLayerInfo(ctx context.Context, tableName string) (*datasource.LayerInfo, error) {
 	// Check if table exists
 	var exists int
-	checkQuery := fmt.Sprintf(`SELECT 1 FROM information_schema.tables WHERE table_name = %s AND table_schema = 'main'`, quoteLiteral(tableName))
+	checkQuery := fmt.Sprintf(`SELECT 1 FROM information_schema.tables WHERE table_name = %s AND table_schema = 'main'`, sqlutil.QuoteLiteral(tableName))
 	if err := ds.db.QueryRowContext(ctx, checkQuery).Scan(&exists); err != nil {
 		return nil, datasource.LayerNotFoundError{Layer: tableName}
 	}
@@ -885,7 +872,7 @@ func (ds *DataSource) getProperties(ctx context.Context, tableName, geomCol stri
 		WHERE table_name = %s AND table_schema = 'main'
 		AND column_name != %s
 		ORDER BY ordinal_position
-	`, quoteLiteral(tableName), quoteLiteral(geomCol))
+	`, sqlutil.QuoteLiteral(tableName), sqlutil.QuoteLiteral(geomCol))
 
 	rows, err := ds.db.QueryContext(ctx, query)
 	if err != nil {
@@ -919,8 +906,8 @@ func (ds *DataSource) getProperties(ctx context.Context, tableName, geomCol stri
 func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.QueryParams) (string, []any, error) {
 	p = p.WithDateTimeFilter()
 	p.SortBy = datasource.StableSort(p.SortBy, info.IDColumn)
-	table := quoteIdent(info.Name)
-	geom := quoteIdent(info.GeometryColumn)
+	table := sqlutil.QuoteIdent(info.Name)
+	geom := sqlutil.QuoteIdent(info.GeometryColumn)
 
 	outSRID := p.OutputSRID
 	if outSRID == 0 {
@@ -936,7 +923,7 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 	// Build ID expression
 	var idExpr string
 	if info.IDColumn != "" {
-		idExpr = fmt.Sprintf("t.%s", quoteIdent(info.IDColumn))
+		idExpr = fmt.Sprintf("t.%s", sqlutil.QuoteIdent(info.IDColumn))
 	} else {
 		idExpr = "NULL"
 	}
@@ -945,7 +932,7 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 	propCols := make([]string, 0, len(info.Properties))
 	for _, prop := range info.Properties {
 		if prop.Name != info.IDColumn && datasource.PropertySelected(prop.Name, p.Properties) {
-			propCols = append(propCols, fmt.Sprintf("%s, t.%s", quoteLiteral(prop.Name), quoteIdent(prop.Name)))
+			propCols = append(propCols, fmt.Sprintf("%s, t.%s", sqlutil.QuoteLiteral(prop.Name), sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propExpr := "json_object(" + strings.Join(propCols, ", ") + ")"
@@ -957,31 +944,15 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 	var args []any
 	argPos := 1
 
-	// BBox filter
 	if p.BBox != nil {
-		bboxSRID := p.BBoxSRID
-		if bboxSRID == 0 {
-			bboxSRID = 4326
-		}
-
-		var bboxClauses []string
-		for _, part := range p.BBox.Parts(bboxSRID) {
-			var bboxGeom string
-			if info.SRID == bboxSRID || info.SRID == 0 {
-				bboxGeom = fmt.Sprintf("ST_MakeEnvelope($%d, $%d, $%d, $%d)", argPos, argPos+1, argPos+2, argPos+3)
-			} else {
-				bboxGeom = fmt.Sprintf("ST_Transform(ST_MakeEnvelope($%d, $%d, $%d, $%d), 'EPSG:%d', 'EPSG:%d', always_xy := true)",
-					argPos, argPos+1, argPos+2, argPos+3, bboxSRID, info.SRID)
-			}
-			bboxClauses = append(bboxClauses, fmt.Sprintf("ST_Intersects(t.%s, %s)", geom, bboxGeom))
-			args = append(args, part.MinX, part.MinY, part.MaxX, part.MaxY)
-			argPos += 4
-		}
-		whereParts = append(whereParts, "("+strings.Join(bboxClauses, " OR ")+")")
+		predicate, bboxArgs, nextArg := datasource.DuckDBBBoxPredicate("t."+geom, info.SRID, p.BBoxSRID, argPos, p.BBox)
+		whereParts = append(whereParts, predicate)
+		args = append(args, bboxArgs...)
+		argPos = nextArg
 	}
 
 	// Use pre-compiled filter if provided (e.g., from FES XML)
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "t", GeometryExpression: "t." + quoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "t", GeometryExpression: "t." + sqlutil.QuoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && p.Filter != "" {
@@ -1019,50 +990,23 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 		}
 	}
 
-	// Build ORDER BY
-	orderSQL := ""
-	if len(p.SortBy) > 0 {
-		var orderItems []string
-		for _, s := range p.SortBy {
-			if s.Name == "" {
-				continue
-			}
-			if _, ok := info.PGTypes[s.Name]; !ok && s.Name != info.IDColumn {
-				continue
-			}
-			dir := "ASC"
-			if s.Desc {
-				dir = "DESC"
-			}
-			orderItems = append(orderItems, fmt.Sprintf("t.%s %s", quoteIdent(s.Name), dir))
-		}
-		if len(orderItems) > 0 {
-			orderSQL = "ORDER BY " + strings.Join(orderItems, ", ")
-		}
-	} else if info.IDColumn != "" {
-		orderSQL = fmt.Sprintf("ORDER BY t.%s", quoteIdent(info.IDColumn))
-	}
+	orderSQL := datasource.OrderByClause("t", p.SortBy, datasource.LayerSortable(info), info.IDColumn)
 
-	// Build LIMIT/OFFSET
-	limitSQL := fmt.Sprintf("LIMIT $%d OFFSET $%d", argPos, argPos+1)
-	args = append(args, p.Limit, p.Offset)
+	limitSQL := datasource.LimitOffsetClause(&args, argPos, p.Limit, p.Offset)
 
 	// Build feature JSON
 	featureExpr := datasource.DuckDBFeatureJSONExpression(idExpr, geomExpr, propExpr)
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	sql := fmt.Sprintf(`SELECT CAST(%s AS VARCHAR) AS feature FROM %s t %s %s %s`, featureExpr, table, whereSQL, orderSQL, limitSQL)
 	return sql, args, nil
 }
 
 func (ds *DataSource) buildFeatureByIDSQL(info *datasource.LayerInfo, outSRID int) string {
-	table := quoteIdent(info.Name)
-	geom := quoteIdent(info.GeometryColumn)
-	idCol := quoteIdent(info.IDColumn)
+	table := sqlutil.QuoteIdent(info.Name)
+	geom := sqlutil.QuoteIdent(info.GeometryColumn)
+	idCol := sqlutil.QuoteIdent(info.IDColumn)
 
 	if outSRID == 0 {
 		outSRID = 4326
@@ -1077,7 +1021,7 @@ func (ds *DataSource) buildFeatureByIDSQL(info *datasource.LayerInfo, outSRID in
 	propCols := make([]string, 0, len(info.Properties))
 	for _, prop := range info.Properties {
 		if prop.Name != info.IDColumn {
-			propCols = append(propCols, fmt.Sprintf("%s, t.%s", quoteLiteral(prop.Name), quoteIdent(prop.Name)))
+			propCols = append(propCols, fmt.Sprintf("%s, t.%s", sqlutil.QuoteLiteral(prop.Name), sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propExpr := "json_object(" + strings.Join(propCols, ", ") + ")"
@@ -1092,38 +1036,22 @@ func (ds *DataSource) buildFeatureByIDSQL(info *datasource.LayerInfo, outSRID in
 
 func (ds *DataSource) buildCountSQL(info *datasource.LayerInfo, p datasource.QueryParams) (string, []any, error) {
 	p = p.WithDateTimeFilter()
-	table := quoteIdent(info.Name)
-	geom := quoteIdent(info.GeometryColumn)
+	table := sqlutil.QuoteIdent(info.Name)
+	geom := sqlutil.QuoteIdent(info.GeometryColumn)
 
 	var whereParts []string
 	var args []any
 	argPos := 1
 
-	// BBox filter
 	if p.BBox != nil {
-		bboxSRID := p.BBoxSRID
-		if bboxSRID == 0 {
-			bboxSRID = 4326
-		}
-
-		var bboxClauses []string
-		for _, part := range p.BBox.Parts(bboxSRID) {
-			var bboxGeom string
-			if info.SRID == bboxSRID || info.SRID == 0 {
-				bboxGeom = fmt.Sprintf("ST_MakeEnvelope($%d, $%d, $%d, $%d)", argPos, argPos+1, argPos+2, argPos+3)
-			} else {
-				bboxGeom = fmt.Sprintf("ST_Transform(ST_MakeEnvelope($%d, $%d, $%d, $%d), 'EPSG:%d', 'EPSG:%d', always_xy := true)",
-					argPos, argPos+1, argPos+2, argPos+3, bboxSRID, info.SRID)
-			}
-			bboxClauses = append(bboxClauses, fmt.Sprintf("ST_Intersects(t.%s, %s)", geom, bboxGeom))
-			args = append(args, part.MinX, part.MinY, part.MaxX, part.MaxY)
-			argPos += 4
-		}
-		whereParts = append(whereParts, "("+strings.Join(bboxClauses, " OR ")+")")
+		predicate, bboxArgs, nextArg := datasource.DuckDBBBoxPredicate("t."+geom, info.SRID, p.BBoxSRID, argPos, p.BBox)
+		whereParts = append(whereParts, predicate)
+		args = append(args, bboxArgs...)
+		argPos = nextArg
 	}
 
 	// Use pre-compiled filter if provided (e.g., from FES XML)
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "t", GeometryExpression: "t." + quoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "t", GeometryExpression: "t." + sqlutil.QuoteIdent(info.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && p.Filter != "" {
@@ -1159,10 +1087,7 @@ func (ds *DataSource) buildCountSQL(info *datasource.LayerInfo, p datasource.Que
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s t %s`, table, whereSQL)
 	return sql, args, nil
@@ -1198,16 +1123,6 @@ func duckdbTypeToJSON(colType string) datasource.JSONType {
 	default:
 		return datasource.JSONTypeString
 	}
-}
-
-func quoteIdent(s string) string {
-	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
-}
-
-// quoteLiteral escapes a string for use as a SQL string literal.
-// It escapes single quotes by doubling them.
-func quoteLiteral(s string) string {
-	return `'` + strings.ReplaceAll(s, `'`, `''`) + `'`
 }
 
 // SQL View support - delegates to shared helper

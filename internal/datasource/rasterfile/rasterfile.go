@@ -41,6 +41,7 @@ type Config struct {
 type DataSource struct {
 	id        string
 	path      string
+	lease     *pathpolicy.Lease // pins a cached HTTPS download
 	ds        *godal.Dataset
 	md        *gdalmd.Dataset
 	variables map[string]*mdCoverage
@@ -60,11 +61,17 @@ func NewFromService(svc *store.Service) (datasource.DataSource, error) {
 	if err := json.Unmarshal(svc.ConnectionInfo, &cfg); err != nil {
 		return nil, fmt.Errorf("unmarshal raster file config: %w", err)
 	}
-	resolved, err := pathpolicy.Resolve(context.Background(), cfg.Path)
+	lease, err := pathpolicy.Acquire(context.Background(), cfg.Path)
 	if err != nil {
 		return nil, err
 	}
-	return newDataSource(svc.ID, resolved, cfg)
+	ds, err := newDataSource(svc.ID, lease.Path, cfg)
+	if err != nil {
+		lease.Release()
+		return nil, err
+	}
+	ds.lease = lease
+	return ds, nil
 }
 
 func New(id, path string) (*DataSource, error) {
@@ -122,6 +129,7 @@ func (ds *DataSource) Health(context.Context) error {
 func (ds *DataSource) Close() error {
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
+	defer ds.lease.Release()
 	if ds.ds == nil && ds.md == nil {
 		return nil
 	}

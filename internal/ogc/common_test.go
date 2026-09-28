@@ -244,37 +244,27 @@ func TestUrlPathEscape(t *testing.T) {
 // ============================================================================
 
 func TestSwaggerUIHTML(t *testing.T) {
-	html := swaggerUIHTML()
+	html := swaggerUIHTML("")
 
-	// Check that it returns non-empty HTML
-	if html == "" {
-		t.Error("expected non-empty HTML")
-	}
-
-	// Check for essential Swagger UI elements
-	requiredElements := []string{
-		"<!doctype html>",
-		"<html>",
-		"</html>",
-		"swagger-ui",
-		"SwaggerUIBundle",
-		"./api",
-	}
-
-	for _, elem := range requiredElements {
+	for _, elem := range []string{"<!doctype html>", "</html>", "swagger-ui",
+		"/admin/vendor/swagger/swagger-ui.css", "/admin/vendor/swagger/swagger-ui-bundle.js", `src="./api.js"`} {
 		if !contains(html, elem) {
 			t.Errorf("expected HTML to contain %q", elem)
 		}
 	}
+	// The server's CSP (`script-src 'self'`) blocks remote and inline scripts,
+	// which previously left this page blank.
+	for _, forbidden := range []string{"unpkg.com", "http://", "https://", "SwaggerUIBundle("} {
+		if contains(html, forbidden) {
+			t.Errorf("HTML must not contain %q; the Content-Security-Policy blocks it", forbidden)
+		}
+	}
 }
 
-func TestSwaggerUIHTML_IsDeterministic(t *testing.T) {
-	// Calling multiple times should return the same result
-	html1 := swaggerUIHTML()
-	html2 := swaggerUIHTML()
-
-	if html1 != html2 {
-		t.Error("expected swaggerUIHTML to return the same result on multiple calls")
+func TestSwaggerUIHTMLHonorsBasePath(t *testing.T) {
+	html := swaggerUIHTML("/gis/")
+	if !contains(html, `"/gis/admin/vendor/swagger/swagger-ui-bundle.js"`) {
+		t.Errorf("expected vendor assets under the base path, got:\n%s", html)
 	}
 }
 

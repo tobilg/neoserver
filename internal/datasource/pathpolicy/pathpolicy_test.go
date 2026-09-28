@@ -50,7 +50,7 @@ func TestAllowPath(t *testing.T) {
 	}
 }
 
-func TestResolveRejectsSymlinkEscape(t *testing.T) {
+func TestAcquireRejectsSymlinkEscape(t *testing.T) {
 	root := t.TempDir()
 	outside := t.TempDir()
 	target := filepath.Join(outside, "secret.gpkg")
@@ -62,7 +62,7 @@ func TestResolveRejectsSymlinkEscape(t *testing.T) {
 		t.Fatal(err)
 	}
 	Configure([]string{filepath.Join(root, "**")})
-	if _, err := Resolve(context.Background(), link); err == nil {
+	if _, err := Acquire(context.Background(), link); err == nil {
 		t.Fatal("expected symlink escape rejection")
 	}
 }
@@ -75,13 +75,17 @@ func TestAllowPathDenyByDefault(t *testing.T) {
 }
 
 func TestIsBlockedIP(t *testing.T) {
-	blocked := []string{"127.0.0.1", "::1", "169.254.169.254", "10.0.0.5", "192.168.1.1", "172.16.0.1", "0.0.0.0"}
+	blocked := []string{"127.0.0.1", "::1", "169.254.169.254", "10.0.0.5", "192.168.1.1", "172.16.0.1", "0.0.0.0",
+		"100.100.100.200", "100.64.0.1", "198.18.0.1", "192.0.0.170", "240.0.0.1", "255.255.255.255", "224.0.0.1",
+		"::ffff:10.0.0.1", "::10.0.0.1", "fd00::1", "fe80::1", "fec0::1", "ff02::1", "2001:db8::1", "2001::1",
+		"64:ff9b::a9fe:a9fe", "64:ff9b::7f00:1", "64:ff9b:1::a00:1", "2002:a9fe:a9fe::1", "2002:7f00:1::"}
 	for _, ip := range blocked {
 		if !isBlockedIP(net.ParseIP(ip)) {
 			t.Errorf("expected %s to be blocked", ip)
 		}
 	}
-	allowed := []string{"8.8.8.8", "1.1.1.1", "93.184.216.34"}
+	allowed := []string{"8.8.8.8", "1.1.1.1", "93.184.216.34", "2606:4700:4700::1111",
+		"64:ff9b::808:808", "2002:808:808::1", "100.128.0.1"}
 	for _, ip := range allowed {
 		if isBlockedIP(net.ParseIP(ip)) {
 			t.Errorf("expected %s to be allowed", ip)
@@ -93,9 +97,9 @@ func TestSafeDialContextRejectsDNSToLoopback(t *testing.T) {
 	// Defeats DNS-rebinding: a hostname resolving to a loopback/private address
 	// must be refused at dial time even though the literal host is not an IP.
 	// "localhost" resolves to 127.0.0.1 / ::1.
-	_, err := safeDialContext(context.Background(), "tcp", "localhost:80")
+	_, err := SafeDialContext(context.Background(), "tcp", "localhost:80")
 	if err == nil {
-		t.Fatal("expected safeDialContext to reject a host resolving to loopback")
+		t.Fatal("expected SafeDialContext to reject a host resolving to loopback")
 	}
 }
 
@@ -141,7 +145,7 @@ func TestAllowPathNormalizesLocalForms(t *testing.T) {
 	}
 }
 
-func TestResolveAcceptsAbsolutePathForRelativePattern(t *testing.T) {
+func TestAcquireAcceptsAbsolutePathForRelativePattern(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "rasters"), 0o700); err != nil {
 		t.Fatal(err)
@@ -153,11 +157,12 @@ func TestResolveAcceptsAbsolutePathForRelativePattern(t *testing.T) {
 	t.Chdir(root)
 	Configure([]string{"./rasters/**"})
 	defer Configure(nil)
-	resolved, err := Resolve(context.Background(), file)
+	lease, err := Acquire(context.Background(), file)
 	if err != nil {
-		t.Fatalf("Resolve(%q): %v", file, err)
+		t.Fatalf("Acquire(%q): %v", file, err)
 	}
-	if want, _ := filepath.EvalSymlinks(file); resolved != want {
-		t.Fatalf("resolved %q, want %q", resolved, want)
+	defer lease.Release()
+	if want, _ := filepath.EvalSymlinks(file); lease.Path != want || lease.Cached {
+		t.Fatalf("resolved %+v, want %q", lease, want)
 	}
 }

@@ -89,7 +89,7 @@ func TestServiceNamesAndManagedBindingHTTPContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, id := range []string{svc.Name, svc.ID} {
-		w := workflowRequest(router, key, "PUT", "/workspaces/workflow/services/"+id, `{"connection_info":{"host":"new"}}`)
+		w := workflowRequest(router, key, "PUT", "/workspaces/workflow/services/"+id, `{"connection_info":{"host":"old","database":"renamed"}}`)
 		if w.Code != 200 {
 			t.Fatalf("alias %s: %d %s", id, w.Code, w.Body.String())
 		}

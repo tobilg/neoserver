@@ -38,7 +38,7 @@ func (s *DuckDBStore) CreateWorkspace(ctx context.Context, input CreateWorkspace
 
 func (s *DuckDBStore) GetWorkspace(ctx context.Context, id string) (*Workspace, error) {
 	var ws Workspace
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, name, description, created_at, updated_at
 		FROM workspaces w WHERE id = ?
 		AND NOT EXISTS (SELECT 1 FROM catalog_deletions d WHERE d.scope_kind='workspace'
@@ -55,7 +55,7 @@ func (s *DuckDBStore) GetWorkspace(ctx context.Context, id string) (*Workspace, 
 
 func (s *DuckDBStore) GetWorkspaceByName(ctx context.Context, name string) (*Workspace, error) {
 	var ws Workspace
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, name, description, created_at, updated_at
 		FROM workspaces w WHERE name = ?
 		AND NOT EXISTS (SELECT 1 FROM catalog_deletions d WHERE d.scope_kind='workspace'
@@ -71,7 +71,7 @@ func (s *DuckDBStore) GetWorkspaceByName(ctx context.Context, name string) (*Wor
 }
 
 func (s *DuckDBStore) ListWorkspaces(ctx context.Context) ([]*Workspace, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.read.QueryContext(ctx, `
 		SELECT id, name, description, created_at, updated_at
 		FROM workspaces w
 		WHERE NOT EXISTS (SELECT 1 FROM catalog_deletions d WHERE d.scope_kind='workspace'

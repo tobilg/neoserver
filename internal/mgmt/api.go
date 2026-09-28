@@ -37,6 +37,9 @@ type Dependencies struct {
 	Lifecycle  *cataloglifecycle.Coordinator
 	Importer   *importer.Manager
 	Audit      *audit.Manager
+	// CredentialLimiter throttles console sign-in; share it with the identity
+	// middleware so HTTP Basic guesses count against the same budget.
+	CredentialLimiter *identity.FailureLimiter
 }
 
 // handler contains all management API handlers.
@@ -54,7 +57,7 @@ type handler struct {
 	lifecycle  *cataloglifecycle.Coordinator
 	importer   *importer.Manager
 	audit      *audit.Manager
-	loginRate  *loginRateLimiter
+	loginRate  *identity.FailureLimiter
 }
 
 // RegisterRoutes registers all management API routes.
@@ -66,6 +69,9 @@ func RegisterRoutes(r chi.Router, deps Dependencies) {
 	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusMethodNotAllowed, "Method Not Allowed", "method not supported for this management route")
 	})
+	if deps.CredentialLimiter == nil {
+		deps.CredentialLimiter = identity.NewFailureLimiter()
+	}
 	h := &handler{
 		cfg:        deps.Config,
 		store:      deps.Store,
@@ -80,7 +86,7 @@ func RegisterRoutes(r chi.Router, deps Dependencies) {
 		lifecycle:  deps.Lifecycle,
 		importer:   deps.Importer,
 		audit:      deps.Audit,
-		loginRate:  newLoginRateLimiter(),
+		loginRate:  deps.CredentialLimiter,
 	}
 
 	// OpenAPI documentation (no auth required) - defined in separate group

@@ -28,6 +28,7 @@ import (
 
 	"github.com/fogleman/gg"
 	"github.com/tobilg/neoserver/internal/conf"
+	"github.com/tobilg/neoserver/internal/datasource/pathpolicy"
 	"github.com/tobilg/neoserver/internal/sld"
 )
 
@@ -50,7 +51,9 @@ func New(cfg conf.WMS, workspaceID string, allowRemote bool, manifests ...map[st
 	if len(manifests) > 0 {
 		resolver.assets = manifests[0]
 	}
-	resolver.client = &http.Client{Timeout: timeout, CheckRedirect: func(request *http.Request, via []*http.Request) error {
+	// Allowlisted origins must still resolve to public addresses at connect time.
+	transport := &http.Transport{Proxy: nil, DialContext: pathpolicy.SafeDialContext}
+	resolver.client = &http.Client{Timeout: timeout, Transport: transport, CheckRedirect: func(request *http.Request, via []*http.Request) error {
 		if len(via) >= 5 {
 			return fmt.Errorf("too many redirects")
 		}

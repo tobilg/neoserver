@@ -11,6 +11,7 @@ import (
 	"github.com/airbusgeo/godal"
 	"github.com/tobilg/neoserver/internal/datasource"
 	"github.com/tobilg/neoserver/internal/datasource/rastergrid"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 // DiscoverCoverages reads the standard PostGIS raster_columns catalog. Only
@@ -114,7 +115,7 @@ func (ds *DataSource) ExtractCoverage(ctx context.Context, sourceCoverage string
 			WHERE ST_Intersects(%s, ST_MakeEnvelope($1,$2,$3,$4,$5))
 		), mosaic AS (SELECT ST_Union(rast) AS rast FROM clipped)
 		SELECT ST_AsGDALRaster(rast, 'GTiff', ARRAY['COMPRESS=DEFLATE']) FROM mosaic WHERE rast IS NOT NULL`,
-		quoteIdent(column), quoteIdent(schema), quoteIdent(table), quoteIdent(column))
+		sqlutil.QuoteIdent(column), sqlutil.QuoteIdent(schema), sqlutil.QuoteIdent(table), sqlutil.QuoteIdent(column))
 	var data []byte
 	if err := ds.pool.QueryRow(ctx, query, minX, minY, maxX, maxY, info.SRID).Scan(&data); err != nil {
 		return nil, fmt.Errorf("extract PostGIS coverage: %w", err)

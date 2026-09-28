@@ -8,13 +8,9 @@ import (
 
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/store"
 )
-
-// quoteIdent quotes an SQL identifier (table name, column name) to prevent SQL injection.
-func quoteIdent(s string) string {
-	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
-}
 
 // Adapter is the interface for Casbin policy storage.
 type Adapter interface {
@@ -128,7 +124,7 @@ func (a *DuckDBAdapter) LoadPolicy(model model.Model) error {
 	query := fmt.Sprintf(`
 		SELECT ptype, v0, v1, v2, v3, v4, v5
 		FROM %s
-	`, quoteIdent(a.tableName))
+	`, sqlutil.QuoteIdent(a.tableName))
 
 	rows, err := a.db.QueryContext(ctx, query)
 	if err != nil {
@@ -156,7 +152,7 @@ func (a *DuckDBAdapter) SavePolicy(model model.Model) error {
 	ctx := context.Background()
 
 	// Clear existing policies
-	if _, err := a.db.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s", quoteIdent(a.tableName))); err != nil {
+	if _, err := a.db.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s", sqlutil.QuoteIdent(a.tableName))); err != nil {
 		return fmt.Errorf("failed to clear policies: %w", err)
 	}
 
@@ -202,7 +198,7 @@ func (a *DuckDBAdapter) RemovePolicy(sec string, ptype string, rule []string) er
 		}
 	}
 
-	query := fmt.Sprintf("DELETE FROM %s WHERE %s", quoteIdent(a.tableName), strings.Join(conditions, " AND "))
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s", sqlutil.QuoteIdent(a.tableName), strings.Join(conditions, " AND "))
 	_, err := a.db.ExecContext(ctx, query, args...)
 	return err
 }
@@ -222,7 +218,7 @@ func (a *DuckDBAdapter) RemoveFilteredPolicy(sec string, ptype string, fieldInde
 		}
 	}
 
-	query := fmt.Sprintf("DELETE FROM %s WHERE %s", quoteIdent(a.tableName), strings.Join(conditions, " AND "))
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s", sqlutil.QuoteIdent(a.tableName), strings.Join(conditions, " AND "))
 	_, err := a.db.ExecContext(ctx, query, args...)
 	return err
 }
@@ -243,7 +239,7 @@ func (a *DuckDBAdapter) insertPolicy(ctx context.Context, ptype string, rule []s
 	query := fmt.Sprintf(`
 		INSERT INTO %s (ptype, v0, v1, v2, v3, v4, v5)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, quoteIdent(a.tableName))
+	`, sqlutil.QuoteIdent(a.tableName))
 
 	_, err := a.db.ExecContext(ctx, query, values...)
 	if err != nil {

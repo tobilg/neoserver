@@ -47,7 +47,7 @@ func (s *DuckDBStore) CreateStyle(ctx context.Context, input CreateStyleInput) (
 
 func (s *DuckDBStore) GetStyle(ctx context.Context, id string) (*Style, error) {
 	var style Style
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, workspace_id, name, title, description, sld_body, format, created_at, updated_at
 		FROM styles WHERE id = ?
 	`, id).Scan(&style.ID, &style.WorkspaceID, &style.Name, &style.Title, &style.Description, &style.SLDBody, &style.Format, &style.CreatedAt, &style.UpdatedAt)
@@ -62,7 +62,7 @@ func (s *DuckDBStore) GetStyle(ctx context.Context, id string) (*Style, error) {
 
 func (s *DuckDBStore) GetStyleByName(ctx context.Context, workspaceID, name string) (*Style, error) {
 	var style Style
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, workspace_id, name, title, description, sld_body, format, created_at, updated_at
 		FROM styles WHERE workspace_id = ? AND name = ?
 	`, workspaceID, name).Scan(&style.ID, &style.WorkspaceID, &style.Name, &style.Title, &style.Description, &style.SLDBody, &style.Format, &style.CreatedAt, &style.UpdatedAt)
@@ -76,7 +76,7 @@ func (s *DuckDBStore) GetStyleByName(ctx context.Context, workspaceID, name stri
 }
 
 func (s *DuckDBStore) ListStyles(ctx context.Context, workspaceID string) ([]*Style, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.read.QueryContext(ctx, `
 		SELECT id, workspace_id, name, title, description, sld_body, format, created_at, updated_at
 		FROM styles WHERE workspace_id = ? ORDER BY name
 	`, workspaceID)
@@ -192,7 +192,7 @@ func (s *DuckDBStore) CreateWFSStoredQuery(ctx context.Context, input CreateWFSS
 func (s *DuckDBStore) GetWFSStoredQuery(ctx context.Context, workspaceID, queryID string) (*WFSStoredQuery, error) {
 	var sq WFSStoredQuery
 	var paramsJSON, returnTypesJSON any
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, workspace_id, query_id, title, abstract, parameters, query_expression, language, return_types, created_at
 		FROM wfs_stored_queries WHERE workspace_id = ? AND query_id = ?
 	`, workspaceID, queryID).Scan(&sq.ID, &sq.WorkspaceID, &sq.QueryID, &sq.Title, &sq.Abstract, &paramsJSON, &sq.QueryExpression, &sq.Language, &returnTypesJSON, &sq.CreatedAt)
@@ -217,7 +217,7 @@ func (s *DuckDBStore) GetWFSStoredQuery(ctx context.Context, workspaceID, queryI
 }
 
 func (s *DuckDBStore) ListWFSStoredQueries(ctx context.Context, workspaceID string) ([]*WFSStoredQuery, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.read.QueryContext(ctx, `
 		SELECT id, workspace_id, query_id, title, abstract, parameters, query_expression, language, return_types, created_at
 		FROM wfs_stored_queries WHERE workspace_id = ? ORDER BY query_id
 	`, workspaceID)
@@ -265,7 +265,7 @@ func (s *DuckDBStore) DeleteWFSStoredQuery(ctx context.Context, workspaceID, que
 
 func (s *DuckDBStore) GetWMSSettings(ctx context.Context, workspaceID string) (*WMSSettings, error) {
 	var settingsJSON any // DuckDB returns JSON as map[string]interface{}
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT wms_settings FROM workspaces WHERE id = ?
 	`, workspaceID).Scan(&settingsJSON)
 	if err == sql.ErrNoRows {
@@ -310,7 +310,7 @@ func (s *DuckDBStore) UpdateWMSSettings(ctx context.Context, workspaceID string,
 
 func (s *DuckDBStore) GetWFSSettings(ctx context.Context, workspaceID string) (*WFSSettings, error) {
 	var settingsJSON any // DuckDB returns JSON as map[string]interface{}
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT wfs_settings FROM workspaces WHERE id = ?
 	`, workspaceID).Scan(&settingsJSON)
 	if err == sql.ErrNoRows {
@@ -355,7 +355,7 @@ func (s *DuckDBStore) UpdateWFSSettings(ctx context.Context, workspaceID string,
 
 func (s *DuckDBStore) GetOGCAPISettings(ctx context.Context, workspaceID string) (*OGCAPISettings, error) {
 	var settingsJSON any // DuckDB returns JSON as map[string]interface{}
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT ogcapi_settings FROM workspaces WHERE id = ?
 	`, workspaceID).Scan(&settingsJSON)
 	if err == sql.ErrNoRows {
@@ -400,7 +400,7 @@ func (s *DuckDBStore) UpdateOGCAPISettings(ctx context.Context, workspaceID stri
 
 func (s *DuckDBStore) GetOGCTilesAPISettings(ctx context.Context, workspaceID string) (*OGCTilesAPISettings, error) {
 	var settingsJSON any // DuckDB returns JSON as map[string]interface{}
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT ogc_tiles_api_settings FROM workspaces WHERE id = ?
 	`, workspaceID).Scan(&settingsJSON)
 	if err == sql.ErrNoRows {

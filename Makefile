@@ -115,7 +115,7 @@ vet:
 
 .PHONY: test-race
 test-race:
-	go test -p 1 -race -ldflags='$(GO_APP_LINK_FLAGS)' ./internal/rbac ./internal/identity ./internal/cache ./internal/wms ./internal/mgmt ./internal/workspace ./internal/tilecache ./internal/tilejobs ./internal/tiles ./internal/wfs ./internal/mosaiccatalog
+	go test -p 1 -race -ldflags='$(GO_APP_LINK_FLAGS)' ./internal/rbac ./internal/identity ./internal/cache ./internal/wms ./internal/mgmt ./internal/workspace ./internal/tilecache ./internal/tilejobs ./internal/tiles ./internal/wfs ./internal/mosaiccatalog ./internal/store ./internal/importer ./internal/cataloglifecycle ./internal/datasource ./internal/datasource/pathpolicy
 
 .PHONY: test-s3-lease-integration
 test-s3-lease-integration:

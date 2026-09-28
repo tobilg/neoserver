@@ -10,7 +10,7 @@ import (
 
 func (s *DuckDBStore) GetWMTSSettings(ctx context.Context, workspaceID string) (*WMTSSettings, error) {
 	var raw any
-	if err := s.db.QueryRowContext(ctx, "SELECT wmts_settings FROM workspaces WHERE id = ?", workspaceID).Scan(&raw); err != nil {
+	if err := s.read.QueryRowContext(ctx, "SELECT wmts_settings FROM workspaces WHERE id = ?", workspaceID).Scan(&raw); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrNotFound
 		}
@@ -40,7 +40,7 @@ func (s *DuckDBStore) UpdateWMTSSettings(ctx context.Context, workspaceID string
 
 func (s *DuckDBStore) GetTileRevision(ctx context.Context, workspaceID string) (int64, error) {
 	var revision int64
-	if err := s.db.QueryRowContext(ctx, "SELECT tile_revision FROM workspaces WHERE id = ?", workspaceID).Scan(&revision); err != nil {
+	if err := s.read.QueryRowContext(ctx, "SELECT tile_revision FROM workspaces WHERE id = ?", workspaceID).Scan(&revision); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, ErrNotFound
 		}

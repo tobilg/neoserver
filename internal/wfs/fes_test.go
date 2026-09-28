@@ -517,27 +517,6 @@ func TestStripNSPrefix(t *testing.T) {
 	}
 }
 
-func TestQuoteIdent(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"name", `"name"`},
-		{"geom", `"geom"`},
-		{`col"name`, `"col""name"`},
-		{"", `""`},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			got := quoteIdent(tt.input)
-			if got != tt.expected {
-				t.Errorf("quoteIdent(%q) = %q, want %q", tt.input, got, tt.expected)
-			}
-		})
-	}
-}
-
 func TestValidateNumericCoords(t *testing.T) {
 	tests := []struct {
 		name     string

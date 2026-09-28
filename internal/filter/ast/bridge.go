@@ -5,6 +5,8 @@ package ast
 import (
 	"fmt"
 	"strings"
+
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 // CompileOptions provides common options for compiling filters.
@@ -172,14 +174,9 @@ func ComparisonNodeType(op ComparisonOp) NodeType {
 	}
 }
 
-// QuoteIdentifier quotes an SQL identifier.
-func QuoteIdentifier(name string) string {
-	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
-}
-
 // QuoteIdentifierWithAlias quotes an SQL identifier with optional table alias.
 func QuoteIdentifierWithAlias(name, alias string) string {
-	quoted := QuoteIdentifier(name)
+	quoted := sqlutil.QuoteIdent(name)
 	if alias != "" {
 		return alias + "." + quoted
 	}

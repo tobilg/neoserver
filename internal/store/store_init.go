@@ -3,23 +3,16 @@ package store
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/tobilg/neoserver/internal/dbschema"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
-
-// escapeSQLLiteral escapes single quotes for safe interpolation inside a DuckDB
-// single-quoted string literal (used for ATTACH path / ENCRYPTION_KEY, which cannot
-// be passed as bound parameters).
-func escapeSQLLiteral(s string) string {
-	return strings.ReplaceAll(s, "'", "''")
-}
 
 // Open opens an existing encrypted DuckDB store.
 func Open(cfg Config) (*DuckDBStore, error) {
 	// Open an in-memory database first, then attach the encrypted file
-	db, catalogAttached, err := newCatalogConnection()
+	db, catalog, err := newCatalogConnection()
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -34,21 +27,21 @@ func Open(cfg Config) (*DuckDBStore, error) {
 		_, err = db.Exec(fmt.Sprintf(`
 			ATTACH '%s' AS store (ENCRYPTION_KEY '%s');
 			USE store;
-		`, escapeSQLLiteral(cfg.Path), escapeSQLLiteral(cfg.EncryptionKey)))
+		`, sqlutil.EscapeLiteral(cfg.Path), sqlutil.EscapeLiteral(cfg.EncryptionKey)))
 		if err != nil {
 			db.Close()
 			return nil, WrapAttachError(fmt.Errorf("failed to attach encrypted database: %w", err), cfg.Path)
 		}
 	} else {
 		// No encryption - just attach normally
-		_, err = db.Exec(fmt.Sprintf(`ATTACH '%s' AS store; USE store;`, escapeSQLLiteral(cfg.Path)))
+		_, err = db.Exec(fmt.Sprintf(`ATTACH '%s' AS store; USE store;`, sqlutil.EscapeLiteral(cfg.Path)))
 		if err != nil {
 			db.Close()
 			return nil, WrapAttachError(fmt.Errorf("failed to attach database: %w", err), cfg.Path)
 		}
 	}
 
-	catalogAttached()
+	catalog.markAttached()
 	// Verify the store is initialized
 	var version int
 	err = db.QueryRow("SELECT version FROM schema_info ORDER BY version DESC LIMIT 1").Scan(&version)
@@ -59,12 +52,13 @@ func Open(cfg Config) (*DuckDBStore, error) {
 
 	store := &DuckDBStore{
 		db:            db,
+		read:          catalog.readPool(db, cfg.MaxConnections),
 		encryptionKey: cfg.EncryptionKey,
 	}
 
 	// Run migrations if needed
 	if err := store.runMigrations(version); err != nil {
-		db.Close()
+		store.Close()
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
@@ -92,7 +86,7 @@ func (s *DuckDBStore) runMigrations(currentVersion int) error {
 // Init creates a new encrypted DuckDB store and returns a bootstrap JWT.
 func Init(cfg Config) (*DuckDBStore, string, error) {
 	// Open an in-memory database first, then attach/create the encrypted file
-	db, catalogAttached, err := newCatalogConnection()
+	db, catalog, err := newCatalogConnection()
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create database: %w", err)
 	}
@@ -107,14 +101,14 @@ func Init(cfg Config) (*DuckDBStore, string, error) {
 		_, err = db.Exec(fmt.Sprintf(`
 			ATTACH '%s' AS store (ENCRYPTION_KEY '%s');
 			USE store;
-		`, escapeSQLLiteral(cfg.Path), escapeSQLLiteral(cfg.EncryptionKey)))
+		`, sqlutil.EscapeLiteral(cfg.Path), sqlutil.EscapeLiteral(cfg.EncryptionKey)))
 		if err != nil {
 			db.Close()
 			return nil, "", fmt.Errorf("failed to create encrypted database: %w", err)
 		}
 	} else {
 		// No encryption - just attach normally
-		_, err = db.Exec(fmt.Sprintf(`ATTACH '%s' AS store; USE store;`, escapeSQLLiteral(cfg.Path)))
+		_, err = db.Exec(fmt.Sprintf(`ATTACH '%s' AS store; USE store;`, sqlutil.EscapeLiteral(cfg.Path)))
 		if err != nil {
 			db.Close()
 			return nil, "", fmt.Errorf("failed to create database: %w", err)
@@ -122,7 +116,7 @@ func Init(cfg Config) (*DuckDBStore, string, error) {
 	}
 
 	// Run schema creation
-	catalogAttached()
+	catalog.markAttached()
 	_, err = db.Exec(schemaSQL)
 	if err != nil {
 		db.Close()
@@ -152,20 +146,21 @@ func Init(cfg Config) (*DuckDBStore, string, error) {
 
 	store := &DuckDBStore{
 		db:            db,
+		read:          catalog.readPool(db, cfg.MaxConnections),
 		encryptionKey: cfg.EncryptionKey,
 	}
 
 	// Generate initial signing key
 	signingKey, err := store.RotateSigningKey(context.Background())
 	if err != nil {
-		db.Close()
+		store.Close()
 		return nil, "", fmt.Errorf("failed to generate signing key: %w", err)
 	}
 
 	// Generate bootstrap JWT
 	bootstrapToken, err := store.createBootstrapToken(signingKey)
 	if err != nil {
-		db.Close()
+		store.Close()
 		return nil, "", fmt.Errorf("failed to create bootstrap token: %w", err)
 	}
 
@@ -174,10 +169,13 @@ func Init(cfg Config) (*DuckDBStore, string, error) {
 
 // Close closes the database connection.
 func (s *DuckDBStore) Close() error {
+	if s.read != nil && s.read != s.db {
+		_ = s.read.Close()
+	}
 	return s.db.Close()
 }
 
 // createBootstrapToken creates a self-signed JWT for initial setup.
 func (s *DuckDBStore) createBootstrapToken(signingKey *SigningKey) (string, error) {
-	return s.CreateToken(signingKey, "bootstrap", "super_admin", 24*time.Hour)
+	return s.CreateToken(signingKey, "bootstrap", "super_admin", "", 24*time.Hour)
 }

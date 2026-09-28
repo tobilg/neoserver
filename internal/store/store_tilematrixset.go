@@ -37,7 +37,7 @@ func scanTileMatrixSet(row interface{ Scan(...any) error }) (*TileMatrixSetRecor
 }
 
 func (s *DuckDBStore) ListTileMatrixSets(ctx context.Context) ([]*TileMatrixSetRecord, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id,definition_json,revision,digest,created_at,updated_at FROM tile_matrix_sets ORDER BY id`)
+	rows, err := s.read.QueryContext(ctx, `SELECT id,definition_json,revision,digest,created_at,updated_at FROM tile_matrix_sets ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("list tile matrix sets: %w", err)
 	}
@@ -54,7 +54,7 @@ func (s *DuckDBStore) ListTileMatrixSets(ctx context.Context) ([]*TileMatrixSetR
 }
 
 func (s *DuckDBStore) GetTileMatrixSet(ctx context.Context, id string) (*TileMatrixSetRecord, error) {
-	item, err := scanTileMatrixSet(s.db.QueryRowContext(ctx, `SELECT id,definition_json,revision,digest,created_at,updated_at FROM tile_matrix_sets WHERE id=?`, id))
+	item, err := scanTileMatrixSet(s.read.QueryRowContext(ctx, `SELECT id,definition_json,revision,digest,created_at,updated_at FROM tile_matrix_sets WHERE id=?`, id))
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}

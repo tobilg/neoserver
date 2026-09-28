@@ -96,7 +96,8 @@ The runtime is digest-pinned Ubuntu 26.04 with the packages required by those
 libraries, including GEOS, NetCDF, HDF5, libtiff, SQLite, cURL, expat and zlib.
 It dynamically links those libraries and preserves their package metadata and
 copyright files. Their licenses include LGPL and other terms beyond neoserver's
-MIT license.
+MIT license. The image contains no GPL-licensed libraries: GDAL's PDF plugin,
+which would bring in poppler, is excluded, and neoserver writes PDFs itself.
 
 Five libraries copied from OSGeo are built outside dpkg: `libgdal.so.39`,
 `libinternalproj.so.25`, `libjxl.so.0.13`, `libjxl_cms.so.0.13` and `libQB3.so`.

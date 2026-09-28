@@ -29,8 +29,8 @@ func TestTransportSecurityAcceptsTrustedProxy(t *testing.T) {
 		t.Fatal(err)
 	}
 	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !IsSecureTransport(r.Context()) {
-			t.Error("transport was not marked secure")
+		if !IsSecureTransport(r.Context()) || !IsEncryptedTransport(r.Context()) {
+			t.Error("transport was not marked secure and encrypted")
 		}
 		w.WriteHeader(http.StatusNoContent)
 	}))
@@ -54,7 +54,14 @@ func TestTransportSecurityAllowsDirectLoopbackDevelopment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Loopback HTTP may carry credentials, but it is not encrypted: cookies
+		// must not be marked Secure, which some browsers reject over HTTP.
+		if !IsSecureTransport(r.Context()) || IsEncryptedTransport(r.Context()) {
+			t.Error("loopback HTTP must be secure for credentials but not encrypted")
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
 	request := httptest.NewRequest(http.MethodGet, "http://localhost/", nil)
 	request.RemoteAddr = "127.0.0.1:1234"
 	request.Header.Set("Authorization", "Bearer secret")

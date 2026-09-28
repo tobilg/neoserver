@@ -5,6 +5,7 @@ import (
 	"github.com/tobilg/neoserver/internal/httputil"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -34,6 +35,9 @@ type MiddlewareConfig struct {
 	// AllowAPIKeyInQuery permits API keys via the ?apikey= query parameter.
 	AllowAPIKeyInQuery bool
 	Session            *SessionConfig
+	// CredentialLimiter throttles HTTP Basic guessing. Share it with console
+	// sign-in; nil gives the Basic validator its own limiter.
+	CredentialLimiter *FailureLimiter
 }
 
 // Middleware creates HTTP middleware that extracts identity from the request.
@@ -57,7 +61,11 @@ func Middleware(cfg MiddlewareConfig) func(http.Handler) http.Handler {
 
 	// Basic auth validator (server-configured, optional)
 	if len(cfg.BasicAuthUsers) > 0 {
-		validators = append(validators, NewBasicAuthValidator(cfg.BasicAuthUsers, cfg.DefaultRole))
+		basic := NewBasicAuthValidator(cfg.BasicAuthUsers, cfg.DefaultRole)
+		if cfg.CredentialLimiter != nil {
+			basic.limiter = cfg.CredentialLimiter
+		}
+		validators = append(validators, basic)
 	}
 
 	// Self-signed JWT validator
@@ -115,10 +123,14 @@ func Middleware(cfg MiddlewareConfig) func(http.Handler) http.Handler {
 			}
 			if identity == nil && lastErr == nil && sessionValidator != nil && !hasExplicitCredential(r, cfg.AllowAPIKeyInQuery) && !isSessionExemptPath(r.URL.Path) {
 				id, err := sessionValidator.ValidateRequest(ctx, r)
-				if err != nil {
-					lastErr = err
-				} else {
+				switch {
+				case err == nil:
 					identity = id
+				case staleSessionMayReadAnonymously(r):
+					// An expired or revoked console session must not break
+					// public map requests from the same browser.
+				default:
+					lastErr = err
 				}
 			}
 
@@ -132,6 +144,9 @@ func Middleware(cfg MiddlewareConfig) func(http.Handler) http.Handler {
 					status := authErr.StatusCode
 					if status == 0 {
 						status = http.StatusUnauthorized
+					}
+					if authErr.RetryAfter > 0 {
+						w.Header().Set("Retry-After", strconv.Itoa(int(authErr.RetryAfter.Seconds())+1))
 					}
 					httputil.HTTPError(w, r, authErr.Message, status)
 					return
@@ -156,6 +171,17 @@ func Middleware(cfg MiddlewareConfig) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// staleSessionMayReadAnonymously reports whether a request whose only
+// credential is an invalid session cookie proceeds as anonymous: safe,
+// non-mutating protocol requests only. Anonymous access grants less than any
+// session did, and protocol handlers still enforce workspace and layer policy.
+// Management and console routes keep failing with 401 so the console can
+// prompt for sign-in.
+func staleSessionMayReadAnonymously(r *http.Request) bool {
+	descriptor := protocolrequest.Get(r)
+	return descriptor.Service != "" && !isUnsafeMethod(r.Method) && !descriptor.Mutating(r.Method)
 }
 
 func hasExplicitCredential(r *http.Request, allowQuery bool) bool {

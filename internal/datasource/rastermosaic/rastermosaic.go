@@ -68,6 +68,7 @@ func SetMaxRenderGranules(value int) {
 type granule struct {
 	store.RasterMosaicGranule
 	resolved string
+	lease    *pathpolicy.Lease // pins a cached HTTPS download
 }
 
 type DataSource struct {
@@ -133,15 +134,16 @@ func NewFromService(service *store.Service) (datasource.DataSource, error) {
 		result.name = service.Name
 	}
 	for _, item := range items {
-		resolved, err := pathpolicy.Resolve(context.Background(), item.Path)
+		lease, err := pathpolicy.Acquire(context.Background(), item.Path)
 		if err != nil {
 			result.Close()
 			return nil, fmt.Errorf("resolve mosaic granule: %w", err)
 		}
+		resolved := lease.Path
 		if strings.HasPrefix(strings.ToLower(resolved), "s3://") {
 			resolved = "/vsis3/" + strings.TrimPrefix(resolved, "s3://")
 		}
-		result.granules = append(result.granules, granule{RasterMosaicGranule: item, resolved: resolved})
+		result.granules = append(result.granules, granule{RasterMosaicGranule: item, resolved: resolved, lease: lease})
 	}
 	sort.SliceStable(result.granules, func(i, j int) bool { return result.granules[i].Priority < result.granules[j].Priority })
 	paths := result.paths(result.granules)
@@ -170,6 +172,9 @@ func (d *DataSource) Health(context.Context) error {
 func (d *DataSource) Close() error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	for _, item := range d.granules {
+		item.lease.Release()
+	}
 	if d.all == nil {
 		return nil
 	}

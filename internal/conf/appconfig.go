@@ -1,6 +1,6 @@
 package conf
 
-var setVersion = "0.1.2"
+var setVersion = "0.2.0"
 var setCommit = "unknown"
 
 type AppInfo struct {

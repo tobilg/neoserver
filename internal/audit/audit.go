@@ -27,6 +27,7 @@ import (
 	"github.com/tobilg/neoserver/internal/dbschema"
 	"github.com/tobilg/neoserver/internal/identity"
 	"github.com/tobilg/neoserver/internal/protocolrequest"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/store"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -121,9 +122,9 @@ func Open(ctx context.Context, cfg conf.Audit, encryptionKey string, logger *slo
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 	_, _ = db.Exec("INSTALL httpfs; LOAD httpfs")
-	attach := fmt.Sprintf("ATTACH '%s' AS audit", sqlLiteral(cfg.DatabasePath))
+	attach := fmt.Sprintf("ATTACH '%s' AS audit", sqlutil.EscapeLiteral(cfg.DatabasePath))
 	if encryptionKey != "" {
-		attach += fmt.Sprintf(" (ENCRYPTION_KEY '%s')", sqlLiteral(encryptionKey))
+		attach += fmt.Sprintf(" (ENCRYPTION_KEY '%s')", sqlutil.EscapeLiteral(encryptionKey))
 	}
 	if _, err = db.Exec(attach + "; USE audit"); err != nil {
 		db.Close()
@@ -675,8 +676,6 @@ func (m *Manager) Middleware(next http.Handler) http.Handler {
 		}
 	})
 }
-
-func sqlLiteral(value string) string { return strings.ReplaceAll(value, "'", "''") }
 
 func ParseLimit(value string) int {
 	limit, _ := strconv.Atoi(value)

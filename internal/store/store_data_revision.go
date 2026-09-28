@@ -21,7 +21,7 @@ const dataRevisionSchema = `CREATE TABLE IF NOT EXISTS workspace_data_revisions 
 func (s *DuckDBStore) GetDataRevision(ctx context.Context, workspaceID string) (int64, bool, error) {
 	var revision int64
 	var pending bool
-	err := s.db.QueryRowContext(ctx, `SELECT revision,pending FROM workspace_data_revisions WHERE workspace_id=?`, workspaceID).Scan(&revision, &pending)
+	err := s.read.QueryRowContext(ctx, `SELECT revision,pending FROM workspace_data_revisions WHERE workspace_id=?`, workspaceID).Scan(&revision, &pending)
 	if err == sql.ErrNoRows {
 		return 1, false, nil
 	}
@@ -30,7 +30,7 @@ func (s *DuckDBStore) GetDataRevision(ctx context.Context, workspaceID string) (
 
 func (s *DuckDBStore) SetDataWritePending(ctx context.Context, workspaceID string, pending bool) (int64, error) {
 	var revision int64
-	err := s.db.QueryRowContext(ctx, `INSERT INTO workspace_data_revisions VALUES (?,2,?)
+	err := s.read.QueryRowContext(ctx, `INSERT INTO workspace_data_revisions VALUES (?,2,?)
  ON CONFLICT(workspace_id) DO UPDATE SET revision=workspace_data_revisions.revision+1,pending=excluded.pending
  RETURNING revision`, workspaceID, pending).Scan(&revision)
 	return revision, err

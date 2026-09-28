@@ -368,3 +368,12 @@ func TestValidateSVGWrapper(t *testing.T) {
 		t.Fatal("path SVG must be rejected")
 	}
 }
+
+func TestRemoteGraphicClientRefusesNonPublicAddresses(t *testing.T) {
+	// An allowlisted origin whose DNS points inside the network must not be dialed.
+	r := New(conf.WMS{}, "ws", true)
+	_, err := r.client.Get("https://localhost/graphic.png")
+	if err == nil || !strings.Contains(err.Error(), "not allowed") {
+		t.Fatalf("expected the safe dialer to refuse loopback, got %v", err)
+	}
+}

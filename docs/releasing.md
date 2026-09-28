@@ -10,7 +10,7 @@ Native builds require GDAL and a matching C/C++ runtime; they are not portable
 standalone binaries. macOS arm64 is a development/test platform. Other OS/CPU
 targets are not release-certified until their native and container suites run.
 
-`make release-build VERSION=v0.1.2` requires the real console build and stamps
+`make release-build VERSION=v0.2.0` requires the real console build and stamps
 the native binary. Container builds accept `VERSION` and `COMMIT` build args.
 `neoserver version`, console config and image labels expose release identity.
 
@@ -18,7 +18,7 @@ A release build takes its version from those flags, so the literals in the tree
 are what an unstamped development build reports. Keep them in step with:
 
 ```sh
-make set-version VERSION=v0.1.2   # rewrites the literals, then regenerates openapi.json
+make set-version VERSION=v0.2.0   # rewrites the literals, then regenerates openapi.json
 make check-version                # what CI enforces
 ```
 
@@ -84,7 +84,7 @@ candidate export; retaining diagnostics is not a vulnerability exception.
 The native builder uses the pinned full GDAL 3.13.3 image. The runtime uses
 digest-pinned Ubuntu 26.04 with a matching glibc, installing its shared-library
 package closure and copying only the non-package libraries, required data,
-three plugins and four documented tools. It omits datum grids and does not
+two plugins (netCDF, JP2OpenJPEG) and four documented tools. The GDAL PDF plugin is excluded so that GPL-licensed poppler never ships, and `check-runtime.sh` fails the build if it appears. It omits datum grids and does not
 preload the upstream allocator. Both build stages check for unresolved libraries.
 
 The build downloads signed spatial/httpfs extensions through the compiled

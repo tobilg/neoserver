@@ -13,6 +13,7 @@ import (
 
 	"github.com/tobilg/neoserver/internal/datasource"
 	"github.com/tobilg/neoserver/internal/filter"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 // ForbiddenSQLKeywords contains statement keywords that are not allowed in SQL Views.
@@ -234,7 +235,7 @@ func (h *Helper) DiscoverSQLViewColumns(ctx context.Context, sql string) (*datas
 func (h *Helper) detectSQLViewSRID(ctx context.Context, sql, geomCol string) (int, error) {
 	// Try native geometry first
 	checkSQL := fmt.Sprintf(`SELECT ST_SRID(%s) FROM %s AS _sqlview_check WHERE %s IS NOT NULL LIMIT 1`,
-		QuoteIdent(geomCol), subquery(sql), QuoteIdent(geomCol))
+		sqlutil.QuoteIdent(geomCol), subquery(sql), sqlutil.QuoteIdent(geomCol))
 
 	var srid int
 	if err := h.DB.QueryRowContext(ctx, checkSQL).Scan(&srid); err == nil && srid != 0 {
@@ -246,7 +247,7 @@ func (h *Helper) detectSQLViewSRID(ctx context.Context, sql, geomCol string) (in
 
 	// Fall back to WKB conversion
 	checkSQL = fmt.Sprintf(`SELECT ST_SRID(ST_GeomFromWKB(%s)) FROM %s AS _sqlview_check WHERE %s IS NOT NULL LIMIT 1`,
-		QuoteIdent(geomCol), subquery(sql), QuoteIdent(geomCol))
+		sqlutil.QuoteIdent(geomCol), subquery(sql), sqlutil.QuoteIdent(geomCol))
 
 	if err := h.DB.QueryRowContext(ctx, checkSQL).Scan(&srid); err != nil || srid == 0 {
 		if err := ctx.Err(); err != nil {
@@ -342,7 +343,7 @@ func (h *Helper) CountSQLView(ctx context.Context, config *datasource.SQLViewCon
 func (h *Helper) BuildSQLViewListSQL(config *datasource.SQLViewConfig, p datasource.QueryParams) (string, []any, error) {
 	p = p.WithDateTimeFilter()
 	p.SortBy = datasource.StableSort(p.SortBy, config.IDColumn)
-	geom := QuoteIdent(config.GeometryColumn)
+	geom := sqlutil.QuoteIdent(config.GeometryColumn)
 
 	outSRID := p.OutputSRID
 	if outSRID == 0 {
@@ -366,7 +367,7 @@ func (h *Helper) BuildSQLViewListSQL(config *datasource.SQLViewConfig, p datasou
 	// Build ID expression
 	var idExpr string
 	if config.IDColumn != "" {
-		idExpr = fmt.Sprintf("v.%s", QuoteIdent(config.IDColumn))
+		idExpr = fmt.Sprintf("v.%s", sqlutil.QuoteIdent(config.IDColumn))
 	} else {
 		idExpr = "NULL"
 	}
@@ -375,7 +376,7 @@ func (h *Helper) BuildSQLViewListSQL(config *datasource.SQLViewConfig, p datasou
 	var propCols []string
 	for _, prop := range config.Properties {
 		if prop.Name != config.GeometryColumn && prop.Name != config.IDColumn && datasource.PropertySelected(prop.Name, p.Properties) {
-			propCols = append(propCols, fmt.Sprintf("'%s', v.%s", strings.ReplaceAll(prop.Name, "'", "''"), QuoteIdent(prop.Name)))
+			propCols = append(propCols, fmt.Sprintf("%s, v.%s", sqlutil.QuoteLiteral(prop.Name), sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propExpr := "json_object(" + strings.Join(propCols, ", ") + ")"
@@ -391,7 +392,7 @@ func (h *Helper) BuildSQLViewListSQL(config *datasource.SQLViewConfig, p datasou
 		if config.IDColumn == "" {
 			return "", nil, fmt.Errorf("SQL view requires an id_column for item lookup")
 		}
-		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+QuoteIdent(config.IDColumn), argPos)
+		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+sqlutil.QuoteIdent(config.IDColumn), argPos)
 		whereParts = append(whereParts, predicate)
 		args = append(args, idArgs...)
 		argPos = next
@@ -399,14 +400,14 @@ func (h *Helper) BuildSQLViewListSQL(config *datasource.SQLViewConfig, p datasou
 
 	// BBox filter
 	if p.BBox != nil {
-		predicate, bboxArgs, nextArg := buildBBoxPredicate("v."+geom, sourceSRID, p.BBoxSRID, argPos, p.BBox)
+		predicate, bboxArgs, nextArg := datasource.DuckDBBBoxPredicate("v."+geom, sourceSRID, p.BBoxSRID, argPos, p.BBox)
 		whereParts = append(whereParts, predicate)
 		args = append(args, bboxArgs...)
 		argPos = nextArg
 	}
 
 	// CQL2 filter
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "v", GeometryExpression: "v." + QuoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "v", GeometryExpression: "v." + sqlutil.QuoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && p.Filter != "" {
@@ -442,38 +443,14 @@ func (h *Helper) BuildSQLViewListSQL(config *datasource.SQLViewConfig, p datasou
 		}
 	}
 
-	// Build ORDER BY
-	orderSQL := ""
-	if len(p.SortBy) > 0 {
-		var orderItems []string
-		for _, s := range p.SortBy {
-			if s.Name == "" {
-				continue
-			}
-			dir := "ASC"
-			if s.Desc {
-				dir = "DESC"
-			}
-			orderItems = append(orderItems, fmt.Sprintf("v.%s %s", QuoteIdent(s.Name), dir))
-		}
-		if len(orderItems) > 0 {
-			orderSQL = "ORDER BY " + strings.Join(orderItems, ", ")
-		}
-	} else if config.IDColumn != "" {
-		orderSQL = fmt.Sprintf("ORDER BY v.%s", QuoteIdent(config.IDColumn))
-	}
+	orderSQL := datasource.OrderByClause("v", p.SortBy, nil, config.IDColumn)
 
-	// Build LIMIT/OFFSET
-	limitSQL := fmt.Sprintf("LIMIT $%d OFFSET $%d", argPos, argPos+1)
-	args = append(args, p.Limit, p.Offset)
+	limitSQL := datasource.LimitOffsetClause(&args, argPos, p.Limit, p.Offset)
 
 	// Build feature JSON
 	featureExpr := datasource.DuckDBFeatureJSONExpression(idExpr, geomExpr, propExpr)
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	// Wrap user SQL in subquery
 	sql := fmt.Sprintf(`SELECT CAST(%s AS VARCHAR) AS feature FROM %s v %s %s %s`, featureExpr, subquery(config.SQL), whereSQL, orderSQL, limitSQL)
@@ -483,7 +460,7 @@ func (h *Helper) BuildSQLViewListSQL(config *datasource.SQLViewConfig, p datasou
 // BuildSQLViewWKBSQL builds a SQL query that returns WKB geometry and properties from a SQL View.
 func (h *Helper) BuildSQLViewWKBSQL(config *datasource.SQLViewConfig, p datasource.QueryParams) (string, []any, error) {
 	p = p.WithDateTimeFilter()
-	geom := QuoteIdent(config.GeometryColumn)
+	geom := sqlutil.QuoteIdent(config.GeometryColumn)
 
 	outSRID := p.OutputSRID
 	if outSRID == 0 {
@@ -508,7 +485,7 @@ func (h *Helper) BuildSQLViewWKBSQL(config *datasource.SQLViewConfig, p datasour
 	var propCols []string
 	for _, prop := range config.Properties {
 		if prop.Name != config.GeometryColumn && prop.Name != config.IDColumn {
-			propCols = append(propCols, fmt.Sprintf("'%s', v.%s", prop.Name, QuoteIdent(prop.Name)))
+			propCols = append(propCols, fmt.Sprintf("'%s', v.%s", prop.Name, sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propsExpr := "json_object(" + strings.Join(propCols, ", ") + ")"
@@ -524,7 +501,7 @@ func (h *Helper) BuildSQLViewWKBSQL(config *datasource.SQLViewConfig, p datasour
 		if config.IDColumn == "" {
 			return "", nil, fmt.Errorf("SQL view requires an id_column for item lookup")
 		}
-		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+QuoteIdent(config.IDColumn), argPos)
+		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+sqlutil.QuoteIdent(config.IDColumn), argPos)
 		whereParts = append(whereParts, predicate)
 		args = append(args, idArgs...)
 		argPos = next
@@ -532,14 +509,14 @@ func (h *Helper) BuildSQLViewWKBSQL(config *datasource.SQLViewConfig, p datasour
 
 	// BBox filter
 	if p.BBox != nil {
-		predicate, bboxArgs, nextArg := buildBBoxPredicate("v."+geom, sourceSRID, p.BBoxSRID, argPos, p.BBox)
+		predicate, bboxArgs, nextArg := datasource.DuckDBBBoxPredicate("v."+geom, sourceSRID, p.BBoxSRID, argPos, p.BBox)
 		whereParts = append(whereParts, predicate)
 		args = append(args, bboxArgs...)
 		argPos = nextArg
 	}
 
 	// CQL2 filter
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "v", GeometryExpression: "v." + QuoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "v", GeometryExpression: "v." + sqlutil.QuoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && p.Filter != "" {
@@ -574,10 +551,7 @@ func (h *Helper) BuildSQLViewWKBSQL(config *datasource.SQLViewConfig, p datasour
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	limitSQL := ""
 	if p.Limit > 0 {
@@ -585,7 +559,7 @@ func (h *Helper) BuildSQLViewWKBSQL(config *datasource.SQLViewConfig, p datasour
 	}
 	idExpr := "NULL"
 	if config.IDColumn != "" {
-		idExpr = fmt.Sprintf("CAST(v.%s AS VARCHAR)", QuoteIdent(config.IDColumn))
+		idExpr = fmt.Sprintf("CAST(v.%s AS VARCHAR)", sqlutil.QuoteIdent(config.IDColumn))
 	}
 	sql := fmt.Sprintf(`SELECT ST_AsWKB(%s) AS geom, %s AS props, %s AS feature_id FROM %s v %s %s`,
 		geomExpr, propsExpr, idExpr, subquery(config.SQL), whereSQL, limitSQL)
@@ -595,7 +569,7 @@ func (h *Helper) BuildSQLViewWKBSQL(config *datasource.SQLViewConfig, p datasour
 // BuildSQLViewCountSQL builds a SQL query to count features from a SQL View.
 func (h *Helper) BuildSQLViewCountSQL(config *datasource.SQLViewConfig, p datasource.QueryParams) (string, []any, error) {
 	p = p.WithDateTimeFilter()
-	geom := QuoteIdent(config.GeometryColumn)
+	geom := sqlutil.QuoteIdent(config.GeometryColumn)
 
 	sourceSRID := config.SRID
 	if sourceSRID == 0 {
@@ -610,7 +584,7 @@ func (h *Helper) BuildSQLViewCountSQL(config *datasource.SQLViewConfig, p dataso
 		if config.IDColumn == "" {
 			return "", nil, fmt.Errorf("SQL view requires an id_column for item lookup")
 		}
-		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+QuoteIdent(config.IDColumn), argPos)
+		predicate, idArgs, next := datasource.FeatureIDPredicate(p.FeatureIDs, "v."+sqlutil.QuoteIdent(config.IDColumn), argPos)
 		whereParts = append(whereParts, predicate)
 		args = append(args, idArgs...)
 		argPos = next
@@ -618,14 +592,14 @@ func (h *Helper) BuildSQLViewCountSQL(config *datasource.SQLViewConfig, p dataso
 
 	// BBox filter
 	if p.BBox != nil {
-		predicate, bboxArgs, nextArg := buildBBoxPredicate("v."+geom, sourceSRID, p.BBoxSRID, argPos, p.BBox)
+		predicate, bboxArgs, nextArg := datasource.DuckDBBBoxPredicate("v."+geom, sourceSRID, p.BBoxSRID, argPos, p.BBox)
 		whereParts = append(whereParts, predicate)
 		args = append(args, bboxArgs...)
 		argPos = nextArg
 	}
 
 	// CQL2 filter
-	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "v", GeometryExpression: "v." + QuoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
+	if err := datasource.AppendQueryPredicate(p, datasource.PredicateOptions{Dialect: datasource.SQLDuckDB, TableAlias: "v", GeometryExpression: "v." + sqlutil.QuoteIdent(config.GeometryColumn)}, &whereParts, &args, &argPos); err != nil {
 		return "", nil, err
 	}
 	if !p.HasCompiledPredicate() && p.Filter != "" {
@@ -660,39 +634,10 @@ func (h *Helper) BuildSQLViewCountSQL(config *datasource.SQLViewConfig, p dataso
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s v %s`, subquery(config.SQL), whereSQL)
 	return sql, args, nil
-}
-
-// QuoteIdent quotes an identifier for use in SQL.
-func QuoteIdent(s string) string {
-	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
-}
-
-func buildBBoxPredicate(geomExpr string, sourceSRID, bboxSRID, argPos int, bbox *datasource.BBox) (string, []any, int) {
-	if bboxSRID == 0 {
-		bboxSRID = 4326
-	}
-	if sourceSRID == 0 {
-		sourceSRID = 4326
-	}
-	var clauses []string
-	var args []any
-	for _, part := range bbox.Parts(bboxSRID) {
-		envelope := fmt.Sprintf("ST_MakeEnvelope($%d, $%d, $%d, $%d)", argPos, argPos+1, argPos+2, argPos+3)
-		if sourceSRID != bboxSRID {
-			envelope = fmt.Sprintf("ST_Transform(%s, 'EPSG:%d', 'EPSG:%d', always_xy := true)", envelope, bboxSRID, sourceSRID)
-		}
-		clauses = append(clauses, fmt.Sprintf("ST_Intersects(%s, %s)", geomExpr, envelope))
-		args = append(args, part.MinX, part.MinY, part.MaxX, part.MaxY)
-		argPos += 4
-	}
-	return "(" + strings.Join(clauses, " OR ") + ")", args, argPos
 }
 
 // DefaultTypeMapper is a default implementation of TypeMapper for DuckDB types.

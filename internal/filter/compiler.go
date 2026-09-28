@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 type Options struct {
@@ -242,9 +244,9 @@ func (p *parser) parseComparison() (string, error) {
 				op = "ILIKE"
 			}
 			if not {
-				return fmt.Sprintf("%s NOT %s %s", quoteIdent(prop), op, ph), nil
+				return fmt.Sprintf("%s NOT %s %s", sqlutil.QuoteIdent(prop), op, ph), nil
 			}
-			return fmt.Sprintf("%s %s %s", quoteIdent(prop), op, ph), nil
+			return fmt.Sprintf("%s %s %s", sqlutil.QuoteIdent(prop), op, ph), nil
 		}
 
 		// propertyName IS (NOT)? NULL
@@ -260,9 +262,9 @@ func (p *parser) parseComparison() (string, error) {
 			}
 			p.bump()
 			if not {
-				return fmt.Sprintf("%s IS NOT NULL", quoteIdent(prop)), nil
+				return fmt.Sprintf("%s IS NOT NULL", sqlutil.QuoteIdent(prop)), nil
 			}
-			return fmt.Sprintf("%s IS NULL", quoteIdent(prop)), nil
+			return fmt.Sprintf("%s IS NULL", sqlutil.QuoteIdent(prop)), nil
 		}
 
 		// propertyName (NOT)? IN (...)
@@ -296,9 +298,9 @@ func (p *parser) parseComparison() (string, error) {
 				return "", err
 			}
 			if not {
-				return fmt.Sprintf("%s NOT IN (%s)", quoteIdent(prop), strings.Join(phs, ",")), nil
+				return fmt.Sprintf("%s NOT IN (%s)", sqlutil.QuoteIdent(prop), strings.Join(phs, ",")), nil
 			}
-			return fmt.Sprintf("%s IN (%s)", quoteIdent(prop), strings.Join(phs, ",")), nil
+			return fmt.Sprintf("%s IN (%s)", sqlutil.QuoteIdent(prop), strings.Join(phs, ",")), nil
 		}
 
 		// If we got here, this wasn't a special property-starting predicate.
@@ -306,7 +308,7 @@ func (p *parser) parseComparison() (string, error) {
 		// We return the quoted identifier and let the generic scalar parser continue.
 		// Note: to keep the parser simple, we don't actually rewind tokens; instead,
 		// we construct `left` here and continue with binary comparison parsing below.
-		left := quoteIdent(prop)
+		left := sqlutil.QuoteIdent(prop)
 
 		// BETWEEN / binary comparison follow.
 		if p.cur.typ == tokNot && p.peek.typ == tokBetween {
@@ -462,7 +464,7 @@ func (p *parser) parseScalarPrimary() (string, error) {
 			return "", err
 		}
 		p.bump()
-		return quoteIdent(prop), nil
+		return sqlutil.QuoteIdent(prop), nil
 	case tokString:
 		ph := p.addArg(p.cur.raw)
 		p.bump()
@@ -513,7 +515,7 @@ func (p *parser) parseGeomExpr() (string, error) {
 			return "", fmt.Errorf("unsupported geometry property %q (allowed: %q)", name, p.opt.GeometryProperty)
 		}
 		p.bump()
-		return quoteIdent(name), nil
+		return sqlutil.QuoteIdent(name), nil
 	}
 
 	wkt, err := p.parseGeomLiteralWKT()
@@ -608,10 +610,6 @@ func (p *parser) assertAllowedProperty(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown property %q", name)
-}
-
-func quoteIdent(name string) string {
-	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
 func envelopeWKT(coords []string) (string, error) {

@@ -194,7 +194,7 @@ func (h *workspaceHandler) buildWorkspaceOpenAPI(ws *workspace.Workspace) *opena
 		Info:    &openapi3.Info{Title: fmt.Sprintf("%s - %s", h.cfg.Metadata.Title, ws.Name), Description: ws.Description, Version: "1.0.0"},
 		Paths:   paths, Components: components,
 	}
-	if h.cfg.Auth.Enabled && !ws.Settings.OGCAPI.Public {
+	if !ws.Settings.OGCAPI.Public {
 		doc.Components.SecuritySchemes = openapi3.SecuritySchemes{
 			"bearerAuth": {Value: &openapi3.SecurityScheme{Type: "http", Scheme: "bearer", BearerFormat: "JWT"}},
 			"apiKey":     {Value: &openapi3.SecurityScheme{Type: "apiKey", In: "header", Name: "X-API-Key"}},

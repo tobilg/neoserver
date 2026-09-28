@@ -124,54 +124,12 @@ func TestPgTypeToJSON(t *testing.T) {
 	}
 }
 
-func TestQuoteIdent(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"simple", `"simple"`},
-		{"with space", `"with space"`},
-		{`with"quote`, `"with""quote"`},
-		{`double""quote`, `"double""""quote"`},
-		{"", `""`},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			if got := quoteIdent(tt.input); got != tt.want {
-				t.Errorf("quoteIdent(%q) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestQuoteLiteral(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"simple", `'simple'`},
-		{"with space", `'with space'`},
-		{`with'quote`, `'with''quote'`},
-		{`double''quote`, `'double''''quote'`},
-		{"", `''`},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			if got := quoteLiteral(tt.input); got != tt.want {
-				t.Errorf("quoteLiteral(%q) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestNonZero(t *testing.T) {
 	tests := []struct {
-		name   string
-		v      int
-		def    int
-		want   int
+		name string
+		v    int
+		def  int
+		want int
 	}{
 		{"value is non-zero", 5, 10, 5},
 		{"value is zero", 0, 10, 10},

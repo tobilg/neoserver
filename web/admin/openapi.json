@@ -5442,7 +5442,7 @@
   "info": {
     "description": "REST API for managing workspaces, services, layers, API keys, roles, and OIDC claim mappings.",
     "title": "neoserver Management API",
-    "version": "0.1.2"
+    "version": "0.2.0"
   },
   "openapi": "3.0.3",
   "paths": {
@@ -12104,7 +12104,7 @@
         ]
       },
       "post": {
-        "description": "Creates a new data source service in a workspace.",
+        "description": "Creates a new data source service in a workspace. Only super administrators may connect a PostGIS service to a new host that is not listed in Datasource.DatabaseHosts; others receive 403.",
         "operationId": "createService",
         "parameters": [
           {
@@ -12248,6 +12248,7 @@
     },
     "/workspaces/{workspace}/services/test-connection": {
       "post": {
+        "description": "Applies the same PostGIS host rule as service creation.",
         "operationId": "testNewServiceConnection",
         "parameters": [
           {
@@ -12300,7 +12301,7 @@
                 }
               }
             },
-            "description": "Insufficient permission, disabled login, or invalid CSRF"
+            "description": "Forbidden"
           },
           "413": {
             "content": {
@@ -12592,7 +12593,7 @@
         ]
       },
       "put": {
-        "description": "Updates a service configuration.",
+        "description": "Updates a service configuration. Workspace administrators may keep a PostGIS service's host and port, or move it to a host listed in Datasource.DatabaseHosts; any other host requires a super administrator (403 otherwise).",
         "operationId": "updateService",
         "parameters": [
           {
@@ -15272,6 +15273,7 @@
     },
     "/workspaces/{workspace}/services/{service}/test-connection": {
       "post": {
+        "description": "Applies the same PostGIS host rule as service updates.",
         "operationId": "testExistingServiceConnection",
         "parameters": [
           {
@@ -15333,7 +15335,7 @@
                 }
               }
             },
-            "description": "Insufficient permission, disabled login, or invalid CSRF"
+            "description": "Forbidden"
           },
           "413": {
             "content": {

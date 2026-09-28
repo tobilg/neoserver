@@ -42,8 +42,10 @@ func (b *limitedMapBuffer) Write(value []byte) (int, error) {
 
 func encodeMapOutput(format string, rendered *renderer.MapRenderer, context mapEncodeContext) ([]byte, error) {
 	switch format {
-	case FormatGeoTIFF, FormatPDF:
+	case FormatGeoTIFF:
 		return encodeGDALMap(format, rendered.Image(), context.Request, context.MaxBytes)
+	case FormatPDF:
+		return encodeGeoPDF(rendered.Image(), context.Request, context.MaxBytes)
 	case FormatKML:
 		return encodeKMLDocument(context.Request, buildPNGMapURL(context.BaseURL, context.Request), context.MaxBytes)
 	case FormatKMZ:
@@ -76,14 +78,7 @@ func encodeGDALMap(format string, img image.Image, req *GetMapRequest, maximum i
 	driver := godal.GTiff
 	suffix := ".tif"
 	creationOptions := []godal.DatasetTranslateOption{godal.CreationOption("COMPRESS=DEFLATE", "TILED=YES")}
-	if format == FormatPDF {
-		if !capabilities.PDF {
-			return nil, errors.New("PDF output is unavailable because the GDAL PDF driver is missing")
-		}
-		driver = godal.DriverName("PDF")
-		suffix = ".pdf"
-		creationOptions = []godal.DatasetTranslateOption{godal.CreationOption("COMPRESS=DEFLATE", "DPI=96")}
-	} else if !capabilities.GeoTIFF {
+	if !capabilities.GeoTIFF {
 		return nil, errors.New("GeoTIFF output is unavailable because the GDAL GTiff driver is missing")
 	}
 	dataset, err := rgbaDataset(img, req)

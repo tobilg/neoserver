@@ -126,6 +126,9 @@ func (h *handler) testNewServiceConnection(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "Bad Request", "managed import bindings are server-owned")
 		return
 	}
+	if !h.authorizeServiceEndpoint(w, r, store.ServiceType(request.Type), nil, request.ConnectionInfo) {
+		return
+	}
 	h.runConnectionTest(w, r, &store.Service{ID: "connection-test", Name: request.Name,
 		Type: store.ServiceType(request.Type), ConnectionInfo: request.ConnectionInfo, Enabled: true})
 }
@@ -155,6 +158,9 @@ func (h *handler) testExistingServiceConnection(w http.ResponseWriter, r *http.R
 		merged := mergeConnectionSecrets(existing.ConnectionInfo, request.ConnectionInfo)
 		if !validManagedBinding(existing.ConnectionInfo, merged) {
 			writeError(w, http.StatusBadRequest, "Bad Request", "managed import bindings cannot be changed")
+			return
+		}
+		if !h.authorizeServiceEndpoint(w, r, existing.Type, existing.ConnectionInfo, merged) {
 			return
 		}
 		existing.ConnectionInfo = merged

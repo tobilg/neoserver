@@ -3,6 +3,7 @@ package ogc
 import (
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/tobilg/neoserver/internal/httputil"
 )
@@ -31,25 +32,9 @@ func urlPathEscape(s string) string {
 	return url.PathEscape(s)
 }
 
-// swaggerUIHTML returns the HTML for Swagger UI.
-func swaggerUIHTML() string {
-	return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>API Docs</title>
-    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
-  </head>
-  <body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-    <script>
-      window.ui = SwaggerUIBundle({
-        url: './api',
-        dom_id: '#swagger-ui',
-      });
-    </script>
-  </body>
-</html>`
+// swaggerUIHTML returns the workspace Swagger UI page. Its assets and the
+// initialiser (served beside the page as api.js) are same-origin, because the
+// server's Content-Security-Policy blocks CDN and inline scripts.
+func swaggerUIHTML(basePath string) string {
+	return httputil.SwaggerUIPage("API Docs", strings.TrimSuffix(basePath, "/"), "./api.js")
 }

@@ -185,7 +185,8 @@ type DuckDBStore struct {
 	datasetMapMu  sync.Mutex   // Serializes map references with group mutations and deletion registration.
 	sessionMu     sync.Mutex   // Serializes conditional token rotations.
 	roleMu        sync.RWMutex // Serializes role deletion against new assignments.
-	db            *sql.DB
+	db            *sql.DB      // single serialized writer; transactions and writes
+	read          *sql.DB      // concurrent readers for statements outside a transaction
 	encryptionKey string
 }
 
@@ -193,6 +194,9 @@ type DuckDBStore struct {
 type Config struct {
 	Path          string
 	EncryptionKey string
+	// MaxConnections bounds the catalog pool: one writer plus MaxConnections-1
+	// readers. Zero selects the default of 10; one serializes all access.
+	MaxConnections int
 }
 
 // Health verifies that the encrypted catalog database is reachable.

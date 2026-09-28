@@ -62,12 +62,12 @@ GetMap advertises only formats the running process can produce:
 | TIFF / palette TIFF | `image/tiff`, `image/tiff8` | Plain or palette raster |
 | GeoTIFF | `image/geotiff` | Georeferenced RGBA raster; advertised only when the linked GDAL GTiff driver is available |
 | SVG | `image/svg+xml` | Self-contained hybrid output; vector geometry and labels remain SVG elements while portrayed coverages and composited intermediate layers are embedded images |
-| PDF | `application/pdf` | Georeferenced rendered map; advertised only when the linked GDAL PDF driver is available |
+| PDF | `application/pdf` | Georeferenced rendered map (ISO 32000 geospatial PDF, 96 DPI); always available |
 | KML / KMZ | `application/vnd.google-earth.kml+xml`, `application/vnd.google-earth.kmz` | A rendered GroundOverlay; KML links to an equivalent PNG request and KMZ embeds `map.png` |
 | MapML | `text/mapml` | A rendered image extent for WGS84/CRS:84 or Web Mercator only |
 | UTFGrid | `application/json;type=utfgrid` | Interactive hit grid for exactly one visible vector layer, with stable feature keys and all returned properties |
 
-`kml` and `kmz` are accepted as short aliases. GeoTIFF and PDF use the same process-wide Go/GDAL capability registry as WFS binary exports; a missing driver removes the format from capabilities and makes direct requests fail rather than advertising a broken encoder. The other formats do not depend on an optional GDAL output driver.
+`kml` and `kmz` are accepted as short aliases. GeoTIFF uses the same process-wide Go/GDAL capability registry as WFS binary exports; a missing driver removes the format from capabilities and makes direct requests fail rather than advertising a broken encoder. The other formats, including PDF, do not depend on an optional GDAL output driver: neoserver writes the PDF itself and uses GDAL only for its coordinate reference system. The PDF embeds the rendered map as one image and is georeferenced with the ISO 32000 geospatial viewport, the encoding GDAL writes by default and reads back (and therefore QGIS).
 
 UTFGrid uses a four-pixel grid resolution, applies the normal feature/vertex/query ceilings, rejects coverage/group/multi-layer requests and rendering transformations, and is deliberately not cached. KML, MapML, and UTFGrid responses are also marked `no-store`; KMZ is cacheable because its image is embedded. Image exception modes are limited to raster formats that can safely carry them.
 

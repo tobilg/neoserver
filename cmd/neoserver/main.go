@@ -237,11 +237,16 @@ func cmdServe(args []string) {
 		slog.Error("Generate one with: openssl rand -hex 32")
 		os.Exit(1)
 	}
+	if keyBytes := conf.StoreKeyBytes(encryptionKey); keyBytes < conf.MinStoreKeyBytes && !cfg.Server.Devel {
+		slog.Warn("NEOSRV_STORE_KEY is weaker than recommended; use a key from 'openssl rand -hex 32', or run with --devel for local development",
+			"key_bytes", keyBytes, "recommended_bytes", conf.MinStoreKeyBytes)
+	}
 
 	storePath := cfg.Store.Path
 	storeCfg := store.Config{
-		Path:          storePath,
-		EncryptionKey: encryptionKey,
+		Path:           storePath,
+		EncryptionKey:  encryptionKey,
+		MaxConnections: cfg.Store.MaxConnections,
 	}
 
 	// Serving never creates security state implicitly. Initialization is an
@@ -300,6 +305,7 @@ func cmdCreateToken(args []string) {
 	role := fs.String("role", "super_admin", "Role for the token (super_admin, admin, editor, viewer)")
 	subject := fs.String("subject", "admin", "Subject identifier for the token")
 	expires := fs.String("expires", "24h", "Token expiration duration (e.g., 24h, 7d)")
+	workspace := fs.String("workspace", "", "Workspace ID or name the role applies to (required for admin, editor, viewer)")
 	fs.Parse(args)
 	configuredStore := mustStoreConfig(*configPath, *storePath)
 	*storePath = configuredStore.Path
@@ -318,6 +324,10 @@ func cmdCreateToken(args []string) {
 	}
 	if !validTokenRole(*role) {
 		fmt.Fprintln(os.Stderr, "Error: role must be super_admin, admin, editor, or viewer")
+		os.Exit(1)
+	}
+	if err := validTokenScope(*role, *workspace); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 
@@ -341,14 +351,24 @@ func cmdCreateToken(args []string) {
 		os.Exit(1)
 	}
 
+	workspaceID, scope := "", "all workspaces"
+	if *workspace != "" {
+		ws, err := resolveTokenWorkspace(context.Background(), s, *workspace)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		}
+		workspaceID, scope = ws.ID, "workspace "+ws.Name
+	}
+
 	// Create the token
-	token, err := s.CreateToken(signingKey, *subject, *role, duration)
+	token, err := s.CreateToken(signingKey, *subject, *role, workspaceID, duration)
 	if err != nil {
 		fmt.Printf("Error creating token: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Access Token (%s, expires in %s):\n", *role, *expires)
+	fmt.Printf("Access Token (%s in %s, expires in %s):\n", *role, scope, *expires)
 	fmt.Println(token)
 	fmt.Println()
 	fmt.Println("Use with: Authorization: Bearer <token>")

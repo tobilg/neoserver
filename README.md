@@ -1,6 +1,6 @@
 # neoserver
 
-Current version: **0.1.2**.
+Current version: **0.2.0**.
 
 neoserver is a modern, multi-workspace geospatial server written in Go. It publishes PostGIS, DuckDB, GeoParquet, vector-file, and raster data through OGC API - Features, WMS 1.3.0, WFS 2.0, WCS 2.1/2.0.1, OGC API - Tiles, a management REST API, and an embedded administration console.
 
@@ -45,12 +45,20 @@ Published endpoints:
 
 The server stores its configuration and security state in an encrypted DuckDB file. Feature data remains in the configured source systems.
 
+## Deployment model and limits
+
+- **One active server per store.** The catalog, tile-cache index and mosaic index are DuckDB files held with exclusive locks, so a second process against the same store refuses to start. There is no clustering or active-active high availability; scale by running separate instances with separate stores, and recover by restarting or replacing the single node. Admin CLI commands such as `create-token` also need the server stopped.
+- **Backups are taken offline.** Stop the server (or otherwise quiesce all writers) and copy the catalog, audit database and other enabled state together. There is no online backup command.
+- **The store key cannot be rotated.** A leaked `NEOSRV_STORE_KEY` means re-initializing the catalog.
+
+See [Deployment](docs/deployment.md#single-active-node) for details on locking, [backups](docs/deployment.md#persistent-state), and [store-key recovery](docs/deployment.md#the-store-key-cannot-be-rotated).
+
 ## Install
 
 Released images are published to Docker Hub for Linux amd64:
 
 ~~~bash
-docker pull tobilg/neoserver:0.1.2     # use :latest for the latest stable release
+docker pull tobilg/neoserver:0.2.0     # use :latest for the latest stable release
 ~~~
 
 Each [GitHub release](https://github.com/tobilg/neoserver/releases) also carries

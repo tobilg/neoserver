@@ -61,7 +61,7 @@ func (s *DuckDBStore) DeleteWorkspaceWFSLocks(ctx context.Context, workspaceID s
 
 // ListWFSLocks returns all persisted locks that have not yet expired.
 func (s *DuckDBStore) ListWFSLocks(ctx context.Context) ([]WFSLockRecord, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT lock_id, workspace_id, owner_id, feature_ids, created_at, expires_at
+	rows, err := s.read.QueryContext(ctx, `SELECT lock_id, workspace_id, owner_id, feature_ids, created_at, expires_at
 		FROM wfs_locks WHERE expires_at > ?`, time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("list WFS locks: %w", err)

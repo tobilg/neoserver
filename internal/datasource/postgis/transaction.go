@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/tobilg/neoserver/internal/datasource"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 func geometryExpression(parameter, inputSRID, targetSRID int) string {
@@ -20,7 +21,7 @@ func mutationIDs(ctx context.Context, exec writeExecutor, info *datasource.Layer
 	if info.IDColumn == "" {
 		return nil, fmt.Errorf("transactional mutations require a stable ID column")
 	}
-	rows, err := exec.Query(ctx, statement+" RETURNING "+quoteIdent(info.IDColumn)+"::text", args...)
+	rows, err := exec.Query(ctx, statement+" RETURNING "+sqlutil.QuoteIdent(info.IDColumn)+"::text", args...)
 	if err != nil {
 		return nil, err
 	}

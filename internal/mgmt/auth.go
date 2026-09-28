@@ -6,11 +6,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -31,86 +29,17 @@ type loginRequest struct {
 
 var serverStartedAt = time.Now().UTC()
 
-type loginAttempt struct {
-	failures     int
-	blockedUntil time.Time
-	updatedAt    time.Time
-}
-
-type loginRateLimiter struct {
-	mu       sync.Mutex
-	attempts map[string]loginAttempt
-}
-
-func newLoginRateLimiter() *loginRateLimiter {
-	return &loginRateLimiter{attempts: make(map[string]loginAttempt)}
-}
-
-func (limiter *loginRateLimiter) allowed(key string, now time.Time) time.Duration {
-	limiter.mu.Lock()
-	defer limiter.mu.Unlock()
-	limiter.prune(now)
-	attempt := limiter.attempts[key]
-	if attempt.blockedUntil.After(now) {
-		return attempt.blockedUntil.Sub(now)
-	}
-	return 0
-}
-
-func (limiter *loginRateLimiter) fail(key string, now time.Time) time.Duration {
-	limiter.mu.Lock()
-	defer limiter.mu.Unlock()
-	limiter.prune(now)
-	attempt := limiter.attempts[key]
-	attempt.failures++
-	attempt.updatedAt = now
-	if attempt.failures >= 5 {
-		shift := attempt.failures - 5
-		if shift > 5 {
-			shift = 5
-		}
-		delay := 30 * time.Second * time.Duration(1<<shift)
-		if delay > 15*time.Minute {
-			delay = 15 * time.Minute
-		}
-		attempt.blockedUntil = now.Add(delay)
-	}
-	limiter.attempts[key] = attempt
-	if attempt.blockedUntil.After(now) {
-		return attempt.blockedUntil.Sub(now)
-	}
-	return 0
-}
-
-func (limiter *loginRateLimiter) success(key string) {
-	limiter.mu.Lock()
-	delete(limiter.attempts, key)
-	limiter.mu.Unlock()
-}
-
-func (limiter *loginRateLimiter) prune(now time.Time) {
-	if len(limiter.attempts) < 1024 {
-		return
-	}
-	for key, attempt := range limiter.attempts {
-		if !attempt.blockedUntil.After(now) && now.Sub(attempt.updatedAt) > time.Hour {
-			delete(limiter.attempts, key)
-		}
-	}
-}
-
 func (h *handler) consoleConfig(w http.ResponseWriter, r *http.Request) {
 	passwordLogin := h.cfg.Auth.Enabled && h.cfg.Auth.Method == "basic" && len(h.cfg.Auth.Users) > 0
 	oidcEnabled := h.cfg.Auth.OIDC.BrowserLoginEnabled && h.cfg.Auth.OIDC.IssuerURL != "" && h.cfg.Auth.OIDC.ClientID != ""
 	basePath := strings.TrimSuffix(h.cfg.Server.BasePath, "/")
 	publicOrigin := strings.TrimSuffix(h.cfg.Server.UrlBase, "/")
 	if publicOrigin == "" {
+		// UrlBase is required for non-loopback binds; this local fallback trusts
+		// X-Forwarded-Proto only from configured proxies.
 		scheme := "http"
-		if r.TLS != nil {
+		if r.TLS != nil || identity.IsEncryptedTransport(r.Context()) {
 			scheme = "https"
-		}
-		if forwarded := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-Proto"), ",")[0]); forwarded == "http" || forwarded == "https" {
-			scheme = forwarded
 		}
 		publicOrigin = scheme + "://" + r.Host
 	}
@@ -164,36 +93,22 @@ func (h *handler) login(w http.ResponseWriter, r *http.Request) {
 	if principal == "" {
 		principal = request.Token + request.OIDCToken + request.IDToken
 	}
-	rateKeys := []string{"ip:" + clientAddress(r), "principal:" + identity.HashSessionToken(principal)}
+	rateKeys := identity.CredentialRateKeys(r, principal)
 	now := time.Now().UTC()
-	wait := time.Duration(0)
-	for _, key := range rateKeys {
-		if delay := h.loginRate.allowed(key, now); delay > wait {
-			wait = delay
-		}
-	}
-	if wait > 0 {
+	if wait := h.loginRate.Wait(rateKeys, now); wait > 0 {
 		w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
 		writeError(w, http.StatusTooManyRequests, "Too Many Requests", "login temporarily rate limited")
 		return
 	}
 	principalIdentity, credentialKind, fingerprint, err := h.authenticateLogin(r.Context(), request)
 	if err != nil || principalIdentity == nil {
-		wait := time.Duration(0)
-		for _, key := range rateKeys {
-			if delay := h.loginRate.fail(key, now); delay > wait {
-				wait = delay
-			}
-		}
-		if wait > 0 {
+		if wait := h.loginRate.Fail(rateKeys, now); wait > 0 {
 			w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
 		}
 		writeError(w, http.StatusUnauthorized, "Authentication failed", "invalid credentials")
 		return
 	}
-	for _, key := range rateKeys {
-		h.loginRate.success(key)
-	}
+	h.loginRate.Succeed(rateKeys)
 	sessions, ok := h.store.(store.BrowserSessionStore)
 	if !ok {
 		writeError(w, http.StatusServiceUnavailable, "Sessions unavailable", "browser session storage is not configured")
@@ -222,7 +137,7 @@ func (h *handler) login(w http.ResponseWriter, r *http.Request) {
 		TokenHash: identity.HashSessionToken(token), CSRFHash: identity.HashSessionToken(csrf), Subject: principalIdentity.Subject,
 		Email: principalIdentity.Email, DisplayName: principalIdentity.DisplayName, AuthMethod: credentialKind,
 		GlobalRole: principalIdentity.Roles["*"], Roles: principalIdentity.Roles, Claims: principalIdentity.Claims,
-		CredentialID: credentialID, CredentialFingerprint: fingerprint, RemoteAddr: clientAddress(r), UserAgent: r.UserAgent(),
+		CredentialID: credentialID, CredentialFingerprint: fingerprint, RemoteAddr: identity.ClientAddress(r), UserAgent: r.UserAgent(),
 		CreatedAt: now, LastSeenAt: now, IdleExpiresAt: idleExpiry, ExpiresAt: expiresAt,
 	})
 	if err != nil {
@@ -508,7 +423,7 @@ func newSessionSecrets() (string, string, error) {
 
 func (h *handler) setSessionCookies(w http.ResponseWriter, r *http.Request, token, csrf string, expires time.Time) {
 	path := strings.TrimSuffix(h.cfg.Server.BasePath, "/") + "/"
-	secure := h.cfg.Auth.RequireHTTPS || r.TLS != nil
+	secure := h.cfg.Auth.RequireHTTPS || r.TLS != nil || identity.IsEncryptedTransport(r.Context())
 	http.SetCookie(w, &http.Cookie{Name: identity.SessionCookieName, Value: token, Path: path, HttpOnly: true, Secure: secure,
 		SameSite: http.SameSiteLaxMode, Expires: expires, MaxAge: maxAge(expires)})
 	http.SetCookie(w, &http.Cookie{Name: identity.CSRFCookieName, Value: csrf, Path: path, Secure: secure,
@@ -517,7 +432,7 @@ func (h *handler) setSessionCookies(w http.ResponseWriter, r *http.Request, toke
 
 func (h *handler) clearSessionCookies(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimSuffix(h.cfg.Server.BasePath, "/") + "/"
-	secure := h.cfg.Auth.RequireHTTPS || r.TLS != nil
+	secure := h.cfg.Auth.RequireHTTPS || r.TLS != nil || identity.IsEncryptedTransport(r.Context())
 	for _, name := range []string{identity.SessionCookieName, identity.CSRFCookieName} {
 		http.SetCookie(w, &http.Cookie{Name: name, Path: path, Secure: secure, HttpOnly: name == identity.SessionCookieName,
 			SameSite: http.SameSiteLaxMode, MaxAge: -1, Expires: time.Unix(1, 0)})
@@ -549,14 +464,6 @@ func claimExpiration(claims map[string]interface{}) time.Time {
 		}
 	}
 	return time.Time{}
-}
-
-func clientAddress(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err == nil {
-		return host
-	}
-	return r.RemoteAddr
 }
 
 func nullableValue(value string) any {

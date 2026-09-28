@@ -15,9 +15,9 @@ import (
 
 	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/tobilg/neoserver/internal/datasource"
-	"github.com/tobilg/neoserver/internal/datasource/duckdbsqlview"
 	"github.com/tobilg/neoserver/internal/datasource/pathpolicy"
 	"github.com/tobilg/neoserver/internal/filter"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/store"
 )
 
@@ -43,16 +43,16 @@ func DefaultConfig() Config {
 
 // DataSource implements datasource.DataSource for GeoParquet files.
 type DataSource struct {
-	id            string
-	db            *sql.DB
-	path          string
-	tableName     string
-	geomCol       string
-	idCol         string
-	srid          int
-	layerCache    map[string]*datasource.LayerInfo
-	cacheMu       sync.RWMutex
-	sqlViewHelper *duckdbsqlview.Helper
+	id         string
+	db         *sql.DB
+	lease      *pathpolicy.Lease // pins a cached HTTPS download
+	path       string
+	tableName  string
+	geomCol    string
+	idCol      string
+	srid       int
+	layerCache map[string]*datasource.LayerInfo
+	cacheMu    sync.RWMutex
 }
 
 // New creates a new GeoParquet DataSource.
@@ -77,6 +77,17 @@ func New(id string, cfg Config) (*DataSource, error) {
 	if err != nil {
 		db.Close()
 		return nil, fmt.Errorf("load spatial extension: %w", err)
+	}
+	// Local files (including cached HTTPS downloads) are the only file this
+	// database may read. Object-store paths keep DuckDB's own access.
+	if !pathpolicy.IsRemote(cfg.Path) {
+		if cfg.Path, err = filepath.Abs(cfg.Path); err == nil {
+			err = datasource.RestrictDuckDBAccess(db, []string{cfg.Path}, nil)
+		}
+		if err != nil {
+			db.Close()
+			return nil, err
+		}
 	}
 
 	// Derive table name from file path
@@ -103,7 +114,6 @@ func New(id string, cfg Config) (*DataSource, error) {
 		srid:       srid,
 		layerCache: make(map[string]*datasource.LayerInfo),
 	}
-	ds.sqlViewHelper = duckdbsqlview.NewHelper(db, parquetTypeToJSON)
 
 	// Verify the file can be read
 	if err := ds.verifyFile(context.Background()); err != nil {
@@ -126,13 +136,19 @@ func NewFromService(svc *store.Service) (datasource.DataSource, error) {
 	}
 
 	// Enforce the datasource allowlist (deny-by-default globs + SSRF host blocks).
-	resolved, err := pathpolicy.Resolve(context.Background(), cfg.Path)
+	lease, err := pathpolicy.Acquire(context.Background(), cfg.Path)
 	if err != nil {
 		return nil, err
 	}
-	cfg.Path = resolved
+	cfg.Path = lease.Path
 
-	return New(svc.ID, cfg)
+	ds, err := New(svc.ID, cfg)
+	if err != nil {
+		lease.Release()
+		return nil, err
+	}
+	ds.lease = lease
+	return ds, nil
 }
 
 // Type returns the data source type.
@@ -147,7 +163,7 @@ func (ds *DataSource) ID() string {
 
 // verifyFile checks if the parquet file can be read
 func (ds *DataSource) verifyFile(ctx context.Context) error {
-	query := fmt.Sprintf(`SELECT COUNT(*) FROM read_parquet(%s) LIMIT 1`, quoteLiteral(ds.path))
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM read_parquet(%s) LIMIT 1`, sqlutil.QuoteLiteral(ds.path))
 	var count int
 	return ds.db.QueryRowContext(ctx, query).Scan(&count)
 }
@@ -187,7 +203,7 @@ func (ds *DataSource) DiscoverLayers(ctx context.Context) ([]*datasource.Discove
 
 // getColumns returns the columns in the parquet file
 func (ds *DataSource) getColumns(ctx context.Context) ([]columnInfo, error) {
-	query := fmt.Sprintf(`DESCRIBE SELECT * FROM read_parquet(%s)`, quoteLiteral(ds.path))
+	query := fmt.Sprintf(`DESCRIBE SELECT * FROM read_parquet(%s)`, sqlutil.QuoteLiteral(ds.path))
 	rows, err := ds.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("describe parquet: %w", err)
@@ -274,7 +290,7 @@ func (ds *DataSource) findIDColumn(columns []columnInfo) string {
 func (ds *DataSource) detectGeometryType(ctx context.Context, geomCol string) string {
 	query := fmt.Sprintf(
 		`SELECT ST_GeometryType(ST_GeomFromWKB(%s)) FROM read_parquet(%s) WHERE %s IS NOT NULL LIMIT 1`,
-		quoteIdent(geomCol), quoteLiteral(ds.path), quoteIdent(geomCol),
+		sqlutil.QuoteIdent(geomCol), sqlutil.QuoteLiteral(ds.path), sqlutil.QuoteIdent(geomCol),
 	)
 
 	var geomType string
@@ -427,17 +443,17 @@ func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.Query
 	var propCols []string
 	for _, prop := range info.Properties {
 		if prop.Name != info.GeometryColumn && datasource.PropertySelected(prop.Name, p.Properties) {
-			propCols = append(propCols, fmt.Sprintf("%s, t.%s", quoteLiteral(prop.Name), quoteIdent(prop.Name)))
+			propCols = append(propCols, fmt.Sprintf("%s, t.%s", sqlutil.QuoteLiteral(prop.Name), sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propsExpr := "json_object(" + strings.Join(propCols, ", ") + ")"
 	idExpr := "NULL"
 	if info.IDColumn != "" {
-		idExpr = fmt.Sprintf("CAST(t.%s AS VARCHAR)", quoteIdent(info.IDColumn))
+		idExpr = fmt.Sprintf("CAST(t.%s AS VARCHAR)", sqlutil.QuoteIdent(info.IDColumn))
 	}
 
 	// Build FROM clause for parquet file
-	fromClause := fmt.Sprintf("read_parquet(%s) t", quoteLiteral(ds.path))
+	fromClause := fmt.Sprintf("read_parquet(%s) t", sqlutil.QuoteLiteral(ds.path))
 
 	var whereParts []string
 	var args []any
@@ -505,10 +521,7 @@ func (ds *DataSource) buildWKBSQL(info *datasource.LayerInfo, p datasource.Query
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
 	limitSQL := ""
 	if p.Limit > 0 {
@@ -605,10 +618,10 @@ func (ds *DataSource) GetLayerExtent(ctx context.Context, layer string) (*dataso
 	if err != nil {
 		return nil, err
 	}
-	geom := quoteIdent(info.GeometryColumn)
+	geom := sqlutil.QuoteIdent(info.GeometryColumn)
 	queries := []string{
-		fmt.Sprintf(`SELECT ST_AsText(ST_Extent_Agg(%s)) FROM read_parquet(%s) WHERE %s IS NOT NULL`, geom, quoteLiteral(ds.path), geom),
-		fmt.Sprintf(`SELECT ST_AsText(ST_Extent_Agg(ST_GeomFromWKB(%s))) FROM read_parquet(%s) WHERE %s IS NOT NULL`, geom, quoteLiteral(ds.path), geom),
+		fmt.Sprintf(`SELECT ST_AsText(ST_Extent_Agg(%s)) FROM read_parquet(%s) WHERE %s IS NOT NULL`, geom, sqlutil.QuoteLiteral(ds.path), geom),
+		fmt.Sprintf(`SELECT ST_AsText(ST_Extent_Agg(ST_GeomFromWKB(%s))) FROM read_parquet(%s) WHERE %s IS NOT NULL`, geom, sqlutil.QuoteLiteral(ds.path), geom),
 	}
 	var lastErr error
 	for _, query := range queries {
@@ -652,6 +665,7 @@ func (ds *DataSource) Health(ctx context.Context) error {
 
 // Close releases resources.
 func (ds *DataSource) Close() error {
+	defer ds.lease.Release()
 	return ds.db.Close()
 }
 
@@ -673,7 +687,7 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 	// Build ID expression
 	var idExpr string
 	if info.IDColumn != "" {
-		idExpr = fmt.Sprintf("t.%s", quoteIdent(info.IDColumn))
+		idExpr = fmt.Sprintf("t.%s", sqlutil.QuoteIdent(info.IDColumn))
 	} else {
 		idExpr = "NULL"
 	}
@@ -682,7 +696,7 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 	propCols := make([]string, 0, len(info.Properties))
 	for _, prop := range info.Properties {
 		if prop.Name != info.IDColumn && datasource.PropertySelected(prop.Name, p.Properties) {
-			propCols = append(propCols, fmt.Sprintf("%s, t.%s", quoteLiteral(prop.Name), quoteIdent(prop.Name)))
+			propCols = append(propCols, fmt.Sprintf("%s, t.%s", sqlutil.QuoteLiteral(prop.Name), sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propExpr := "json_object(" + strings.Join(propCols, ", ") + ")"
@@ -696,7 +710,7 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 
 	// BBox filter
 	if p.BBox != nil {
-		predicate, bboxArgs, nextArg := buildBBoxPredicate(parquetGeometry(info), info.SRID, p.BBoxSRID, argPos, p.BBox)
+		predicate, bboxArgs, nextArg := datasource.DuckDBBBoxPredicate(parquetGeometry(info), info.SRID, p.BBoxSRID, argPos, p.BBox)
 		whereParts = append(whereParts, predicate)
 		args = append(args, bboxArgs...)
 		argPos = nextArg
@@ -740,49 +754,22 @@ func (ds *DataSource) buildListSQL(info *datasource.LayerInfo, p datasource.Quer
 		}
 	}
 
-	// Build ORDER BY
-	orderSQL := ""
-	if len(p.SortBy) > 0 {
-		var orderItems []string
-		for _, s := range p.SortBy {
-			if s.Name == "" {
-				continue
-			}
-			if _, ok := info.PGTypes[s.Name]; !ok && s.Name != info.IDColumn {
-				continue
-			}
-			dir := "ASC"
-			if s.Desc {
-				dir = "DESC"
-			}
-			orderItems = append(orderItems, fmt.Sprintf("t.%s %s", quoteIdent(s.Name), dir))
-		}
-		if len(orderItems) > 0 {
-			orderSQL = "ORDER BY " + strings.Join(orderItems, ", ")
-		}
-	} else if info.IDColumn != "" {
-		orderSQL = fmt.Sprintf("ORDER BY t.%s", quoteIdent(info.IDColumn))
-	}
+	orderSQL := datasource.OrderByClause("t", p.SortBy, datasource.LayerSortable(info), info.IDColumn)
 
-	// Build LIMIT/OFFSET
-	limitSQL := fmt.Sprintf("LIMIT $%d OFFSET $%d", argPos, argPos+1)
-	args = append(args, p.Limit, p.Offset)
+	limitSQL := datasource.LimitOffsetClause(&args, argPos, p.Limit, p.Offset)
 
 	// Build feature JSON
 	featureExpr := datasource.DuckDBFeatureJSONExpression(idExpr, geomExpr, propExpr)
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
-	parquetRead := fmt.Sprintf("read_parquet(%s)", quoteLiteral(ds.path))
+	parquetRead := fmt.Sprintf("read_parquet(%s)", sqlutil.QuoteLiteral(ds.path))
 	sql := fmt.Sprintf(`SELECT CAST(%s AS VARCHAR) AS feature FROM %s t %s %s %s`, featureExpr, parquetRead, whereSQL, orderSQL, limitSQL)
 	return sql, args, nil
 }
 
 func (ds *DataSource) buildFeatureByIDSQL(info *datasource.LayerInfo, outSRID int) string {
-	idCol := quoteIdent(info.IDColumn)
+	idCol := sqlutil.QuoteIdent(info.IDColumn)
 
 	if outSRID == 0 {
 		outSRID = 4326
@@ -797,7 +784,7 @@ func (ds *DataSource) buildFeatureByIDSQL(info *datasource.LayerInfo, outSRID in
 	propCols := make([]string, 0, len(info.Properties))
 	for _, prop := range info.Properties {
 		if prop.Name != info.IDColumn {
-			propCols = append(propCols, fmt.Sprintf("%s, t.%s", quoteLiteral(prop.Name), quoteIdent(prop.Name)))
+			propCols = append(propCols, fmt.Sprintf("%s, t.%s", sqlutil.QuoteLiteral(prop.Name), sqlutil.QuoteIdent(prop.Name)))
 		}
 	}
 	propExpr := "json_object(" + strings.Join(propCols, ", ") + ")"
@@ -807,7 +794,7 @@ func (ds *DataSource) buildFeatureByIDSQL(info *datasource.LayerInfo, outSRID in
 
 	featureExpr := datasource.DuckDBFeatureJSONExpression("t."+idCol, geomExpr, propExpr)
 
-	parquetRead := fmt.Sprintf("read_parquet(%s)", quoteLiteral(ds.path))
+	parquetRead := fmt.Sprintf("read_parquet(%s)", sqlutil.QuoteLiteral(ds.path))
 	return fmt.Sprintf(`SELECT CAST(%s AS VARCHAR) AS feature FROM %s t WHERE t.%s = $1 LIMIT 1`, featureExpr, parquetRead, idCol)
 }
 
@@ -820,7 +807,7 @@ func (ds *DataSource) buildCountSQL(info *datasource.LayerInfo, p datasource.Que
 
 	// BBox filter
 	if p.BBox != nil {
-		predicate, bboxArgs, nextArg := buildBBoxPredicate(parquetGeometry(info), info.SRID, p.BBoxSRID, argPos, p.BBox)
+		predicate, bboxArgs, nextArg := datasource.DuckDBBBoxPredicate(parquetGeometry(info), info.SRID, p.BBoxSRID, argPos, p.BBox)
 		whereParts = append(whereParts, predicate)
 		args = append(args, bboxArgs...)
 		argPos = nextArg
@@ -863,12 +850,9 @@ func (ds *DataSource) buildCountSQL(info *datasource.LayerInfo, p datasource.Que
 		}
 	}
 
-	whereSQL := ""
-	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
-	}
+	whereSQL := datasource.WhereClause(whereParts)
 
-	parquetRead := fmt.Sprintf("read_parquet(%s)", quoteLiteral(ds.path))
+	parquetRead := fmt.Sprintf("read_parquet(%s)", sqlutil.QuoteLiteral(ds.path))
 	sql := fmt.Sprintf(`SELECT COUNT(*) FROM %s t %s`, parquetRead, whereSQL)
 	return sql, args, nil
 }
@@ -876,7 +860,7 @@ func (ds *DataSource) buildCountSQL(info *datasource.LayerInfo, p datasource.Que
 // Helper functions
 
 func parquetGeometry(info *datasource.LayerInfo) string {
-	expression := "t." + quoteIdent(info.GeometryColumn)
+	expression := "t." + sqlutil.QuoteIdent(info.GeometryColumn)
 	if strings.HasPrefix(strings.ToUpper(info.PGTypes[info.GeometryColumn]), "GEOMETRY") {
 		return expression
 	}
@@ -927,62 +911,4 @@ func parquetTypeToJSON(colType string) datasource.JSONType {
 	}
 }
 
-func quoteIdent(s string) string {
-	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
-}
-
-// quoteLiteral escapes a string for use as a SQL string literal.
-// It escapes single quotes by doubling them.
-func quoteLiteral(s string) string {
-	return `'` + strings.ReplaceAll(s, `'`, `''`) + `'`
-}
-
-func buildBBoxPredicate(geomExpr string, sourceSRID, bboxSRID, argPos int, bbox *datasource.BBox) (string, []any, int) {
-	if bboxSRID == 0 {
-		bboxSRID = 4326
-	}
-	var clauses []string
-	var args []any
-	for _, part := range bbox.Parts(bboxSRID) {
-		envelope := fmt.Sprintf("ST_MakeEnvelope($%d, $%d, $%d, $%d)", argPos, argPos+1, argPos+2, argPos+3)
-		if sourceSRID != 0 && sourceSRID != bboxSRID {
-			envelope = fmt.Sprintf("ST_Transform(%s, 'EPSG:%d', 'EPSG:%d', always_xy := true)", envelope, bboxSRID, sourceSRID)
-		}
-		clauses = append(clauses, fmt.Sprintf("ST_Intersects(%s, %s)", geomExpr, envelope))
-		args = append(args, part.MinX, part.MinY, part.MaxX, part.MaxY)
-		argPos += 4
-	}
-	return "(" + strings.Join(clauses, " OR ") + ")", args, argPos
-}
-
 // SQL View support - delegates to shared helper
-
-// ValidateSQLView validates a SQL query for use as a SQL View.
-func (ds *DataSource) ValidateSQLView(ctx context.Context, sql string) error {
-	return errors.New("SQL views are not supported for GeoParquet data sources")
-}
-
-// DiscoverSQLViewColumns executes a SQL query with LIMIT 0 to discover column metadata.
-func (ds *DataSource) DiscoverSQLViewColumns(ctx context.Context, sql string) (*datasource.SQLViewDiscovery, error) {
-	return nil, errors.New("SQL views are not supported for GeoParquet data sources")
-}
-
-// ValidateSQLViewIdentity verifies that every published row has a unique, non-null ID.
-func (ds *DataSource) ValidateSQLViewIdentity(ctx context.Context, config *datasource.SQLViewConfig) error {
-	return ds.sqlViewHelper.ValidateSQLViewIdentity(ctx, config)
-}
-
-// QuerySQLView executes a feature query against a SQL View and returns GeoJSON features.
-func (ds *DataSource) QuerySQLView(ctx context.Context, config *datasource.SQLViewConfig, params datasource.QueryParams) ([]json.RawMessage, error) {
-	return ds.sqlViewHelper.QuerySQLView(ctx, config, params)
-}
-
-// QuerySQLViewWKB executes a SQL View query and returns WKB geometry with properties for rendering.
-func (ds *DataSource) QuerySQLViewWKB(ctx context.Context, config *datasource.SQLViewConfig, params datasource.QueryParams) ([]datasource.RenderFeature, error) {
-	return ds.sqlViewHelper.QuerySQLViewWKB(ctx, config, params)
-}
-
-// CountSQLView returns the number of features matching the SQL View query.
-func (ds *DataSource) CountSQLView(ctx context.Context, config *datasource.SQLViewConfig, params datasource.QueryParams) (int, error) {
-	return ds.sqlViewHelper.CountSQLView(ctx, config, params)
-}

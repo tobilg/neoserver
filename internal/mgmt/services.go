@@ -199,6 +199,9 @@ func (h *handler) createService(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Bad Request", err.Error())
 		return
 	}
+	if !h.authorizeServiceEndpoint(w, r, store.ServiceType(req.Type), nil, req.ConnectionInfo) {
+		return
+	}
 
 	enabled := true
 	if req.Enabled != nil {
@@ -324,6 +327,9 @@ func (h *handler) updateService(w http.ResponseWriter, r *http.Request) {
 		merged := mergeConnectionSecrets(existing.ConnectionInfo, req.ConnectionInfo)
 		if !validManagedBinding(existing.ConnectionInfo, merged) {
 			writeError(w, http.StatusBadRequest, "Bad Request", "managed import bindings cannot be changed")
+			return
+		}
+		if !h.authorizeServiceEndpoint(w, r, existing.Type, existing.ConnectionInfo, merged) {
 			return
 		}
 		input.ConnectionInfo = &merged

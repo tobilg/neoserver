@@ -261,7 +261,7 @@ const importSelect = `SELECT id,workspace_id,name,source_kind,source_locator,sou
 	FROM import_jobs`
 
 func (s *DuckDBStore) GetImportJob(ctx context.Context, id string) (*ImportJob, error) {
-	job, err := scanImportJob(s.db.QueryRowContext(ctx, importSelect+` WHERE id=?`, id))
+	job, err := scanImportJob(s.read.QueryRowContext(ctx, importSelect+` WHERE id=?`, id))
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -275,7 +275,7 @@ func (s *DuckDBStore) ListImportJobs(ctx context.Context, workspaceID string, li
 	if limit <= 0 || limit > 1000 {
 		limit = 100
 	}
-	rows, err := s.db.QueryContext(ctx, importSelect+` WHERE workspace_id=? ORDER BY created_at DESC LIMIT ?`, workspaceID, limit)
+	rows, err := s.read.QueryContext(ctx, importSelect+` WHERE workspace_id=? ORDER BY created_at DESC LIMIT ?`, workspaceID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list import jobs: %w", err)
 	}
@@ -292,7 +292,7 @@ func (s *DuckDBStore) ListImportJobs(ctx context.Context, workspaceID string, li
 }
 
 func (s *DuckDBStore) ListRunnableImportJobs(ctx context.Context) ([]*ImportJob, error) {
-	rows, err := s.db.QueryContext(ctx, importSelect+` WHERE status='queued' ORDER BY created_at LIMIT 100`)
+	rows, err := s.read.QueryContext(ctx, importSelect+` WHERE status='queued' ORDER BY created_at LIMIT 100`)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +309,7 @@ func (s *DuckDBStore) ListRunnableImportJobs(ctx context.Context) ([]*ImportJob,
 }
 
 func (s *DuckDBStore) ListInterruptedImportJobs(ctx context.Context) ([]*ImportJob, error) {
-	rows, err := s.db.QueryContext(ctx, importSelect+` WHERE status IN ('publishing','published','rolling_back','cancelling','cancelled') ORDER BY created_at`)
+	rows, err := s.read.QueryContext(ctx, importSelect+` WHERE status IN ('publishing','published','rolling_back','cancelling','cancelled') ORDER BY created_at`)
 	if err != nil {
 		return nil, fmt.Errorf("list interrupted import jobs: %w", err)
 	}
@@ -552,13 +552,13 @@ func scanManagedAsset(row *sql.Row) (*ManagedAsset, error) {
 }
 
 func (s *DuckDBStore) GetManagedAssetByImport(ctx context.Context, id string) (*ManagedAsset, error) {
-	return scanManagedAsset(s.db.QueryRowContext(ctx, `SELECT import_id,workspace_id,coalesce(service_id,''),path,encryption_key,created_at FROM managed_assets WHERE import_id=?`, id))
+	return scanManagedAsset(s.read.QueryRowContext(ctx, `SELECT import_id,workspace_id,coalesce(service_id,''),path,encryption_key,created_at FROM managed_assets WHERE import_id=?`, id))
 }
 func (s *DuckDBStore) GetManagedAssetByService(ctx context.Context, id string) (*ManagedAsset, error) {
-	return scanManagedAsset(s.db.QueryRowContext(ctx, `SELECT import_id,workspace_id,coalesce(service_id,''),path,encryption_key,created_at FROM managed_assets WHERE service_id=?`, id))
+	return scanManagedAsset(s.read.QueryRowContext(ctx, `SELECT import_id,workspace_id,coalesce(service_id,''),path,encryption_key,created_at FROM managed_assets WHERE service_id=?`, id))
 }
 func (s *DuckDBStore) ListManagedAssets(ctx context.Context) ([]*ManagedAsset, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT import_id,workspace_id,coalesce(service_id,''),path,encryption_key,created_at FROM managed_assets ORDER BY created_at,import_id`)
+	rows, err := s.read.QueryContext(ctx, `SELECT import_id,workspace_id,coalesce(service_id,''),path,encryption_key,created_at FROM managed_assets ORDER BY created_at,import_id`)
 	if err != nil {
 		return nil, err
 	}
@@ -648,7 +648,7 @@ func (s *DuckDBStore) ListImportJobEvents(ctx context.Context, importID string, 
 	if limit <= 0 || limit > 1000 {
 		limit = 200
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id,import_id,workspace_id,status,phase,warnings,error_message,
+	rows, err := s.read.QueryContext(ctx, `SELECT id,import_id,workspace_id,status,phase,warnings,error_message,
 		processed_bytes,processed_features,processed_layers,created_at FROM import_job_events
 		WHERE import_id=? ORDER BY created_at,id LIMIT ?`, importID, limit)
 	if err != nil {

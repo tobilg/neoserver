@@ -87,16 +87,20 @@ func (v *JWTValidator) Validate(ctx context.Context, tokenString string) (*Ident
 	}
 
 	// Build identity
+	// Only super_admin is global. Every other role applies to the workspace in
+	// the token; tokens minted before workspace scoping must be reissued.
 	roles := make(map[string]string)
-	if token.Payload.Role != "" {
-		// Self-signed tokens have a direct role claim
-		if token.Payload.Role == "super_admin" {
-			roles["*"] = "super_admin"
-		} else {
-			// For workspace-scoped tokens, the workspace would be in claims
-			// For now, treat non-super_admin roles as global
-			roles["*"] = token.Payload.Role
+	switch {
+	case token.Payload.Role == "":
+	case token.Payload.Role == "super_admin":
+		if token.Payload.Workspace != "" {
+			return nil, &AuthError{Message: "Invalid token scope"}
 		}
+		roles["*"] = "super_admin"
+	case token.Payload.Workspace == "" || token.Payload.Workspace == "*":
+		return nil, &AuthError{Message: "Token has no workspace scope; issue a new token with create-token --workspace"}
+	default:
+		roles[token.Payload.Workspace] = token.Payload.Role
 	}
 
 	return &Identity{
@@ -104,11 +108,12 @@ func (v *JWTValidator) Validate(ctx context.Context, tokenString string) (*Ident
 		AuthMethod: AuthMethodJWT,
 		Roles:      roles,
 		Claims: map[string]interface{}{
-			"iss":  token.Payload.Iss,
-			"sub":  token.Payload.Sub,
-			"role": token.Payload.Role,
-			"iat":  token.Payload.Iat,
-			"exp":  token.Payload.Exp,
+			"iss":       token.Payload.Iss,
+			"sub":       token.Payload.Sub,
+			"role":      token.Payload.Role,
+			"workspace": token.Payload.Workspace,
+			"iat":       token.Payload.Iat,
+			"exp":       token.Payload.Exp,
 		},
 	}, nil
 }
@@ -121,11 +126,12 @@ type jwtHeader struct {
 }
 
 type jwtPayload struct {
-	Iss  string `json:"iss"`
-	Sub  string `json:"sub"`
-	Role string `json:"role,omitempty"`
-	Iat  int64  `json:"iat"`
-	Exp  int64  `json:"exp"`
+	Iss       string `json:"iss"`
+	Sub       string `json:"sub"`
+	Role      string `json:"role,omitempty"`
+	Workspace string `json:"workspace,omitempty"`
+	Iat       int64  `json:"iat"`
+	Exp       int64  `json:"exp"`
 }
 
 type jwtToken struct {

@@ -1,0 +1,82 @@
+name: Bug report
+description: Something in neoserver does not work as documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Do not include credentials, store keys, tokens, API keys, datasource passwords, or private data**, and redact them from logs and configuration. Report security vulnerabilities [privately](https://github.com/tobilg/neoserver/security/advisories/new) instead.
+  - type: input
+    id: version
+    attributes:
+      label: neoserver version
+      description: Output of `neoserver version`, or the image tag or digest.
+      placeholder: "0.1.2 (commit abc1234)"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run it?
+      options:
+        - Released Docker image
+        - Docker Compose from this repository
+        - Built from source
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - OGC API - Features
+        - OGC API - Tiles
+        - WMS
+        - WFS
+        - WCS
+        - WMTS
+        - Management API
+        - Admin console
+        - Authentication / RBAC
+        - Imports
+        - Tile cache
+        - Data source (PostGIS, DuckDB, GeoParquet, files, rasters)
+        - Installation / deployment
+        - Other
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal requests (curl commands or URLs) and data needed to reproduce it.
+      placeholder: |
+        1. Create a PostGIS service with ...
+        2. Request /workspaces/demo/wfs?SERVICE=WFS&REQUEST=GetFeature&...
+        3. See error ...
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: The TOML sections or NEOSRV_* variables involved, with secrets removed.
+      render: toml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Server log lines around the failure (run with `--debug` if possible), with secrets removed.
+      render: shell
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS / architecture, and versions of PostGIS, the client (QGIS, OpenLayers, ...) or browser if relevant.

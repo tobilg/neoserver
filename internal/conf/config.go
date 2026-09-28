@@ -1,12 +1,14 @@
 package conf
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -49,24 +51,70 @@ type Pprof struct{ Enabled bool }
 
 // Store configuration for the encrypted DuckDB backing store.
 type Store struct {
-	Path          string // Path to the DuckDB database file
-	EncryptionKey string // Encryption key (32 bytes hex-encoded or raw)
+	Path           string // Path to the DuckDB database file
+	EncryptionKey  string // Encryption key (32 bytes hex-encoded or raw)
+	MaxConnections int    // Catalog connections: one serialized writer plus concurrent readers
 }
 
+// MinStoreKeyBytes is the key strength below which serve warns outside
+// development mode; `openssl rand -hex 32` produces exactly this much.
+const MinStoreKeyBytes = 32
+
+// StoreKeyBytes reports the key material in a store key: the decoded length of
+// a hex-encoded key, otherwise its raw byte length.
+func StoreKeyBytes(key string) int {
+	if decoded, err := hex.DecodeString(key); err == nil {
+		return len(decoded)
+	}
+	return len(key)
+}
+
+// ParseDatabaseHost splits a Datasource.DatabaseHosts entry into a lower-case
+// host and an optional port (0 when the entry names any port).
+func ParseDatabaseHost(entry string) (string, int, error) {
+	entry = strings.TrimSpace(entry)
+	if entry == "" {
+		return "", 0, errors.New("empty entry")
+	}
+	host, port := entry, 0
+	if h, p, err := net.SplitHostPort(entry); err == nil {
+		n, convErr := strconv.Atoi(p)
+		if convErr != nil || n < 1 || n > 65535 {
+			return "", 0, errors.New("port must be between 1 and 65535")
+		}
+		host, port = h, n
+	}
+	host = strings.ToLower(strings.Trim(host, "[]"))
+	if host == "" || strings.ContainsAny(host, "/*?") {
+		return "", 0, errors.New("expected host or host:port")
+	}
+	return host, port, nil
+}
+
+// Catalog connection bounds. One connection reproduces fully serialized access.
+const (
+	DefaultStoreMaxConnections = 10
+	MaxStoreMaxConnections     = 100
+)
+
 type Server struct {
-	HttpHost          string
-	HttpPort          int
-	UrlBase           string
-	BasePath          string
-	CORSOrigins       string
-	Debug             bool
-	ReadTimeoutSec    int
-	WriteTimeoutSec   int
-	DisableUI         bool
-	AdminUI           bool
-	Devel             bool
-	MaxBodyBytes      int64    // Maximum request body size in bytes (0 = use default)
-	TrustedProxyCIDRs []string // Proxies permitted to supply forwarding headers
+	HttpHost        string
+	HttpPort        int
+	UrlBase         string
+	BasePath        string
+	CORSOrigins     string
+	Debug           bool
+	ReadTimeoutSec  int
+	WriteTimeoutSec int
+	// ExportWriteTimeoutSec replaces WriteTimeoutSec for bulk data responses
+	// (WFS GetFeature/GetPropertyValue, WCS GetCoverage, OGC API items) so
+	// large downloads to slow clients are not cut off. 0 keeps WriteTimeoutSec.
+	ExportWriteTimeoutSec int
+	DisableUI             bool
+	AdminUI               bool
+	Devel                 bool
+	MaxBodyBytes          int64    // Maximum request body size in bytes (0 = use default)
+	TrustedProxyCIDRs     []string // Proxies permitted to supply forwarding headers
 }
 
 type Database struct {
@@ -90,6 +138,16 @@ type Datasource struct {
 	RemoteMaxBytes    int64
 	RemoteTimeoutSec  int
 	MosaicMaxGranules int
+	// RemoteCacheMaxBytes bounds all cached HTTPS downloads (0 disables);
+	// RemoteCacheMaxAgeSec evicts downloads unused for longer (0 disables).
+	// Downloads held by open datasources are never evicted.
+	RemoteCacheMaxBytes  int64
+	RemoteCacheMaxAgeSec int
+	// DatabaseHosts lists the PostGIS endpoints ("host" or "host:port") that
+	// workspace administrators may connect services to. Any other endpoint
+	// requires super_admin. Empty (the default) reserves new endpoints for
+	// super administrators.
+	DatabaseHosts []string
 }
 
 type Paging struct {
@@ -424,8 +482,10 @@ func setDefaults() {
 	viper.SetDefault("Server.BasePath", "")
 	viper.SetDefault("Server.CORSOrigins", "*")
 	viper.SetDefault("Server.Debug", false)
+	viper.SetDefault("Server.Devel", false)
 	viper.SetDefault("Server.ReadTimeoutSec", 5)
 	viper.SetDefault("Server.WriteTimeoutSec", 30)
+	viper.SetDefault("Server.ExportWriteTimeoutSec", 600)
 	viper.SetDefault("Server.DisableUI", false)
 	viper.SetDefault("Server.AdminUI", true)
 	viper.SetDefault("Server.MaxBodyBytes", 10<<20) // 10 MB
@@ -434,16 +494,20 @@ func setDefaults() {
 	// Store defaults (backing store for workspace configuration)
 	viper.SetDefault("Store.Path", "./data/neoserver.db")
 	viper.SetDefault("Store.EncryptionKey", "")
+	viper.SetDefault("Store.MaxConnections", DefaultStoreMaxConnections)
 
 	viper.SetDefault("Database.DatabaseURL", "")
 	viper.SetDefault("Database.Schemas", []string{"public"})
 	viper.SetDefault("Database.TableIncludes", []string{})
 	viper.SetDefault("Database.TableExcludes", []string{})
 	// Datasource file/URL allowlist (deny-by-default globs). Local data dir allowed by default.
-	viper.SetDefault("Datasource.AllowedPaths", []string{"./data/**", "data/**"})
+	viper.SetDefault("Datasource.AllowedPaths", []string{"./data/sources/**", "./data/imports/**"})
 	viper.SetDefault("Datasource.RemoteCachePath", "./data/remote-cache")
 	viper.SetDefault("Datasource.RemoteMaxBytes", int64(1<<30))
 	viper.SetDefault("Datasource.RemoteTimeoutSec", 60)
+	viper.SetDefault("Datasource.RemoteCacheMaxBytes", int64(10<<30))
+	viper.SetDefault("Datasource.RemoteCacheMaxAgeSec", 0)
+	viper.SetDefault("Datasource.DatabaseHosts", []string{})
 	viper.SetDefault("Datasource.MosaicMaxGranules", 100000)
 
 	viper.SetDefault("Database.MaxOpenConns", 25)
@@ -688,7 +752,9 @@ func Load(configFilename string, debug bool, devel bool) (Config, error) {
 	if debug {
 		viper.Set("Server.Debug", true)
 	}
-	viper.Set("Server.Devel", devel)
+	if devel {
+		viper.Set("Server.Devel", true)
+	}
 
 	viper.SetEnvPrefix(App.EnvPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -806,6 +872,20 @@ func applyCacheProfile(cache *Cache) {
 }
 
 func validate(cfg Config) error {
+	if cfg.Store.MaxConnections < 0 || cfg.Store.MaxConnections > MaxStoreMaxConnections {
+		return fmt.Errorf("invalid Store.MaxConnections: %d (must be 1-%d, or 0 for the default)", cfg.Store.MaxConnections, MaxStoreMaxConnections)
+	}
+	if cfg.Datasource.RemoteCacheMaxBytes < 0 || cfg.Datasource.RemoteCacheMaxAgeSec < 0 {
+		return errors.New("Datasource.RemoteCacheMaxBytes and RemoteCacheMaxAgeSec must not be negative")
+	}
+	for _, entry := range cfg.Datasource.DatabaseHosts {
+		if _, _, err := ParseDatabaseHost(entry); err != nil {
+			return fmt.Errorf("invalid Datasource.DatabaseHosts entry %q: %w", entry, err)
+		}
+	}
+	if cfg.Datasource.RemoteCacheMaxBytes > 0 && cfg.Datasource.RemoteCacheMaxBytes < cfg.Datasource.RemoteMaxBytes {
+		return fmt.Errorf("Datasource.RemoteCacheMaxBytes (%d) must be at least RemoteMaxBytes (%d)", cfg.Datasource.RemoteCacheMaxBytes, cfg.Datasource.RemoteMaxBytes)
+	}
 	if cfg.Server.HttpPort <= 0 || cfg.Server.HttpPort > 65535 {
 		return fmt.Errorf("invalid Server.HttpPort: %d", cfg.Server.HttpPort)
 	}
@@ -991,6 +1071,9 @@ func validate(cfg Config) error {
 				return fmt.Errorf("Cache.%s MaxEntrySize cannot be negative", name)
 			}
 		}
+	}
+	if cfg.Server.ExportWriteTimeoutSec < 0 {
+		return errors.New("Server.ExportWriteTimeoutSec cannot be negative")
 	}
 	if !isLoopbackHost(cfg.Server.HttpHost) && cfg.Server.UrlBase == "" {
 		return errors.New("Server.UrlBase is required when Server.HttpHost is not loopback")

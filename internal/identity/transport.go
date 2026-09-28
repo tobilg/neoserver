@@ -11,10 +11,24 @@ import (
 
 type transportContextKey struct{}
 
+type transportDecision struct {
+	secure    bool // encrypted, or direct loopback HTTP
+	encrypted bool // TLS here or HTTPS at a trusted proxy
+}
+
 // IsSecureTransport reports the effective transport decision made by TransportSecurity.
 func IsSecureTransport(ctx context.Context) bool {
-	secure, _ := ctx.Value(transportContextKey{}).(bool)
-	return secure
+	decision, _ := ctx.Value(transportContextKey{}).(transportDecision)
+	return decision.secure
+}
+
+// IsEncryptedTransport reports whether the client connection is encrypted:
+// TLS terminated here, or HTTPS reported by a trusted proxy. Unlike
+// IsSecureTransport it excludes plain loopback HTTP, so it decides the
+// cookie Secure attribute.
+func IsEncryptedTransport(ctx context.Context) bool {
+	decision, _ := ctx.Value(transportContextKey{}).(transportDecision)
+	return decision.encrypted
 }
 
 // TransportConfig controls trusted-proxy handling and plaintext credential rejection.
@@ -37,17 +51,18 @@ func TransportSecurity(cfg TransportConfig) (func(http.Handler) http.Handler, er
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			peer := remoteIP(r.RemoteAddr)
 			peerTrusted := peer != nil && (peer.IsLoopback() || ipInNetworks(peer, trusted))
-			secure := r.TLS != nil || (peer != nil && peer.IsLoopback())
+			encrypted := r.TLS != nil
 
 			if peerTrusted {
 				proto := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-Proto"), ",")[0])
-				secure = secure || strings.EqualFold(proto, "https")
+				encrypted = encrypted || strings.EqualFold(proto, "https")
 				if client := forwardedClientIP(r.Header.Get("X-Forwarded-For"), peer, trusted); client != nil {
 					r.RemoteAddr = client.String()
 				}
 			}
 
-			ctx := context.WithValue(r.Context(), transportContextKey{}, secure)
+			secure := encrypted || (peer != nil && peer.IsLoopback())
+			ctx := context.WithValue(r.Context(), transportContextKey{}, transportDecision{secure: secure, encrypted: encrypted})
 			r = r.WithContext(ctx)
 			if cfg.RequireHTTPS && !secure && requestHasCredentials(r, cfg.AllowAPIKeyInQuery) {
 				httpsRequired(w, r)

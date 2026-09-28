@@ -613,7 +613,13 @@ func TestTokenCreationAndValidation(t *testing.T) {
 	signingKey, _ := store.GetActiveSigningKey(ctx)
 
 	// Create token
-	token, err := store.CreateToken(signingKey, "test-user", "admin", time.Hour)
+	if _, err := store.CreateToken(signingKey, "test-user", "admin", "", time.Hour); err == nil {
+		t.Fatal("expected an unscoped admin token to be refused")
+	}
+	if _, err := store.CreateToken(signingKey, "root", "super_admin", "ws-1", time.Hour); err == nil {
+		t.Fatal("expected a workspace-scoped super_admin token to be refused")
+	}
+	token, err := store.CreateToken(signingKey, "test-user", "admin", "ws-1", time.Hour)
 	if err != nil {
 		t.Fatalf("CreateToken failed: %v", err)
 	}
@@ -631,6 +637,9 @@ func TestTokenCreationAndValidation(t *testing.T) {
 	}
 	if payload.Role != "admin" {
 		t.Fatalf("expected role 'admin', got %q", payload.Role)
+	}
+	if payload.Workspace != "ws-1" {
+		t.Fatalf("expected workspace 'ws-1', got %q", payload.Workspace)
 	}
 	if payload.Iss != "neoserver" {
 		t.Fatalf("expected issuer 'neoserver', got %q", payload.Iss)

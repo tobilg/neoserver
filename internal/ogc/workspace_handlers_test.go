@@ -1286,8 +1286,8 @@ func TestRegisterWorkspaceRoutes(t *testing.T) {
 		return nil
 	})
 
-	if routeCount != 9 {
-		t.Errorf("expected 9 routes, got %d", routeCount)
+	if routeCount != 10 {
+		t.Errorf("expected 10 routes, got %d", routeCount)
 	}
 }
 

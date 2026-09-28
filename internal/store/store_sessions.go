@@ -122,7 +122,7 @@ func (s *DuckDBStore) CreateBrowserSession(ctx context.Context, session BrowserS
 }
 
 func (s *DuckDBStore) GetBrowserSessionByTokenHash(ctx context.Context, tokenHash string) (*BrowserSession, error) {
-	session, err := scanBrowserSession(s.db.QueryRowContext(ctx, browserSessionSelect+` WHERE token_hash=? OR (previous_token_hash=? AND previous_valid_until>?)`, tokenHash, tokenHash, time.Now().UTC()))
+	session, err := scanBrowserSession(s.read.QueryRowContext(ctx, browserSessionSelect+` WHERE token_hash=? OR (previous_token_hash=? AND previous_valid_until>?)`, tokenHash, tokenHash, time.Now().UTC()))
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -136,7 +136,7 @@ func (s *DuckDBStore) ListBrowserSessions(ctx context.Context, limit int) ([]*Br
 	if limit <= 0 || limit > 1000 {
 		limit = 200
 	}
-	rows, err := s.db.QueryContext(ctx, browserSessionSelect+` ORDER BY created_at DESC LIMIT ?`, limit)
+	rows, err := s.read.QueryContext(ctx, browserSessionSelect+` ORDER BY created_at DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list browser sessions: %w", err)
 	}

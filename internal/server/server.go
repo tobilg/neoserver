@@ -91,6 +91,9 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 		RemoteCachePath: cfg.Datasource.RemoteCachePath,
 		RemoteMaxBytes:  cfg.Datasource.RemoteMaxBytes,
 		RemoteTimeout:   time.Duration(cfg.Datasource.RemoteTimeoutSec) * time.Second,
+
+		RemoteCacheMaxBytes: cfg.Datasource.RemoteCacheMaxBytes,
+		RemoteCacheMaxAge:   time.Duration(cfg.Datasource.RemoteCacheMaxAgeSec) * time.Second,
 	}); err != nil {
 		return nil, fmt.Errorf("configure datasource path policy: %w", err)
 	}
@@ -308,28 +311,21 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 	}
 	r.Use(limitBody(cfg.Server.MaxBodyBytes, importUploadLimit))
 	r.Use(protocolrequest.Middleware(cfg.Server.BasePath))
+	r.Use(exportWriteDeadline(time.Duration(cfg.Server.ExportWriteTimeoutSec)*time.Second, time.Duration(cfg.Server.WriteTimeoutSec)*time.Second))
 	r.Use(middleware.Compress(5))
 	r.Use(securityHeaders)
 
 	// CORS. The default allowed-origins is "*" (configurable via Server.CORSOrigins).
 	// Credentialed cross-origin fetch is disabled. Browser sessions separately
 	// require operation-aware CSRF protection, including mutating GET operations.
-	// Do NOT set AllowCredentials: true while origins may
-	// be "*" — pair credentials only with an explicit origin allowlist.
-	corsOrigins := splitComma(cfg.Server.CORSOrigins)
-	allowCredentials := false
-	for _, o := range corsOrigins {
-		if o == "*" && allowCredentials {
-			// Guard against a future misconfiguration that would be unsafe.
-			panic("CORS misconfiguration: wildcard origin cannot be combined with credentials")
-		}
-	}
+	// Do NOT enable AllowCredentials while origins may be "*" — pair credentials
+	// only with an explicit origin allowlist.
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   corsOrigins,
+		AllowedOrigins:   splitComma(cfg.Server.CORSOrigins),
 		AllowedMethods:   []string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Origin", "X-API-Key"},
 		ExposedHeaders:   []string{"Content-Length", "Content-Type"},
-		AllowCredentials: allowCredentials,
+		AllowCredentials: false,
 		MaxAge:           300,
 	}))
 
@@ -380,8 +376,12 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 			"set Auth.DefaultRole to a least-privilege role (e.g. viewer) unless this is intentional")
 	}
 
+	// Console sign-in and HTTP Basic share one failure budget.
+	credentialLimiter := identity.NewFailureLimiter()
+
 	// Identity middleware for all authenticated routes
 	identityMiddleware := identity.Middleware(identity.MiddlewareConfig{
+		CredentialLimiter:  credentialLimiter,
 		Store:              s,
 		Logger:             logger,
 		OIDCConfig:         toOIDCConfig(cfg.Auth.OIDC),
@@ -416,6 +416,8 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 			Lifecycle:  lifecycle,
 			Importer:   importManager,
 			Audit:      auditManager,
+
+			CredentialLimiter: credentialLimiter,
 		})
 		if cfg.Observability.Pprof.Enabled {
 			r.Group(func(r chi.Router) {

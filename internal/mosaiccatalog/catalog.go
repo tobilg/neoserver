@@ -11,12 +11,12 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
 	duckdb "github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/store"
 )
 
@@ -35,9 +35,9 @@ func openCatalog(path, encryptionKey string) (*catalog, error) {
 	if err := os.MkdirAll(filepath.Dir(abs), 0o700); err != nil {
 		return nil, err
 	}
-	attach := fmt.Sprintf("ATTACH IF NOT EXISTS '%s' AS mosaic_catalog", escapeSQLLiteral(abs))
+	attach := fmt.Sprintf("ATTACH IF NOT EXISTS '%s' AS mosaic_catalog", sqlutil.EscapeLiteral(abs))
 	if encryptionKey != "" {
-		attach += fmt.Sprintf(" (ENCRYPTION_KEY '%s')", escapeSQLLiteral(encryptionKey))
+		attach += fmt.Sprintf(" (ENCRYPTION_KEY '%s')", sqlutil.EscapeLiteral(encryptionKey))
 	}
 	connector, err := duckdb.NewConnector("", func(execer driver.ExecerContext) error {
 		if _, err := execer.ExecContext(context.Background(), attach, nil); err != nil {
@@ -151,8 +151,6 @@ CREATE INDEX IF NOT EXISTS mosaic_jobs_status_created ON mosaic_harvest_jobs(sta
 	}
 	return &catalog{db: db}, nil
 }
-
-func escapeSQLLiteral(value string) string { return strings.ReplaceAll(value, "'", "''") }
 
 const granuleColumns = `id, workspace_id, service_id, generation, source_uri, crs, srid,
  min_x, min_y, max_x, max_y, width, height, band_count, data_type, resolution_x, resolution_y,

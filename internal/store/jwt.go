@@ -23,8 +23,10 @@ type jwtPayload struct {
 	Iss  string `json:"iss"`            // Issuer (always "neoserver" for self-signed)
 	Sub  string `json:"sub"`            // Subject (user identifier)
 	Role string `json:"role,omitempty"` // Role for self-signed tokens
-	Iat  int64  `json:"iat"`            // Issued at
-	Exp  int64  `json:"exp"`            // Expiration time
+	// Workspace scopes every role except super_admin to one workspace ID.
+	Workspace string `json:"workspace,omitempty"`
+	Iat       int64  `json:"iat"` // Issued at
+	Exp       int64  `json:"exp"` // Expiration time
 }
 
 // jwtToken represents a complete JWT.

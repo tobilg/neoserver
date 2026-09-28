@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 // ReadPolicySQL restricts the actual GDAL open, including files disguised with
@@ -26,7 +28,7 @@ func readOptions(options map[string]string) (string, error) {
 		if !allowed[key] {
 			return "", fmt.Errorf("GDAL open option %q is not supported for untrusted files", key)
 		}
-		values = append(values, quoteLiteral(key+"="+value))
+		values = append(values, sqlutil.QuoteLiteral(key+"="+value))
 	}
 	sort.Strings(values)
 	if len(values) == 0 {

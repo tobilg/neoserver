@@ -2,6 +2,25 @@
 
 neoserver separates identity validation from authorization. Credentials identify a principal; global/workspace roles and layer rules determine what it may access.
 
+> [!IMPORTANT]
+> **`Auth.Enabled = false` does not turn authentication off.** It is the default, and in that state the management API, non-public workspace services, and every write still require a credential. `Auth.Enabled` and `Auth.Method` only switch on one additional, server-configured credential; they never remove the built-in ones.
+
+| Credential | Works when `Auth.Enabled = false` | Needs `Auth.Enabled = true` |
+| --- | --- | --- |
+| Stored API keys (`X-API-Key`) | Yes | No |
+| Self-signed JWTs from `init` / `create-token` | Yes | No |
+| Console browser sessions | Yes | No |
+| OIDC bearer tokens and console OIDC login | Yes, whenever `Auth.OIDC.IssuerURL` is set | No; `Method = "oidc"` only makes `IssuerURL` and `ClientID` mandatory at startup |
+| Static key (`Auth.ApiKey`) | No | `Method = "apikey"` |
+| HTTP Basic users (`Auth.Users`) and console password login | No | `Method = "basic"` |
+
+Consequences:
+
+- To stop accepting OIDC tokens, remove `Auth.OIDC.IssuerURL`; setting `Auth.Enabled = false` or another `Method` does not do it.
+- Anonymous access is decided per workspace service by its `public` setting, not by `Auth.Enabled`. A non-public service rejects anonymous requests either way.
+- `WFS.AllowAnonymousMutations` is the one setting that depends on `Auth.Enabled`: it only takes effect, on public WFS workspaces, while `Auth.Enabled = false`, and startup fails if both are true with WFS enabled.
+- `Auth.RequireHTTPS` and `Auth.DefaultRole` apply regardless of `Auth.Enabled`. `DefaultRole` is the global role given to static-key and Basic principals.
+
 Browser sign-out completes only after server-side session revocation succeeds. A session-store write failure returns HTTP 503 and leaves the browser cookie available for retry; the console reports **Sign-out failed** and stays on the current page. Retry **End session** when storage is available. Refresh also returns 503 for persistence failures; HTTP 409 is reserved for an actual concurrent rotation, which the browser recovers from by loading its current identity.
 
 ## Credential types
@@ -31,6 +50,15 @@ neoserver create-token --store-path ./data/neoserver.db \
   --role super_admin --subject recovery --expires 24h
 ~~~
 
+Only `super_admin` tokens are global. `admin`, `editor`, and `viewer` tokens require `--workspace` (a workspace ID or name) and grant the role in that workspace only:
+
+~~~bash
+neoserver create-token --store-path ./data/neoserver.db \
+  --role editor --workspace demo --subject ci --expires 7d
+~~~
+
+Tokens for these roles minted by 0.1.2 and earlier carry no workspace and are rejected; issue replacements. Prefer workspace API keys for long-lived clients: they can be revoked individually.
+
 Rotate the signing key only when all existing self-signed tokens should be invalidated:
 
 ~~~bash
@@ -42,6 +70,10 @@ Stored API keys and OIDC tokens are not signed by this internal key.
 ## Browser sessions
 
 The administration console at `/admin/` exchanges a password, API key, self-signed JWT, or OIDC ID token through `POST /api/v1/auth/login`. The original credential is not stored in the browser. The server persists only session and CSRF hashes in the encrypted catalog and returns an `HttpOnly`, `SameSite=Lax` session cookie plus a readable CSRF cookie. Unsafe HTTP methods and protocol mutations must echo the latter as `X-CSRF-Token`. This includes GET requests for WFS transactions, locks, and stored-query changes; a cookie alone never authorizes those mutations. Explicit header credentials do not require CSRF tokens.
+
+Cookies carry the `Secure` attribute when `Auth.RequireHTTPS` is set, when TLS terminates at neoserver, or when a proxy listed in `Server.TrustedProxyCIDRs` reports HTTPS. When a session has expired or been revoked, safe, read-only requests to workspace protocol endpoints continue anonymously, so public maps keep working in the same browser. Management requests, protocol mutations, and non-public services still return 401.
+
+Password sign-in and HTTP Basic credentials share one failure budget. After five failed attempts from a client address, or fifty failed attempts for one username across all addresses, further attempts receive 429 with `Retry-After`. The block lasts 30 seconds and doubles with each further failure, up to 15 minutes; a successful sign-in resets it. Blocking by address as well as by username means one client cannot lock another user out.
 
 `Auth.Session.TTLSec` bounds absolute lifetime, `IdleTimeoutSec` bounds inactivity, and `CleanupIntervalSec` controls expired-session cleanup. The current session is rotated with `/auth/refresh` and revoked with `/auth/logout`. Super administrators can list and revoke sessions under `/auth/sessions`.
 
@@ -150,7 +182,7 @@ Query-string API keys are disabled by default because URLs leak through logs, ca
 | Role | Scope | Typical access | Admin console |
 | --- | --- | --- | --- |
 | super_admin | Global | All workspaces and global administration | Yes, including server administration |
-| admin | Workspace | Manage services, layers, credentials, settings, and stored queries | Yes, for the assigned workspace |
+| admin | Workspace | Manage services, layers, credentials, settings, and stored queries. New PostGIS hosts must be listed in `Datasource.DatabaseHosts` ([details](data-sources.md#postgis)) | Yes, for the assigned workspace |
 | editor | Workspace | Modify layers/styles via the management API and perform WFS write/lock operations | No |
 | viewer | Workspace | Read visible OGC resources and the management API | No |
 

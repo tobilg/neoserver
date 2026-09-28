@@ -15,7 +15,6 @@ type Capabilities struct {
 	GeoPackage bool
 	Shapefile  bool
 	GeoTIFF    bool
-	PDF        bool
 }
 
 var (
@@ -31,11 +30,9 @@ func Get() Capabilities {
 		_ = godal.RegisterVector(godal.GeoPackage)
 		_ = godal.RegisterVector(godal.Shapefile)
 		_ = godal.RegisterRaster(godal.GTiff)
-		_ = godal.RegisterRaster(godal.DriverName("PDF"))
 		_, discovered.GeoPackage = godal.VectorDriver(godal.GeoPackage)
 		_, discovered.Shapefile = godal.VectorDriver(godal.Shapefile)
 		_, discovered.GeoTIFF = godal.RasterDriver(godal.GTiff)
-		_, discovered.PDF = godal.RasterDriver(godal.DriverName("PDF"))
 	})
 	return discovered
 }

@@ -14,6 +14,7 @@ import (
 
 	duckdb "github.com/duckdb/duckdb-go/v2"
 	"github.com/tobilg/neoserver/internal/dbschema"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/store"
 )
 
@@ -37,9 +38,9 @@ func openMetadataIndex(path, encryptionKey string) (*metadataIndex, error) {
 	if err := os.MkdirAll(filepath.Dir(abs), 0o700); err != nil {
 		return nil, err
 	}
-	attach := fmt.Sprintf("ATTACH IF NOT EXISTS '%s' AS tile_cache", escapeSQLLiteral(abs))
+	attach := fmt.Sprintf("ATTACH IF NOT EXISTS '%s' AS tile_cache", sqlutil.EscapeLiteral(abs))
 	if encryptionKey != "" {
-		attach += fmt.Sprintf(" (ENCRYPTION_KEY '%s')", escapeSQLLiteral(encryptionKey))
+		attach += fmt.Sprintf(" (ENCRYPTION_KEY '%s')", sqlutil.EscapeLiteral(encryptionKey))
 	}
 	connector, err := duckdb.NewConnector("", func(execer driver.ExecerContext) error {
 		if _, err := execer.ExecContext(context.Background(), attach, nil); err != nil {
@@ -175,8 +176,6 @@ func initializeCacheSchema(db *sql.DB, schema string) error {
 	}
 	return tx.Commit()
 }
-
-func escapeSQLLiteral(value string) string { return strings.ReplaceAll(value, "'", "''") }
 
 const entryColumns = `cache_key, object_key, workspace_id, workspace_revision, resource_id, resource_kind, generation,
  tile_type, matrix_set, zoom, tile_col, tile_row, style_digest, style_name, format, size_bytes, etag,

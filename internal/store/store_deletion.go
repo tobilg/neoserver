@@ -249,7 +249,7 @@ func (s *DuckDBStore) PlanServiceDeletion(ctx context.Context, workspaceID, serv
 }
 
 func (s *DuckDBStore) deletionRefs(ctx context.Context, query, kind, reason string, args ...any) ([]DeletionRef, error) {
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	rows, err := s.read.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -314,13 +314,13 @@ func (s *DuckDBStore) BeginCatalogDeletion(ctx context.Context, plan DeletionPla
 }
 
 func (s *DuckDBStore) findActiveCatalogDeletion(ctx context.Context, scope DeletionScope, targetID string) (*DeletionOperation, error) {
-	return scanDeletionOperation(s.db.QueryRowContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
+	return scanDeletionOperation(s.read.QueryRowContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
 		plan_json,last_error,attempt_count,created_at,updated_at,completed_at FROM catalog_deletions
 		WHERE scope_kind=? AND target_id=? AND status IN ('pending','running','failed') ORDER BY created_at DESC LIMIT 1`, scope, targetID))
 }
 
 func (s *DuckDBStore) GetCatalogDeletion(ctx context.Context, id string) (*DeletionOperation, error) {
-	return scanDeletionOperation(s.db.QueryRowContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
+	return scanDeletionOperation(s.read.QueryRowContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
 		plan_json,last_error,attempt_count,created_at,updated_at,completed_at FROM catalog_deletions WHERE id=?`, id))
 }
 
@@ -328,13 +328,13 @@ func (s *DuckDBStore) GetCatalogDeletion(ctx context.Context, id string) (*Delet
 // target, including completed operations. Import rollback recovery uses this
 // to close the small crash window before its operation ID is persisted.
 func (s *DuckDBStore) FindCatalogDeletionByTarget(ctx context.Context, scope DeletionScope, targetID string) (*DeletionOperation, error) {
-	return scanDeletionOperation(s.db.QueryRowContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
+	return scanDeletionOperation(s.read.QueryRowContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
 		plan_json,last_error,attempt_count,created_at,updated_at,completed_at FROM catalog_deletions
 		WHERE scope_kind=? AND target_id=? ORDER BY created_at DESC LIMIT 1`, scope, targetID))
 }
 
 func (s *DuckDBStore) ListPendingCatalogDeletions(ctx context.Context) ([]*DeletionOperation, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
+	rows, err := s.read.QueryContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
 		plan_json,last_error,attempt_count,created_at,updated_at,completed_at FROM catalog_deletions
 		WHERE status IN ('pending','running','failed') ORDER BY created_at`)
 	if err != nil {
@@ -356,7 +356,7 @@ func (s *DuckDBStore) ListCatalogDeletions(ctx context.Context, limit int) ([]*D
 	if limit <= 0 || limit > 1000 {
 		limit = 200
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
+	rows, err := s.read.QueryContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
 		plan_json,last_error,attempt_count,created_at,updated_at,completed_at FROM catalog_deletions
 		ORDER BY created_at DESC LIMIT ?`, limit)
 	if err != nil {

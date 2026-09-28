@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 func TestCapabilitiesRevisionMigrationMutationRollbackAndRestart(t *testing.T) {
@@ -14,10 +16,10 @@ func TestCapabilitiesRevisionMigrationMutationRollbackAndRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = db.Exec("ATTACH '" + escapeSQLLiteral(cfg.Path) + "' AS store (ENCRYPTION_KEY 'abc123'); USE store"); err != nil {
+	if _, err = db.Exec("ATTACH '" + sqlutil.EscapeLiteral(cfg.Path) + "' AS store (ENCRYPTION_KEY 'abc123'); USE store"); err != nil {
 		t.Fatal(err)
 	}
-	attached()
+	attached.markAttached()
 	ddl, err := os.ReadFile("testdata/baseline-v25.sql")
 	if err != nil {
 		t.Fatal(err)

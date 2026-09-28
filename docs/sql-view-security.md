@@ -13,6 +13,12 @@ Validation and execution use a separate pool with read-only transactions, a
 `pg_catalog,public` search path. WFS writes use the ordinary datasource pool and
 still require their own publication/operation authorization. DuckDB uses its
 own restricted SQL implementation; GeoParquet/vector-file SQL views are not supported.
+Every DuckDB datasource disables external access and locks its configuration,
+so no statement can read other files, reach the network, load extensions or
+re-enable access. Local GeoParquet files may read only their own file, and
+local vector files only their own directory (for Shapefile sidecars).
+Object-store (`s3://` and similar) GeoParquet and vector-file sources keep
+DuckDB's network access and rely on the exact bucket allowlist.
 
 These checks are defense in depth, **not a sandbox against the database owner**.
 Operators must control schemas, views, casts, operators and functions: a SELECT

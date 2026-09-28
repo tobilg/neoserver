@@ -2,6 +2,7 @@ package conf
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -493,4 +494,72 @@ func containsAt(s, substr string, start int) bool {
 		}
 	}
 	return false
+}
+
+func TestStoreKeyBytes(t *testing.T) {
+	for key, want := range map[string]int{
+		"abc123":                 3,  // valid hex: decoded bytes
+		"not-hex-passphrase":     18, // raw bytes
+		strings.Repeat("ab", 32): 32, // openssl rand -hex 32
+		strings.Repeat("x", 40):  40,
+	} {
+		if got := StoreKeyBytes(key); got != want {
+			t.Errorf("StoreKeyBytes(%q) = %d, want %d", key, got, want)
+		}
+	}
+}
+
+func TestLoad_DevelFromEnvironment(t *testing.T) {
+	t.Setenv("NEOSRV_SERVER_DEVEL", "true")
+	cfg, err := Load("", false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Server.Devel {
+		t.Error("expected NEOSRV_SERVER_DEVEL=true to enable development mode")
+	}
+}
+
+func TestLoad_StoreMaxConnections(t *testing.T) {
+	cfg, err := Load("", false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Store.MaxConnections != DefaultStoreMaxConnections {
+		t.Fatalf("default Store.MaxConnections = %d", cfg.Store.MaxConnections)
+	}
+	for _, value := range []string{"-1", "101"} {
+		t.Setenv("NEOSRV_STORE_MAXCONNECTIONS", value)
+		if _, err := Load("", false, false); err == nil {
+			t.Errorf("Store.MaxConnections=%s was accepted", value)
+		}
+	}
+	t.Setenv("NEOSRV_STORE_MAXCONNECTIONS", "100")
+	if cfg, err := Load("", false, false); err != nil || cfg.Store.MaxConnections != 100 {
+		t.Fatalf("Store.MaxConnections=100: %d %v", cfg.Store.MaxConnections, err)
+	}
+}
+
+func TestParseDatabaseHost(t *testing.T) {
+	cases := []struct {
+		entry string
+		host  string
+		port  int
+		ok    bool
+	}{
+		{"db", "db", 0, true},
+		{" PG.Example.com:6432 ", "pg.example.com", 6432, true},
+		{"[::1]:5432", "::1", 5432, true},
+		{"10.0.0.0/8", "", 0, false},
+		{"*.example.com", "", 0, false},
+		{"db:0", "", 0, false},
+		{"db:http", "", 0, false},
+		{"", "", 0, false},
+	}
+	for _, tc := range cases {
+		host, port, err := ParseDatabaseHost(tc.entry)
+		if (err == nil) != tc.ok || host != tc.host || port != tc.port {
+			t.Errorf("ParseDatabaseHost(%q) = %q, %d, %v", tc.entry, host, port, err)
+		}
+	}
 }

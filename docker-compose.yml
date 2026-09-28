@@ -10,6 +10,11 @@ services:
       NEOSRV_SERVER_HTTPPORT: 9000
       # Public URL used in generated OGC links (use http://server:9000 for CITE containers)
       NEOSRV_SERVER_URLBASE: ${NEOSRV_SERVER_URLBASE:?NEOSRV_SERVER_URLBASE must be set}
+      # Local plain-HTTP use only. Docker's port proxy makes host requests arrive
+      # from a non-loopback address, so the default (true) rejects every
+      # authenticated request with 426. Behind a TLS-terminating proxy, remove
+      # this line and set NEOSRV_SERVER_TRUSTEDPROXYCIDRS instead.
+      NEOSRV_AUTH_REQUIREHTTPS: "false"
       NEOSRV_METADATA_TITLE: "NeoServer"
       NEOSRV_METADATA_DESCRIPTION: "OGC API Features / WMS / WFS server"
       NEOSRV_WEBSITE_BASEMAPURL: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"

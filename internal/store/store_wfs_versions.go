@@ -36,7 +36,7 @@ func (s *DuckDBStore) PutWFSFeatureVersion(ctx context.Context, rec WFSFeatureVe
 
 // ListWFSFeatureVersions returns all persisted feature version records.
 func (s *DuckDBStore) ListWFSFeatureVersions(ctx context.Context) ([]WFSFeatureVersionRecord, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT workspace_id, layer_id, feature_id, version, previous_rid, state, modified_by, created_at
+	rows, err := s.read.QueryContext(ctx, `SELECT workspace_id, layer_id, feature_id, version, previous_rid, state, modified_by, created_at
 		FROM wfs_feature_versions ORDER BY workspace_id, layer_id, feature_id, version`)
 	if err != nil {
 		return nil, fmt.Errorf("list WFS feature versions: %w", err)

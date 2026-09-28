@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest a new capability or an improvement.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How you would like it to work. For protocol features, name the OGC standard and requirement class if you know it.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and workarounds
+      description: Other approaches you considered, or how you work around it now (for example, how GeoServer handles it).

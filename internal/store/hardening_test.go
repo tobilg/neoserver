@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 )
@@ -40,29 +39,11 @@ func TestValidateToken_ValidES256(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetActiveSigningKey: %v", err)
 	}
-	token, err := store.CreateToken(signingKey, "user", "viewer", time.Hour)
+	token, err := store.CreateToken(signingKey, "user", "viewer", "ws-1", time.Hour)
 	if err != nil {
 		t.Fatalf("CreateToken: %v", err)
 	}
 	if _, err := store.ValidateToken(ctx, token); err != nil {
 		t.Fatalf("expected valid ES256 token to validate, got %v", err)
-	}
-}
-
-func TestEscapeSQLLiteral(t *testing.T) {
-	cases := map[string]string{
-		"plain":          "plain",
-		"a'b":            "a''b",
-		"'; DROP TABLE;": "''; DROP TABLE;",
-		"o''ne":          "o''''ne",
-	}
-	for in, want := range cases {
-		if got := escapeSQLLiteral(in); got != want {
-			t.Errorf("escapeSQLLiteral(%q) = %q, want %q", in, got, want)
-		}
-	}
-	// A key containing a quote must not be able to terminate the literal early.
-	if strings.Count(escapeSQLLiteral("k'ey"), "'")%2 != 0 {
-		t.Error("escaped literal has unbalanced quotes")
 	}
 }

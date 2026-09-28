@@ -607,11 +607,12 @@ func inspectGranule(ctx context.Context, workspaceID, serviceID string, generati
 	if candidate.Elevation != nil && (math.IsNaN(*candidate.Elevation) || math.IsInf(*candidate.Elevation, 0)) {
 		return nil, errors.New("granule elevation must be finite")
 	}
-	resolved, err := pathpolicy.Resolve(ctx, candidate.Path)
+	lease, err := pathpolicy.Acquire(ctx, candidate.Path)
 	if err != nil {
 		return nil, err
 	}
-	openPath := resolved
+	defer lease.Release()
+	openPath := lease.Path
 	if strings.HasPrefix(strings.ToLower(openPath), "s3://") {
 		openPath = "/vsis3/" + strings.TrimPrefix(openPath, "s3://")
 	}
@@ -648,7 +649,7 @@ func inspectGranule(ctx context.Context, workspaceID, serviceID string, generati
 		Width: structure.SizeX, Height: structure.SizeY, BandCount: structure.NBands,
 		DataType: dataset.Bands()[0].Structure().DataType.String(), ResolutionX: transform[1], ResolutionY: transform[5],
 		Time: candidate.Time, Elevation: candidate.Elevation, Priority: candidate.Priority, FootprintWKB: footprintWKB(bbox)}
-	if stat, statErr := os.Stat(resolved); statErr == nil {
+	if stat, statErr := os.Stat(lease.Path); statErr == nil {
 		modified := stat.ModTime().UTC()
 		item.SizeBytes, item.ModifiedAt = stat.Size(), &modified
 	}

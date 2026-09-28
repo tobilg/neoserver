@@ -3,6 +3,7 @@ package audit
 import (
 	"context"
 	"database/sql"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/testutil/schematest"
 	"io"
 	"log/slog"
@@ -16,7 +17,7 @@ func openAuditFile(t *testing.T, path string) *sql.DB {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = db.Exec("ATTACH '" + sqlLiteral(path) + "' AS audit (ENCRYPTION_KEY 'abc123'); USE audit"); err != nil {
+	if _, err = db.Exec("ATTACH '" + sqlutil.EscapeLiteral(path) + "' AS audit (ENCRYPTION_KEY 'abc123'); USE audit"); err != nil {
 		db.Close()
 		t.Fatal(err)
 	}

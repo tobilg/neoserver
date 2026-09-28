@@ -17,7 +17,9 @@ ROOT = OUT / 'rootfs'
 PLUGIN_DIR = Path('/usr/lib/x86_64-linux-gnu/gdalplugins')
 TOOLS = ['/usr/bin/gdalinfo', '/usr/bin/ogrinfo',
          '/usr/local/gdal-internal/bin/projinfo', '/usr/local/gdal-internal/bin/projsync']
-PLUGINS = [PLUGIN_DIR / f'gdal_{name}.so' for name in ('netCDF', 'JP2OpenJPEG', 'PDF')]
+# WMS PDF output is written by neoserver itself. GDAL's PDF plugin is left out:
+# it links GPL-licensed poppler, which is only needed to read PDFs.
+PLUGINS = [PLUGIN_DIR / f'gdal_{name}.so' for name in ('netCDF', 'JP2OpenJPEG')]
 GRIDS = {'.tif', '.gsb', '.gtx', '.byn', '.lla', '.gvb', '.ct2'}
 
 

@@ -36,7 +36,7 @@ DATABASE_URL is accepted as a compatibility alias when Database.DatabaseURL is o
 neoserver init [--config PATH] [--store-path PATH]
 neoserver serve [--config PATH] [--debug] [--devel]
 neoserver create-token [--config PATH] [--store-path PATH] [--role ROLE]
-                       [--subject SUBJECT] [--expires DURATION]
+                       [--workspace ID|NAME] [--subject SUBJECT] [--expires DURATION]
 neoserver rotate-signing-key [--config PATH] [--store-path PATH] [--force]
 neoserver add-claim-mapping [--config PATH] [--store-path PATH] [--workspace ID]
                             --claim NAME --value VALUE --role ROLE
@@ -60,18 +60,22 @@ Important settings:
 | Server.UrlBase | Public origin used in generated links |
 | Server.BasePath | Optional route prefix |
 | Server.CORSOrigins | Comma-separated origins |
+| Server.WriteTimeoutSec | Time allowed to write a response (default 30) |
+| Server.ExportWriteTimeoutSec | Replaces WriteTimeoutSec for bulk data responses: WFS GetFeature, GetFeatureWithLock and GetPropertyValue, WCS GetCoverage, and OGC API Features items (default 600; 0 keeps WriteTimeoutSec). Without it, a large download to a slow client is cut off mid-stream. Server-side work stays bounded by each protocol's own row, size and processing limits |
 | Server.MaxBodyBytes | Maximum request body |
 | Server.TrustedProxyCIDRs | Peers allowed to set forwarding headers |
 | Server.AdminUI | Serve the embedded administration console at `/admin` (default true) |
 | Server.DisableUI | Disable all browser UI, including the administration console |
 | Store.Path | Encrypted DuckDB backing store |
-| Store.EncryptionKey | Store key; normally supplied as NEOSRV_STORE_KEY |
+| Store.EncryptionKey | Store key; normally supplied as NEOSRV_STORE_KEY. `serve` warns when it holds fewer than 32 bytes (64 hex characters from `openssl rand -hex 32`) |
+| Server.Devel | Explicit local development mode (`serve --devel` or `NEOSRV_SERVER_DEVEL=true`); suppresses the weak store-key warning. `make dev` sets it |
+| Store.MaxConnections | Catalog connections (default 10, maximum 100): one serialized writer plus concurrent readers; `1` serializes all catalog access |
 
 Server.UrlBase must be an absolute HTTP(S) URL and is required for non-loopback binds.
 
 ## Datasource policy and database defaults
 
-Datasource.AllowedPaths is a deny-by-default doublestar glob allowlist for local files and remote URLs. RemoteCachePath, RemoteMaxBytes, and RemoteTimeoutSec control downloads. MosaicMaxGranules bounds managed raster-mosaic service initialization; WMS.MaxMosaicGranulesPerRender separately limits each portrayed selection.
+Datasource.AllowedPaths is a deny-by-default doublestar glob allowlist for local files and remote URLs. The default, `["./data/sources/**", "./data/imports/**"]`, matches the container image (`/data/sources/**`, `/data/imports/**`) and deliberately excludes the server's own state under `./data` (catalog, audit, tile cache, mosaic index, remote cache). Never allowlist a directory that contains that state. Datasource.DatabaseHosts (default empty) lists the PostGIS endpoints, `host` or `host:port`, that workspace administrators may connect services to; any other endpoint requires `super_admin` (see [PostGIS](data-sources.md#postgis)). The allowlist is process-wide: every workspace administrator can publish any file it permits, so workspace isolation does not extend to allowlisted files. RemoteCachePath, RemoteMaxBytes, and RemoteTimeoutSec control downloads. RemoteCacheMaxBytes (default 10 GiB, at least RemoteMaxBytes, 0 disables) and RemoteCacheMaxAgeSec (default 0, disabled) bound the download cache: when a remote datasource is opened, downloads unused past the age limit are evicted, then the least recently used ones until the cache fits. Downloads held by open datasources are never evicted. When the origin is unreachable or answers with a 5xx status, the cached copy is served; other errors such as 404 are not masked. Managed imports keep their own copy of an HTTPS source under `Importer.TemporaryDirectory`. MosaicMaxGranules bounds managed raster-mosaic service initialization; WMS.MaxMosaicGranulesPerRender separately limits each portrayed selection.
 
 Database settings provide defaults and pool sizing for database-backed operation: URL, schemas, table includes/excludes, open and idle connection counts, and connection lifetimes. Per-workspace PostGIS services carry their own connection information.
 

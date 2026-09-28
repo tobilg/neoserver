@@ -161,15 +161,6 @@ func TestCastPropertyForMVT(t *testing.T) {
 	}
 }
 
-func TestQuoteIdent(t *testing.T) {
-	if got := quoteIdent("plain"); got != `"plain"` {
-		t.Errorf("quoteIdent(plain) = %q", got)
-	}
-	if got := quoteIdent(`evil"col`); got != `"evil""col"` {
-		t.Errorf("embedded quotes must be doubled, got %q", got)
-	}
-}
-
 func TestGeometryVertices(t *testing.T) {
 	poly := orb.Polygon{
 		{{0, 0}, {1, 0}, {1, 1}, {0, 0}},                 // outer ring, 4 points

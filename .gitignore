@@ -59,3 +59,6 @@ data/*.wal
 .agents/
 
 .DS_Store
+
+# Local agent skill lock
+skills-lock.json

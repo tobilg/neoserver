@@ -63,7 +63,7 @@ func (s *DuckDBStore) ListImportJobsPage(ctx context.Context, workspaceID string
 	}
 	query += ` ORDER BY created_at DESC,id DESC LIMIT ?`
 	args = append(args, limit+1)
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	rows, err := s.read.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

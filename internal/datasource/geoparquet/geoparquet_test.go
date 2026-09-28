@@ -107,50 +107,6 @@ func TestParquetTypeToJSON(t *testing.T) {
 	}
 }
 
-func TestQuoteIdent(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"simple", `"simple"`},
-		{"with space", `"with space"`},
-		{`with"quote`, `"with""quote"`},
-		{`double""quote`, `"double""""quote"`},
-		{"", `""`},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			if got := quoteIdent(tt.input); got != tt.want {
-				t.Errorf("quoteIdent(%q) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestQuoteLiteral(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"simple", `'simple'`},
-		{"with space", `'with space'`},
-		{`with'quote`, `'with''quote'`},
-		{`double''quote`, `'double''''quote'`},
-		{"", `''`},
-		{"/path/to/file.parquet", `'/path/to/file.parquet'`},
-		{"s3://bucket/data.parquet", `'s3://bucket/data.parquet'`},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			if got := quoteLiteral(tt.input); got != tt.want {
-				t.Errorf("quoteLiteral(%q) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestNewFromServiceMissingPath(t *testing.T) {
 	cfg := Config{}
 	connInfo, _ := json.Marshal(cfg)

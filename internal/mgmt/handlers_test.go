@@ -445,6 +445,7 @@ func TestCreateService_Success(t *testing.T) {
 	body := bytes.NewBufferString(`{"name":"test-service","type":"postgis","connection_info":{"host":"localhost"}}`)
 	r := httptest.NewRequest("POST", "/workspaces/ws-1/services", body)
 	ctx := withChiContext(r.Context(), map[string]string{"workspace": "ws-1"})
+	ctx = withIdentity(ctx, &identity.Identity{Subject: "admin", Roles: map[string]string{"*": rbac.RoleSuperAdmin}})
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 

@@ -45,11 +45,11 @@ func scanStyleAsset(row interface{ Scan(...any) error }) (*StyleAsset, error) {
 }
 
 func (s *DuckDBStore) GetStyleAsset(ctx context.Context, workspaceID, name string) (*StyleAsset, error) {
-	return scanStyleAsset(s.db.QueryRowContext(ctx, `SELECT id,workspace_id,name,content_type,size_bytes,sha256,created_at,updated_at FROM style_assets WHERE workspace_id=? AND name=?`, workspaceID, name))
+	return scanStyleAsset(s.read.QueryRowContext(ctx, `SELECT id,workspace_id,name,content_type,size_bytes,sha256,created_at,updated_at FROM style_assets WHERE workspace_id=? AND name=?`, workspaceID, name))
 }
 
 func (s *DuckDBStore) ListStyleAssets(ctx context.Context, workspaceID string) ([]*StyleAsset, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id,workspace_id,name,content_type,size_bytes,sha256,created_at,updated_at FROM style_assets WHERE workspace_id=? ORDER BY name`, workspaceID)
+	rows, err := s.read.QueryContext(ctx, `SELECT id,workspace_id,name,content_type,size_bytes,sha256,created_at,updated_at FROM style_assets WHERE workspace_id=? ORDER BY name`, workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list style assets: %w", err)
 	}

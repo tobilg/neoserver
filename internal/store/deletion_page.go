@@ -103,7 +103,7 @@ func (s *DuckDBStore) ListCatalogDeletionPage(ctx context.Context, q DeletionQue
 		args = append(args, cursor.Created, cursor.Created, cursor.ID)
 	}
 	args = append(args, q.Limit+1)
-	rows, err := s.db.QueryContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
+	rows, err := s.read.QueryContext(ctx, `SELECT id,scope_kind,workspace_id,target_id,target_name,status,phase,
 		plan_json,last_error,attempt_count,created_at,updated_at,completed_at FROM catalog_deletions
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY created_at DESC,id DESC LIMIT ?`, args...)
 	if err != nil {

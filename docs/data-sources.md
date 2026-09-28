@@ -35,6 +35,15 @@ SQL-view layers are always read-only, including on PostGIS.
 
 The field is user, not username. Discovery scans configured schemas for spatial tables and views. Give the account SELECT access for serving features. WFS transactions additionally require INSERT, UPDATE, and DELETE rights on published tables.
 
+A PostGIS host is a network target, so workspace administrators cannot choose arbitrary ones. Only `super_admin` may create a PostGIS service, test a connection, or change a service's host or port to an endpoint that is not listed in `Datasource.DatabaseHosts`; anyone else receives 403. Workspace administrators may edit every other field of an existing service, including credentials, while keeping its host and port. To let them add services themselves, list the approved database endpoints:
+
+~~~toml
+[Datasource]
+DatabaseHosts = ["postgres.example.com", "10.0.4.12:5432"]
+~~~
+
+An entry without a port matches any port on that host. Host names are compared as written, not resolved, so list the names your administrators should use.
+
 ## DuckDB Spatial
 
 ~~~json
@@ -42,7 +51,7 @@ The field is user, not username. Discovery scans configured schemas for spatial 
   "name": "analytics",
   "type": "duckdb",
   "connection_info": {
-    "path": "/data/analytics.duckdb",
+    "path": "/data/sources/analytics.duckdb",
     "srid": 4326
   }
 }
@@ -63,7 +72,7 @@ Imports reprojected before the 2026-09-14 candidate remediation may contain inco
   "name": "buildings",
   "type": "geoparquet",
   "connection_info": {
-    "path": "/data/buildings.parquet"
+    "path": "/data/sources/buildings.parquet"
   }
 }
 ~~~
@@ -81,7 +90,7 @@ VRT and indirect/XML source formats (including GML and KML inputs) are not accep
   "name": "natural-earth",
   "type": "vectorfile",
   "connection_info": {
-    "path": "/data/natural-earth.gpkg",
+    "path": "/data/sources/natural-earth.gpkg",
     "layer": "ne_10m_admin_0_countries",
     "geometry_column": "geom",
     "id_column": "id",
@@ -128,7 +137,7 @@ multidimensional CF-NetCDF or GRIB2 arrays:
 {
   "name": "terrain",
   "type": "rasterfile",
-  "connection_info": { "path": "./data/terrain.tif" }
+  "connection_info": { "path": "./data/sources/terrain.tif" }
 }
 ```
 

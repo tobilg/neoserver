@@ -7,7 +7,9 @@ while IFS= read -r binary; do
   output=$(ldd "$binary")
   case "$output" in *'not found'*) printf '%s\n%s\n' "$binary" "$output" >&2; exit 1;; esac
 done < /usr/share/neoserver/runtime-elf.txt
-test "$(find /usr/lib/x86_64-linux-gnu/gdalplugins -name '*.so' | wc -l)" -eq 3
+test "$(find /usr/lib/x86_64-linux-gnu/gdalplugins -name '*.so' | wc -l)" -eq 2
+# GPL-licensed poppler must not ship; neoserver writes PDFs without it.
+test -z "$(find /usr/lib /usr/local/lib /usr/local/gdal-internal -name 'libpoppler*' 2>/dev/null)"
 test -z "$(find /usr/local/gdal-internal/share/proj /usr/share/proj -type f \( -iname '*.tif' -o -iname '*.gsb' -o -iname '*.gtx' -o -iname '*.byn' -o -iname '*.lla' -o -iname '*.gvb' -o -iname '*.ct2' \))"
 test ! -e /usr/bin/pebble
 test ! -e /usr/bin/python3

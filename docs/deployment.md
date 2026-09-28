@@ -10,9 +10,9 @@ Native builds require Go 1.26.8, a C toolchain for DuckDB's CGO bindings, the GD
 make build
 ~~~
 
-Output capabilities are runtime-accurate. WMS GeoTIFF/PDF and WFS GeoPackage/SHAPE-ZIP are registered and probed once through the linked GDAL library. A missing optional driver disables and removes only its corresponding format from service capabilities; it does not trigger a request-time driver installation or a DuckDB Spatial fallback. Verify the target image's advertised capabilities after changing its GDAL package set.
+Output capabilities are runtime-accurate. WMS GeoTIFF and WFS GeoPackage/SHAPE-ZIP are registered and probed once through the linked GDAL library. A missing optional driver disables and removes only its corresponding format from service capabilities; it does not trigger a request-time driver installation or a DuckDB Spatial fallback. Verify the target image's advertised capabilities after changing its GDAL package set.
 
-The container image uses Ubuntu 26.04 and runs as UID/GID 65532. The native build uses pinned GDAL 3.13.3; the runtime installs the packages its libraries require and keeps the netCDF, JP2OpenJPEG and PDF plugins. Mount writable data directories with permissions that allow this user to create the store and remote-file cache.
+The container image uses Ubuntu 26.04 and runs as UID/GID 65532. The native build uses pinned GDAL 3.13.3; the runtime installs the packages its libraries require and keeps the netCDF and JP2OpenJPEG plugins. GDAL's PDF plugin is left out because it links GPL-licensed poppler; WMS PDF output does not need it. The image therefore cannot read PDF files, and no neoserver datasource accepts them. Mount writable data directories with permissions that allow this user to create the store and remote-file cache.
 
 DuckDB 1.5.5 spatial and httpfs extensions are bundled in the runtime user's
 home. Initialization, startup and local DuckDB/GeoParquet queries work without
@@ -42,7 +42,7 @@ these three grid installation methods:
    mkdir -p proj-grids
    sudo chown 65532:65532 proj-grids
    docker run --rm --entrypoint projsync \
-     -v "$PWD/proj-grids:/proj-grids" tobilg/neoserver:0.1.2 \
+     -v "$PWD/proj-grids:/proj-grids" tobilg/neoserver:0.2.0 \
      --file us_noaa_conus.tif --target-dir /proj-grids
    ```
 
@@ -59,7 +59,7 @@ these three grid installation methods:
 3. **Build an image with your grids.** Download the grids first, then build:
 
    ```dockerfile
-   FROM tobilg/neoserver:0.1.2
+   FROM tobilg/neoserver:0.2.0
    COPY proj-grids/ /usr/local/gdal-internal/share/proj/
    ```
 
@@ -91,6 +91,18 @@ This creates the encrypted store, generates an internal ECDSA signing key, and p
 ~~~
 
 Reuse the same store path and NEOSRV_STORE_KEY on every start. A missing store or wrong key causes startup to fail.
+
+### The store key cannot be rotated
+
+NEOSRV_STORE_KEY is fixed when `init` creates the catalog, and neoserver has no command to re-encrypt an existing catalog or its backups under a new key. `serve` only warns about a key shorter than 32 bytes; it does not refuse one, so generate the key with `openssl rand -hex 32` before the first `init`, not afterwards.
+
+**A leaked store key means re-initializing.** Anyone holding the key and a copy of the catalog, including any backup made with that key, can read everything in it: the JWT signing key, API key records, session state, and datasource connection passwords. To recover:
+
+1. Generate a new key and run `init` against a new store path.
+2. Recreate workspaces, services, layers, styles, API keys, and claim mappings in the new store.
+3. Change every datasource password that was stored in the old catalog, since the old copy stays readable.
+4. Issue new API keys and tokens to clients; credentials from the old catalog do not carry over.
+5. Destroy the old catalog and every backup encrypted with the leaked key.
 
 WFS feature locks and feature-version metadata are persisted in the catalog store, so a restart does not invalidate held WFS lockIds (they remain valid until their expiry). In-memory response caches are rebuilt after a restart.
 
@@ -131,6 +143,13 @@ PostGIS. Protect and back up both. `make down` preserves them; only the explicit
 confirmed `make reset-demo CONFIRM_DELETE_DEMO_DATA=yes` removes both volumes.
 Existing `./data` bind mounts are not migrated automatically; see the
 [container upgrade instructions](releasing.md#container-storage-and-upgrade).
+
+The repository's `docker-compose.yml` sets `NEOSRV_AUTH_REQUIREHTTPS=false` so
+the plain-HTTP quickstart works: Docker's port proxy makes host requests arrive
+from a non-loopback address, which the HTTPS requirement would otherwise reject
+with 426. Before exposing the server beyond your machine, remove that line,
+terminate TLS in a proxy, and list the proxy in `Server.TrustedProxyCIDRs`
+(see [HTTPS and authentication](#https-and-authentication)).
 
 In an orchestrator, run init as a one-time job against the same persistent volume used by the application. Do not run concurrent initialization jobs. Retrieve the bootstrap token from the job output and move ongoing administration to OIDC or scoped API keys. When enabled, place `Importer.Root` and `Audit.DatabasePath` on private persistent storage too; the audit database must be a different file from the catalog.
 
@@ -260,7 +279,7 @@ Before upgrading:
 
 A binary refuses a state database whose schema is older than its baseline or newer than it supports; it never modifies a database it refuses. Avoid rolling back to an older binary without a compatible backup.
 
-In neoserver 0.1.2, catalogs at the released 0.1.0 baseline (25) upgrade
+In neoserver 0.2.0, catalogs at the released 0.1.0 baseline (25) upgrade
 transactionally to schema 26. Tile-cache (2) and mosaic (1) schemas already
 match the supported versions. The unversioned 0.1.0 audit log is recognized
 and stamped at baseline 1. DuckDB 1.5.5 can update

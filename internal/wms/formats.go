@@ -35,7 +35,7 @@ var getMapFormatRegistry = []getMapFormat{
 	{Token: FormatTIFF8, ContentType: FormatTIFF8, Cacheable: true, ImageExceptions: true},
 	{Token: FormatGeoTIFF, ContentType: FormatGeoTIFF, Cacheable: true, Available: func(c gdalcap.Capabilities) bool { return c.GeoTIFF }},
 	{Token: FormatSVG, ContentType: FormatSVG, Cacheable: true},
-	{Token: FormatPDF, ContentType: FormatPDF, Cacheable: true, Available: func(c gdalcap.Capabilities) bool { return c.PDF }},
+	{Token: FormatPDF, ContentType: FormatPDF, Cacheable: true},
 	{Token: FormatKML, ContentType: FormatKML, Aliases: []string{"kml"}},
 	{Token: FormatKMZ, ContentType: FormatKMZ, Aliases: []string{"kmz"}, Cacheable: true},
 	{Token: FormatMapML, ContentType: FormatMapML},

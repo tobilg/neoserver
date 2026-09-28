@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 // DuckDBOptions contains options for DuckDB CQL2 compilation.
@@ -243,9 +245,9 @@ func (p *duckdbParser) parseComparison() (string, error) {
 				op = "ILIKE"
 			}
 			if not {
-				return fmt.Sprintf("%s NOT %s %s", quoteIdent(prop), op, ph), nil
+				return fmt.Sprintf("%s NOT %s %s", sqlutil.QuoteIdent(prop), op, ph), nil
 			}
-			return fmt.Sprintf("%s %s %s", quoteIdent(prop), op, ph), nil
+			return fmt.Sprintf("%s %s %s", sqlutil.QuoteIdent(prop), op, ph), nil
 		}
 
 		if p.cur.typ == tokIs {
@@ -260,9 +262,9 @@ func (p *duckdbParser) parseComparison() (string, error) {
 			}
 			p.bump()
 			if not {
-				return fmt.Sprintf("%s IS NOT NULL", quoteIdent(prop)), nil
+				return fmt.Sprintf("%s IS NOT NULL", sqlutil.QuoteIdent(prop)), nil
 			}
-			return fmt.Sprintf("%s IS NULL", quoteIdent(prop)), nil
+			return fmt.Sprintf("%s IS NULL", sqlutil.QuoteIdent(prop)), nil
 		}
 
 		if p.cur.typ == tokIn {
@@ -295,12 +297,12 @@ func (p *duckdbParser) parseComparison() (string, error) {
 				return "", err
 			}
 			if not {
-				return fmt.Sprintf("%s NOT IN (%s)", quoteIdent(prop), strings.Join(phs, ", ")), nil
+				return fmt.Sprintf("%s NOT IN (%s)", sqlutil.QuoteIdent(prop), strings.Join(phs, ", ")), nil
 			}
-			return fmt.Sprintf("%s IN (%s)", quoteIdent(prop), strings.Join(phs, ", ")), nil
+			return fmt.Sprintf("%s IN (%s)", sqlutil.QuoteIdent(prop), strings.Join(phs, ", ")), nil
 		}
 
-		left := quoteIdent(prop)
+		left := sqlutil.QuoteIdent(prop)
 
 		if p.cur.typ == tokNot && p.peek.typ == tokBetween {
 			p.bump()
@@ -440,7 +442,7 @@ func (p *duckdbParser) parseScalarPrimary() (string, error) {
 			return "", err
 		}
 		p.bump()
-		return quoteIdent(prop), nil
+		return sqlutil.QuoteIdent(prop), nil
 	case tokString:
 		ph := p.addArg(p.cur.raw)
 		p.bump()
@@ -489,7 +491,7 @@ func (p *duckdbParser) parseGeomExpr() (string, error) {
 		if p.opt.GeometryExpression != "" {
 			return p.opt.GeometryExpression, nil
 		}
-		return quoteIdent(name), nil
+		return sqlutil.QuoteIdent(name), nil
 	}
 
 	wkt, err := p.parseGeomLiteralWKT()

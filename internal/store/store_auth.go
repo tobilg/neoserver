@@ -25,7 +25,7 @@ func (s *DuckDBStore) CreateRole(ctx context.Context, input CreateRoleInput) (*R
 	s.roleMu.Lock()
 	defer s.roleMu.Unlock()
 	var retired bool
-	if err := s.db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM retired_roles WHERE id=?)", input.ID).Scan(&retired); err != nil {
+	if err := s.read.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM retired_roles WHERE id=?)", input.ID).Scan(&retired); err != nil {
 		return nil, err
 	}
 	if retired {
@@ -55,7 +55,7 @@ func (s *DuckDBStore) CreateRole(ctx context.Context, input CreateRoleInput) (*R
 
 func (s *DuckDBStore) GetRole(ctx context.Context, id string) (*Role, error) {
 	var role Role
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, name, description, is_system, created_at
 		FROM roles WHERE id = ?
 	`, id).Scan(&role.ID, &role.Name, &role.Description, &role.IsSystem, &role.CreatedAt)
@@ -69,7 +69,7 @@ func (s *DuckDBStore) GetRole(ctx context.Context, id string) (*Role, error) {
 }
 
 func (s *DuckDBStore) ListRoles(ctx context.Context) ([]*Role, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.read.QueryContext(ctx, `
 		SELECT id, name, description, is_system, created_at
 		FROM roles ORDER BY is_system DESC, name
 	`)
@@ -234,7 +234,7 @@ func (s *DuckDBStore) getAPIKey(ctx context.Context, column, value string) (*API
 	var workspaceID sql.NullString
 	var expiresAt sql.NullTime
 
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, key_hash, key_prefix, owner_name, owner_email, workspace_id, role_id, name, expires_at, revoked, created_at
 		FROM api_keys WHERE `+column+` = ? AND revoked = false AND role_id IN (SELECT id FROM roles)
 	`, value).Scan(&apiKey.ID, &apiKey.KeyHash, &apiKey.KeyPrefix, &apiKey.OwnerName, &apiKey.OwnerEmail,
@@ -266,12 +266,12 @@ func (s *DuckDBStore) ListAPIKeys(ctx context.Context, workspaceID *string) ([]*
 	var err error
 
 	if workspaceID != nil {
-		rows, err = s.db.QueryContext(ctx, `
+		rows, err = s.read.QueryContext(ctx, `
 			SELECT id, key_hash, key_prefix, owner_name, owner_email, workspace_id, role_id, name, expires_at, revoked, created_at
 			FROM api_keys WHERE workspace_id = ? ORDER BY created_at DESC
 		`, *workspaceID)
 	} else {
-		rows, err = s.db.QueryContext(ctx, `
+		rows, err = s.read.QueryContext(ctx, `
 			SELECT id, key_hash, key_prefix, owner_name, owner_email, workspace_id, role_id, name, expires_at, revoked, created_at
 			FROM api_keys ORDER BY created_at DESC
 		`)
@@ -381,7 +381,7 @@ func (s *DuckDBStore) CreateClaimMapping(ctx context.Context, input CreateClaimM
 
 func (s *DuckDBStore) GetClaimMapping(ctx context.Context, id string) (*ClaimRoleMapping, error) {
 	var mapping ClaimRoleMapping
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, workspace_id, claim_name, claim_value, role_id, priority, created_at
 		FROM claim_role_mappings WHERE id = ?
 	`, id).Scan(&mapping.ID, &mapping.WorkspaceID, &mapping.ClaimName, &mapping.ClaimValue, &mapping.RoleID, &mapping.Priority, &mapping.CreatedAt)
@@ -395,7 +395,7 @@ func (s *DuckDBStore) GetClaimMapping(ctx context.Context, id string) (*ClaimRol
 }
 
 func (s *DuckDBStore) ListClaimMappings(ctx context.Context, workspaceID string) ([]*ClaimRoleMapping, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.read.QueryContext(ctx, `
 		SELECT id, workspace_id, claim_name, claim_value, role_id, priority, created_at
 		FROM claim_role_mappings WHERE workspace_id = ? ORDER BY priority DESC, claim_name
 	`, workspaceID)
@@ -456,7 +456,7 @@ func (s *DuckDBStore) ResolveClaimsToRoles(ctx context.Context, claims map[strin
 		ORDER BY workspace_id,priority DESC,
 		CASE role_id WHEN 'super_admin' THEN 4 WHEN 'admin' THEN 3 WHEN 'editor' THEN 2 WHEN 'viewer' THEN 1 ELSE 0 END DESC,
 		role_id`, strings.Join(clauses, " OR "))
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	rows, err := s.read.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve claims: %w", err)
 	}
@@ -484,7 +484,7 @@ func placeholdersWithQuestionMarks(placeholders []string) []string {
 
 func (s *DuckDBStore) GetActiveSigningKey(ctx context.Context) (*SigningKey, error) {
 	var key SigningKey
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, private_key, public_key, algorithm, created_at, is_active
 		FROM signing_keys WHERE is_active = true
 		ORDER BY created_at DESC LIMIT 1
@@ -546,7 +546,7 @@ func (s *DuckDBStore) RotateSigningKey(ctx context.Context) (*SigningKey, error)
 // Casbin adapter operations
 
 func (s *DuckDBStore) LoadCasbinPolicies(ctx context.Context) ([]*CasbinRule, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.read.QueryContext(ctx, `
 		SELECT id, ptype, v0, v1, v2, v3, v4, v5
 		FROM casbin_rules WHERE v0 IN (SELECT id FROM roles)
 	`)
@@ -631,7 +631,12 @@ func (s *DuckDBStore) ReplaceCasbinPolicies(ctx context.Context, rules []*Casbin
 }
 
 // CreateToken creates a self-signed JWT with the given parameters.
-func (s *DuckDBStore) CreateToken(signingKey *SigningKey, subject, role string, duration time.Duration) (string, error) {
+// CreateToken signs a self-signed JWT. super_admin tokens are global and take an
+// empty workspaceID; every other role must be scoped to one workspace ID.
+func (s *DuckDBStore) CreateToken(signingKey *SigningKey, subject, role, workspaceID string, duration time.Duration) (string, error) {
+	if (role == "super_admin") != (workspaceID == "") {
+		return "", errors.New("super_admin tokens are global; every other role requires a workspace")
+	}
 	privateKey, err := x509.ParseECPrivateKey(signingKey.PrivateKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse private key: %w", err)
@@ -644,11 +649,12 @@ func (s *DuckDBStore) CreateToken(signingKey *SigningKey, subject, role string, 
 			Typ: "JWT",
 		},
 		Payload: jwtPayload{
-			Iss:  "neoserver",
-			Sub:  subject,
-			Role: role,
-			Iat:  now.Unix(),
-			Exp:  now.Add(duration).Unix(),
+			Iss:       "neoserver",
+			Sub:       subject,
+			Role:      role,
+			Workspace: workspaceID,
+			Iat:       now.Unix(),
+			Exp:       now.Add(duration).Unix(),
 		},
 	}
 

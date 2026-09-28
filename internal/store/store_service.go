@@ -52,7 +52,7 @@ func (s *DuckDBStore) GetService(ctx context.Context, id string) (*Service, erro
 	var svc Service
 	var svcType string
 	var connInfo, cacheSettings any // DuckDB returns JSON as map[string]interface{}
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, workspace_id, name, type, connection_info, cache_settings, enabled, created_at, updated_at
 		FROM services svc WHERE id = ?
 		AND NOT EXISTS (SELECT 1 FROM catalog_deletions d WHERE d.scope_kind='service'
@@ -82,7 +82,7 @@ func (s *DuckDBStore) GetService(ctx context.Context, id string) (*Service, erro
 }
 
 func (s *DuckDBStore) ListServices(ctx context.Context, workspaceID string) ([]*Service, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.read.QueryContext(ctx, `
 		SELECT id, workspace_id, name, type, connection_info, cache_settings, enabled, created_at, updated_at
 		FROM services svc WHERE workspace_id = ?
 		AND NOT EXISTS (SELECT 1 FROM catalog_deletions d WHERE d.scope_kind='service'

@@ -14,6 +14,7 @@ import (
 	"github.com/paulmach/orb/project"
 	"github.com/paulmach/orb/simplify"
 	"github.com/tobilg/neoserver/internal/datasource"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/store"
 )
 
@@ -168,9 +169,9 @@ func (g *MVTGenerator) generatePostGISTile(ctx context.Context, ds datasource.Da
 
 // buildPostGISMVTQuery builds a PostGIS query to generate MVT tiles.
 func (g *MVTGenerator) buildPostGISMVTQuery(layer *datasource.LayerInfo, tms string, z, x, y int, bounds *TileBounds) (string, []any) {
-	schema := quoteIdent(layer.Schema)
-	table := quoteIdent(strings.TrimPrefix(layer.Name, layer.Schema+"."))
-	geomCol := quoteIdent(layer.GeometryColumn)
+	schema := sqlutil.QuoteIdent(layer.Schema)
+	table := sqlutil.QuoteIdent(strings.TrimPrefix(layer.Name, layer.Schema+"."))
+	geomCol := sqlutil.QuoteIdent(layer.GeometryColumn)
 	layerName := layer.Name
 	if strings.Contains(layerName, ".") {
 		parts := strings.SplitN(layerName, ".", 2)
@@ -379,7 +380,7 @@ func geometryVertices(geometry orb.Geometry) int {
 // buildIDExpr builds the ID expression for MVT.
 func (g *MVTGenerator) buildIDExpr(layer *datasource.LayerInfo) string {
 	if layer.IDColumn != "" {
-		return fmt.Sprintf("t.%s", quoteIdent(layer.IDColumn))
+		return fmt.Sprintf("t.%s", sqlutil.QuoteIdent(layer.IDColumn))
 	}
 	return "NULL"
 }
@@ -411,7 +412,7 @@ func (g *MVTGenerator) buildPropertyColumns(layer *datasource.LayerInfo) string 
 // castPropertyForMVT returns the column expression with appropriate type casting.
 // MVT only supports: STRING, FLOAT, DOUBLE, INT64, UINT64, SINT64, BOOL
 func (g *MVTGenerator) castPropertyForMVT(prop datasource.PropertyInfo, pgTypes map[string]string) string {
-	colName := quoteIdent(prop.Name)
+	colName := sqlutil.QuoteIdent(prop.Name)
 	pgType := ""
 	if pgTypes != nil {
 		pgType = strings.ToLower(pgTypes[prop.Name])
@@ -444,9 +445,4 @@ func (g *MVTGenerator) castPropertyForMVT(prop datasource.PropertyInfo, pgTypes 
 
 	// Default: use as-is
 	return fmt.Sprintf("t.%s", colName)
-}
-
-// quoteIdent quotes a SQL identifier.
-func quoteIdent(s string) string {
-	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 }

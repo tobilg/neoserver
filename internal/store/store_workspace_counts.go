@@ -19,7 +19,7 @@ type WorkspaceCountStore interface {
 }
 
 func (s *DuckDBStore) ListWorkspaceCounts(ctx context.Context) (map[string]WorkspaceCounts, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT w.id,
+	rows, err := s.read.QueryContext(ctx, `SELECT w.id,
 		(SELECT count(*) FROM services s WHERE s.workspace_id=w.id),
 		(SELECT count(*) FROM layers l JOIN services s ON s.id=l.service_id WHERE s.workspace_id=w.id),
 		(SELECT count(*) FROM coverages c WHERE c.workspace_id=w.id),

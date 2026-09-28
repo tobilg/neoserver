@@ -21,25 +21,6 @@ func duckOpts(props ...string) DuckDBOptions {
 	return DuckDBOptions{StartParamIndex: 1, FilterSRID: 4326, SourceSRID: 4326, AllowedProperties: allowed, GeometryProperty: "geom"}
 }
 
-func TestQuoteIdentEscaping(t *testing.T) {
-	tests := []struct {
-		in   string
-		want string
-	}{
-		{"name", `"name"`},
-		{`na"me`, `"na""me"`},
-		{`a""b`, `"a""""b"`},
-		{`x;DROP TABLE y--`, `"x;DROP TABLE y--"`},
-	}
-	for _, tt := range tests {
-		if got := quoteIdent(tt.in); got != tt.want {
-			t.Errorf("quoteIdent(%q) = %s, want %s", tt.in, got, tt.want)
-		}
-	}
-}
-
-// A hostile identifier admitted through the allowlist must stay inside its
-// quotes: the doubled-quote escaping prevents breaking out of the identifier.
 func TestHostileAllowlistedIdentifierIsQuoted(t *testing.T) {
 	hostile := `a" = '' ; DROP TABLE users; --`
 	sql, _, _, err := Compile(hostile+" = 'x'", pgOpts(hostile))
@@ -418,20 +399,20 @@ func TestDuckDBScalarArithmeticAndTemporal(t *testing.T) {
 
 func TestMalformedPredicatesRejected(t *testing.T) {
 	filters := []string{
-		"name BETWEEN 'a' 'z'",           // missing AND
-		"name NOT BETWEEN 'a' 'z'",       // missing AND in negated form
-		"name IN (name)",                 // non-literal in IN list
-		"name IN ()",                     // empty IN list
-		"name IN ('a' 'b')",              // missing comma
-		"name LIKE 42",                   // non-string LIKE pattern
-		"name IS 'x'",                    // IS without NULL
-		"secret = 'x'",                   // property not in allowlist
-		"name =",                         // missing right operand
-		"INTERSECTS(geom)",               // missing second geometry
-		"DWITHIN(geom, POINT(1 2))",      // missing distance
+		"name BETWEEN 'a' 'z'",                   // missing AND
+		"name NOT BETWEEN 'a' 'z'",               // missing AND in negated form
+		"name IN (name)",                         // non-literal in IN list
+		"name IN ()",                             // empty IN list
+		"name IN ('a' 'b')",                      // missing comma
+		"name LIKE 42",                           // non-string LIKE pattern
+		"name IS 'x'",                            // IS without NULL
+		"secret = 'x'",                           // property not in allowlist
+		"name =",                                 // missing right operand
+		"INTERSECTS(geom)",                       // missing second geometry
+		"DWITHIN(geom, POINT(1 2))",              // missing distance
 		"INTERSECTS(geom, ENVELOPE(a, b, c, d))", // non-numeric envelope
-		"AND name = 'x'",                 // dangling operator
-		"(name = 'x'",                    // unbalanced paren
+		"AND name = 'x'",                         // dangling operator
+		"(name = 'x'",                            // unbalanced paren
 	}
 	for _, f := range filters {
 		if _, _, _, err := Compile(f, pgOpts("name")); err == nil {

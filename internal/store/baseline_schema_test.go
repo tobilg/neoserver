@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/testutil/schematest"
 	"path/filepath"
 	"strings"
@@ -35,10 +36,10 @@ func TestOpenRejectsCatalogOlderThanBaselineWithoutChangingIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if _, err = db.Exec("ATTACH '" + escapeSQLLiteral(cfg.Path) + "' AS store (ENCRYPTION_KEY 'abc123'); USE store;"); err != nil {
+	if _, err = db.Exec("ATTACH '" + sqlutil.EscapeLiteral(cfg.Path) + "' AS store (ENCRYPTION_KEY 'abc123'); USE store;"); err != nil {
 		t.Fatal(err)
 	}
-	attached()
+	attached.markAttached()
 	var version int
 	if err = db.QueryRow("SELECT max(version) FROM schema_info").Scan(&version); err != nil || version != catalogBaselineVersion-1 {
 		t.Fatalf("version=%d %v", version, err)

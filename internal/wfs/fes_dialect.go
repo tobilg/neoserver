@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/tobilg/neoserver/internal/datasource"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 type featurePredicate struct {
@@ -26,9 +27,9 @@ func (c *fesCompiler) column(name string) string {
 		alias = "t"
 	}
 	if alias != "t" && alias != "v" {
-		alias = quoteIdent(alias)
+		alias = sqlutil.QuoteIdent(alias)
 	}
-	return alias + "." + quoteIdent(name)
+	return alias + "." + sqlutil.QuoteIdent(name)
 }
 
 func (c *fesCompiler) transformGeometry(expr string, srid int) string {

@@ -29,6 +29,7 @@ import (
 	"github.com/tobilg/neoserver/internal/datasource/geoparquet"
 	"github.com/tobilg/neoserver/internal/datasource/pathpolicy"
 	"github.com/tobilg/neoserver/internal/datasource/vectorfile"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 	"github.com/tobilg/neoserver/internal/store"
 	"github.com/tobilg/neoserver/internal/workspace"
 )
@@ -666,12 +667,23 @@ func (m *Manager) discover(ctx context.Context, job *store.ImportJob) error {
 	_, _ = m.store.UpdateImportJob(ctx, job.ID, store.ImportJobUpdate{Phase: &phase})
 	path := job.SourcePath
 	var err error
-	if job.SourceKind == "uri" {
-		path, err = pathpolicy.Resolve(ctx, path)
+	if job.SourceKind == "uri" && job.SourceRelativePath == "" {
+		lease, err := pathpolicy.Acquire(ctx, path)
 		if err != nil {
 			return err
 		}
-		if _, err := m.store.UpdateImportJob(ctx, job.ID, store.ImportJobUpdate{SourcePath: &path}); err != nil {
+		path = lease.Path
+		update := store.ImportJobUpdate{SourcePath: &path}
+		if lease.Cached {
+			var relative string
+			path, relative, err = m.adoptRemoteSource(job, lease.Path)
+			update = store.ImportJobUpdate{SourcePath: &path, SourceRelativePath: &relative}
+		}
+		lease.Release()
+		if err != nil {
+			return err
+		}
+		if _, err := m.store.UpdateImportJob(ctx, job.ID, update); err != nil {
 			return err
 		}
 	}
@@ -800,7 +812,7 @@ func (m *Manager) transform(ctx context.Context, job *store.ImportJob) error {
 		source := discovered[plan.SourceLayer]
 		if strings.EqualFold(filepath.Ext(job.SourcePath), ".parquet") {
 			var geometryType string
-			err := db.QueryRowContext(ctx, fmt.Sprintf("SELECT typeof((SELECT %s FROM read_parquet('%s') LIMIT 1))", quoteIdent(source.GeometryColumn), quoteLiteralValue(job.SourcePath))).Scan(&geometryType)
+			err := db.QueryRowContext(ctx, fmt.Sprintf("SELECT typeof((SELECT %s FROM read_parquet('%s') LIMIT 1))", sqlutil.QuoteIdent(source.GeometryColumn), sqlutil.EscapeLiteral(job.SourcePath))).Scan(&geometryType)
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return fmt.Errorf("inspect Parquet geometry: %w", err)
 			}
@@ -815,13 +827,13 @@ func (m *Manager) transform(ctx context.Context, job *store.ImportJob) error {
 			return fmt.Errorf("transform layer %q: %w", plan.SourceLayer, err)
 		}
 		var total, nonNull, distinct int64
-		if err = db.QueryRowContext(ctx, fmt.Sprintf("SELECT count(*),count(%s),count(DISTINCT %s) FROM managed.%s", quoteIdent(idColumn), quoteIdent(idColumn), quoteIdent(plan.PublicID))).Scan(&total, &nonNull, &distinct); err != nil {
+		if err = db.QueryRowContext(ctx, fmt.Sprintf("SELECT count(*),count(%s),count(DISTINCT %s) FROM managed.%s", sqlutil.QuoteIdent(idColumn), sqlutil.QuoteIdent(idColumn), sqlutil.QuoteIdent(plan.PublicID))).Scan(&total, &nonNull, &distinct); err != nil {
 			return err
 		}
 		if total != nonNull || total != distinct {
 			return fmt.Errorf("id column %q for layer %q must be non-null and unique", idColumn, plan.PublicID)
 		}
-		if _, err = db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE managed.%s ADD PRIMARY KEY (%s)", quoteIdent(plan.PublicID), quoteIdent(idColumn))); err != nil {
+		if _, err = db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE managed.%s ADD PRIMARY KEY (%s)", sqlutil.QuoteIdent(plan.PublicID), sqlutil.QuoteIdent(idColumn))); err != nil {
 			return fmt.Errorf("add primary key: %w", err)
 		}
 		if _, err = db.ExecContext(ctx, "INSERT INTO managed.__neoserver.layers VALUES (?, ?)", plan.PublicID, plan.TargetSRID); err != nil {
@@ -1063,12 +1075,66 @@ func openImportDatabase(path, key string) (*sql.DB, error) {
 	}
 	// The target is local, but an import source may use S3/HTTPS.
 	_, _ = db.Exec("INSTALL httpfs; LOAD httpfs")
-	statement := fmt.Sprintf("ATTACH '%s' AS managed (ENCRYPTION_KEY '%s')", quoteLiteralValue(path), quoteLiteralValue(key))
+	statement := fmt.Sprintf("ATTACH '%s' AS managed (ENCRYPTION_KEY '%s')", sqlutil.EscapeLiteral(path), sqlutil.EscapeLiteral(key))
 	if _, err = db.Exec(statement); err != nil {
 		db.Close()
 		return nil, err
 	}
 	return db, nil
+}
+
+// adoptRemoteSource gives a job its own copy of a cached HTTPS download, like an
+// upload, so remote-cache eviction cannot remove a source that later import
+// phases reopen. A hard link avoids the copy when both share a filesystem.
+func (m *Manager) adoptRemoteSource(job *store.ImportJob, cached string) (string, string, error) {
+	m.storageMu.Lock()
+	defer m.storageMu.Unlock()
+	info, err := os.Stat(cached)
+	if err != nil {
+		return "", "", err
+	}
+	remaining, err := m.remainingSourceBytes()
+	if err != nil {
+		return "", "", err
+	}
+	if info.Size() > remaining {
+		return "", "", errors.New("remote source exceeds the available retained-source budget; publish or cancel unused imports")
+	}
+	jobDir, err := os.MkdirTemp(m.cfg.TemporaryDirectory, "upload-*")
+	if err != nil {
+		return "", "", err
+	}
+	name := filepath.Base(job.SourceFilename)
+	if !supportedSource(name) && !strings.EqualFold(filepath.Ext(name), ".zip") {
+		name = filepath.Base(cached)
+	}
+	path := filepath.Join(jobDir, name)
+	err = os.Chmod(jobDir, 0700)
+	if err == nil && os.Link(cached, path) != nil {
+		err = copyFile(cached, path)
+	}
+	if err != nil {
+		_ = os.RemoveAll(jobDir)
+		return "", "", err
+	}
+	return path, filepath.Join(filepath.Base(jobDir), name), nil
+}
+
+func copyFile(source, destination string) error {
+	in, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(destination, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	if _, err = io.Copy(out, in); err != nil {
+		out.Close()
+		return err
+	}
+	return out.Close()
 }
 
 func (m *Manager) cleanupTemporarySource(path string) error {
@@ -1099,12 +1165,12 @@ func removeOwnedFile(path string) error {
 }
 
 func buildTransformSQL(path string, source store.ImportDiscoveredLayer, plan store.ImportLayerPlan) (string, string, error) {
-	read := fmt.Sprintf("ST_Read('%s'", quoteLiteralValue(path))
+	read := fmt.Sprintf("ST_Read('%s'", sqlutil.EscapeLiteral(path))
 	if strings.EqualFold(filepath.Ext(path), ".parquet") {
-		read = fmt.Sprintf("read_parquet('%s')", quoteLiteralValue(path))
+		read = fmt.Sprintf("read_parquet('%s')", sqlutil.EscapeLiteral(path))
 	} else {
 		if source.Name != "" && strings.EqualFold(filepath.Ext(path), ".gpkg") {
-			read += fmt.Sprintf(", layer='%s'", quoteLiteralValue(source.Name))
+			read += fmt.Sprintf(", layer='%s'", sqlutil.EscapeLiteral(source.Name))
 		}
 		read += vectorfile.ReadPolicySQL + ")"
 	}
@@ -1115,7 +1181,7 @@ func buildTransformSQL(path string, source store.ImportDiscoveredLayer, plan sto
 			if property.Name == source.GeometryColumn {
 				continue
 			}
-			fields = append(fields, "src."+quoteIdent(property.Name))
+			fields = append(fields, "src."+sqlutil.QuoteIdent(property.Name))
 			targetNames[property.Name] = true
 		}
 	} else {
@@ -1127,15 +1193,15 @@ func buildTransformSQL(path string, source store.ImportDiscoveredLayer, plan sto
 			if target == "" {
 				target = field.Source
 			}
-			expression := "src." + quoteIdent(field.Source)
+			expression := "src." + sqlutil.QuoteIdent(field.Source)
 			if sqlType, ok := castType(field.Type); ok && sqlType != "" {
 				expression = "CAST(" + expression + " AS " + sqlType + ")"
 			}
-			fields = append(fields, expression+" AS "+quoteIdent(target))
+			fields = append(fields, expression+" AS "+sqlutil.QuoteIdent(target))
 			targetNames[target] = true
 		}
 	}
-	geom := "src." + quoteIdent(source.GeometryColumn)
+	geom := "src." + sqlutil.QuoteIdent(source.GeometryColumn)
 	if strings.EqualFold(filepath.Ext(path), ".parquet") {
 		var native bool
 		for _, property := range source.Properties {
@@ -1150,15 +1216,15 @@ func buildTransformSQL(path string, source store.ImportDiscoveredLayer, plan sto
 	if plan.SourceSRID != plan.TargetSRID {
 		geom = fmt.Sprintf("ST_Transform(%s, 'EPSG:%d', 'EPSG:%d', always_xy := true)", geom, plan.SourceSRID, plan.TargetSRID)
 	}
-	fields = append(fields, geom+" AS "+quoteIdent(plan.TargetGeometry))
+	fields = append(fields, geom+" AS "+sqlutil.QuoteIdent(plan.TargetGeometry))
 	idColumn := plan.IDColumn
 	if idColumn == "" {
 		idColumn = "__neoserver_id"
-		fields = append([]string{"row_number() OVER ()::BIGINT AS " + quoteIdent(idColumn)}, fields...)
+		fields = append([]string{"row_number() OVER ()::BIGINT AS " + sqlutil.QuoteIdent(idColumn)}, fields...)
 	} else if !targetNames[idColumn] {
 		return "", "", fmt.Errorf("id_column %q is not an included target field", idColumn)
 	}
-	return fmt.Sprintf("CREATE TABLE managed.%s AS SELECT %s FROM %s AS src", quoteIdent(plan.PublicID), strings.Join(fields, ","), read), idColumn, nil
+	return fmt.Sprintf("CREATE TABLE managed.%s AS SELECT %s FROM %s AS src", sqlutil.QuoteIdent(plan.PublicID), strings.Join(fields, ","), read), idColumn, nil
 }
 
 func castType(value string) (string, bool) {
@@ -1181,8 +1247,6 @@ func castType(value string) (string, bool) {
 		return "", false
 	}
 }
-func quoteIdent(value string) string        { return `"` + strings.ReplaceAll(value, `"`, `""`) + `"` }
-func quoteLiteralValue(value string) string { return strings.ReplaceAll(value, "'", "''") }
 func supportedSource(path string) bool {
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".gpkg", ".geojson", ".json", ".fgb", ".parquet", ".shp":

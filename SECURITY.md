@@ -4,17 +4,32 @@ Do not post credentials, private data, or working exploit details in public issu
 Use [private vulnerability reporting](https://github.com/tobilg/neoserver/security/advisories/new).
 If private reporting is unavailable, open a minimal issue requesting a private contact without disclosing the vulnerability.
 
-The latest tagged release is the supported security-update line. Until the first
-public release, use the current main branch and treat deployments as pre-release.
-Security fixes may require upgrading; older releases do not have an LTS guarantee.
+## Supported versions
+
+Only the latest tagged [release](https://github.com/tobilg/neoserver/releases)
+receives security fixes. neoserver is pre-1.0: fixes ship in a new release rather
+than as backports, and may require upgrading and following the upgrade notes in
+the [release notes](docs/release-notes.md). Older releases have no LTS guarantee.
+
+## What to expect
+
+Reports are acknowledged within a few days. Confirmed vulnerabilities are fixed
+in a new release and disclosed through a
+[GitHub security advisory](https://github.com/tobilg/neoserver/security/advisories)
+that names affected versions and any credential rotation or migration needed.
+
+## Deploying securely
 
 Deployment requirements: TLS outside loopback, a random catalog encryption key
 stored separately from backups, least-privilege datasource credentials, explicit
-file allowlists, and private-by-default publications. See
+file allowlists that exclude the server's own state, PostGIS host allowlisting
+for workspace administrators, and private-by-default publications. See
 [deployment and release guidance](docs/releasing.md) and
 [SQL-view security](docs/sql-view-security.md).
 
-Maintainers: confirm private reporting is enabled before announcing a release.
+## Maintainer checklist
+
+Confirm private reporting is enabled before announcing a release.
 Reproduce reports in isolated fixtures, prepare regression tests, coordinate a
 patched release and advisory, and describe credential rotation/migration needs.
 Run scheduled dependency scans as well as scans of the exact release image.

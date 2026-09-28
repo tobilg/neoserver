@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/tobilg/neoserver/internal/crs"
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 // SQLDialect specifies the target SQL dialect.
@@ -480,7 +481,7 @@ func (c *SQLCompiler) compileResourceIds(node *Node) (string, error) {
 }
 
 func (c *SQLCompiler) quoteProperty(name string) string {
-	quoted := `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+	quoted := sqlutil.QuoteIdent(name)
 	if c.opts.TableAlias != "" {
 		return c.opts.TableAlias + "." + quoted
 	}

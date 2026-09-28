@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/tobilg/neoserver/security/advisories/new
+    about: Report vulnerabilities privately. Never post them in a public issue.
+  - name: Documentation
+    url: https://github.com/tobilg/neoserver/tree/main/docs
+    about: Tutorials, configuration, deployment and protocol guides.

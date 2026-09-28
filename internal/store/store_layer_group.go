@@ -60,7 +60,7 @@ func (s *DuckDBStore) CreateLayerGroup(ctx context.Context, input CreateLayerGro
 }
 
 func (s *DuckDBStore) GetLayerGroup(ctx context.Context, id string) (*LayerGroup, error) {
-	value, err := scanLayerGroup(s.db.QueryRowContext(ctx, `SELECT `+layerGroupColumns+` FROM layer_groups WHERE id=?`, id))
+	value, err := scanLayerGroup(s.read.QueryRowContext(ctx, `SELECT `+layerGroupColumns+` FROM layer_groups WHERE id=?`, id))
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -68,7 +68,7 @@ func (s *DuckDBStore) GetLayerGroup(ctx context.Context, id string) (*LayerGroup
 }
 
 func (s *DuckDBStore) GetLayerGroupByPublicID(ctx context.Context, workspaceID, publicID string) (*LayerGroup, error) {
-	value, err := scanLayerGroup(s.db.QueryRowContext(ctx, `SELECT `+layerGroupColumns+` FROM layer_groups WHERE workspace_id=? AND public_id=?`, workspaceID, publicID))
+	value, err := scanLayerGroup(s.read.QueryRowContext(ctx, `SELECT `+layerGroupColumns+` FROM layer_groups WHERE workspace_id=? AND public_id=?`, workspaceID, publicID))
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -76,7 +76,7 @@ func (s *DuckDBStore) GetLayerGroupByPublicID(ctx context.Context, workspaceID, 
 }
 
 func (s *DuckDBStore) ListLayerGroups(ctx context.Context, workspaceID string) ([]*LayerGroup, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+layerGroupColumns+` FROM layer_groups WHERE workspace_id=? ORDER BY public_id`, workspaceID)
+	rows, err := s.read.QueryContext(ctx, `SELECT `+layerGroupColumns+` FROM layer_groups WHERE workspace_id=? ORDER BY public_id`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (s *DuckDBStore) DeleteLayerGroup(ctx context.Context, id string) error {
 	s.datasetMapMu.Lock()
 	defer s.datasetMapMu.Unlock()
 	var references int
-	if err := s.db.QueryRowContext(ctx, `SELECT count(*) FROM workspaces WHERE json_extract_string(ogc_tiles_api_settings, '$.settings.dataset_map_layer_group_id') = ?`, id).Scan(&references); err != nil {
+	if err := s.read.QueryRowContext(ctx, `SELECT count(*) FROM workspaces WHERE json_extract_string(ogc_tiles_api_settings, '$.settings.dataset_map_layer_group_id') = ?`, id).Scan(&references); err != nil {
 		return err
 	}
 	if references > 0 {

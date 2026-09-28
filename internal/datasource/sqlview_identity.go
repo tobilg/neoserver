@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
+
+	"github.com/tobilg/neoserver/internal/sqlutil"
 )
 
 var ErrSQLViewIdentity = errors.New("SQL view requires a unique, non-null id_column")
@@ -19,6 +20,6 @@ func SQLViewIdentitySQL(config *SQLViewConfig) (string, error) {
 	if config == nil || config.IDColumn == "" {
 		return "", ErrSQLViewIdentity
 	}
-	id := `"` + strings.ReplaceAll(config.IDColumn, `"`, `""`) + `"`
+	id := sqlutil.QuoteIdent(config.IDColumn)
 	return fmt.Sprintf("SELECT COUNT(*) = COUNT(%s) AND COUNT(*) = COUNT(DISTINCT CAST(%s AS VARCHAR)) FROM (%s) AS v", id, id, config.SQL), nil
 }

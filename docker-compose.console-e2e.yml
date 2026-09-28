@@ -92,6 +92,8 @@ services:
       NEOSRV_SERVER_URLBASE: "http://localhost:${CONSOLE_HTTP_PORT:-19100}"
       NEOSRV_SERVER_ADMINUI: "true"
       NEOSRV_AUTH_REQUIREHTTPS: "false"
+      # Workspace admins create the fixture PostGIS store through the console.
+      NEOSRV_DATASOURCE_DATABASEHOSTS: "${CONSOLE_POSTGIS_HOST:-db}"
       # Human sign-in is OIDC; machine clients keep API keys and JWTs.
       NEOSRV_AUTH_OIDC_ISSUERURL: "http://keycloak:8080/realms/neoserver"
       NEOSRV_AUTH_OIDC_CLIENTID: "neoserver-console"

@@ -163,7 +163,7 @@ func getPaths(params PathParams) *openapi3.Paths {
 		Post: &openapi3.Operation{
 			Tags:        []string{"Services"},
 			Summary:     "Create service",
-			Description: "Creates a new data source service in a workspace.",
+			Description: "Creates a new data source service in a workspace. Only super administrators may connect a PostGIS service to a new host that is not listed in Datasource.DatabaseHosts; others receive 403.",
 			OperationID: "createService",
 			Parameters:  openapi3.Parameters{params.Workspace},
 			RequestBody: jsonBody("Service to create", &openapi3.SchemaRef{Value: &openapi3.Schema{
@@ -187,7 +187,8 @@ func getPaths(params PathParams) *openapi3.Paths {
 	})
 	paths.Set("/workspaces/{workspace}/services/test-connection", &openapi3.PathItem{Post: &openapi3.Operation{
 		Tags: []string{"Services"}, Summary: "Test a service connection before saving", OperationID: "testNewServiceConnection", Parameters: openapi3.Parameters{params.Workspace},
-		RequestBody: jsonBody("Service connection", schemaRef("ServiceConnectionInput")), Responses: mkResponses(map[string]*openapi3.ResponseRef{"200": jsonResp("Connection test result", schemaRef("ConnectionTest"))}),
+		Description: "Applies the same PostGIS host rule as service creation.",
+		RequestBody: jsonBody("Service connection", schemaRef("ServiceConnectionInput")), Responses: mkResponses(map[string]*openapi3.ResponseRef{"200": jsonResp("Connection test result", schemaRef("ConnectionTest")), "403": errResp(403, "Forbidden")}),
 	}})
 
 	paths.Set("/workspaces/{workspace}/services/{service}", &openapi3.PathItem{
@@ -207,7 +208,7 @@ func getPaths(params PathParams) *openapi3.Paths {
 		Put: &openapi3.Operation{
 			Tags:        []string{"Services"},
 			Summary:     "Update service",
-			Description: "Updates a service configuration.",
+			Description: "Updates a service configuration. Workspace administrators may keep a PostGIS service's host and port, or move it to a host listed in Datasource.DatabaseHosts; any other host requires a super administrator (403 otherwise).",
 			OperationID: "updateService",
 			Parameters:  openapi3.Parameters{params.Workspace, params.Service},
 			RequestBody: jsonBody("Service updates", &openapi3.SchemaRef{Value: &openapi3.Schema{
@@ -245,7 +246,8 @@ func getPaths(params PathParams) *openapi3.Paths {
 	})
 	paths.Set("/workspaces/{workspace}/services/{service}/test-connection", &openapi3.PathItem{Post: &openapi3.Operation{
 		Tags: []string{"Services"}, Summary: "Test an existing service connection", OperationID: "testExistingServiceConnection", Parameters: openapi3.Parameters{params.Workspace, params.Service},
-		RequestBody: jsonBody("Optional connection updates", schemaRef("ServiceConnectionInput")), Responses: mkResponses(map[string]*openapi3.ResponseRef{"200": jsonResp("Connection test result", schemaRef("ConnectionTest"))}),
+		Description: "Applies the same PostGIS host rule as service updates.",
+		RequestBody: jsonBody("Optional connection updates", schemaRef("ServiceConnectionInput")), Responses: mkResponses(map[string]*openapi3.ResponseRef{"200": jsonResp("Connection test result", schemaRef("ConnectionTest")), "403": errResp(403, "Forbidden")}),
 	}})
 	paths.Set("/workspaces/{workspace}/services/{service}/deletion-plan", &openapi3.PathItem{Get: &openapi3.Operation{
 		Tags: []string{"Catalog Lifecycle"}, Summary: "Inspect service deletion dependencies", OperationID: "getServiceDeletionPlan",

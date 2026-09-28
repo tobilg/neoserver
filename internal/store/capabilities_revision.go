@@ -12,7 +12,7 @@ type CapabilitiesRevisionStore interface {
 
 func (s *DuckDBStore) GetCapabilitiesRevision(ctx context.Context, workspaceID string) (int64, error) {
 	var revision int64
-	err := s.db.QueryRowContext(ctx, "SELECT capabilities_revision FROM workspaces WHERE id = ?", workspaceID).Scan(&revision)
+	err := s.read.QueryRowContext(ctx, "SELECT capabilities_revision FROM workspaces WHERE id = ?", workspaceID).Scan(&revision)
 	if err == sql.ErrNoRows {
 		return 0, ErrNotFound
 	}

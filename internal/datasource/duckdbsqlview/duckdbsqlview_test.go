@@ -198,12 +198,12 @@ func TestDiscoverSQLViewColumns(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name           string
-		sql            string
-		wantErr        bool
-		wantGeomCol    string
-		wantIDCol      string
-		wantPropCount  int
+		name          string
+		sql           string
+		wantErr       bool
+		wantGeomCol   string
+		wantIDCol     string
+		wantPropCount int
 	}{
 		{
 			name:          "discover all columns",
@@ -454,27 +454,6 @@ func TestDefaultTypeMapper(t *testing.T) {
 			result := DefaultTypeMapper(tt.colType)
 			if result != tt.expected {
 				t.Errorf("DefaultTypeMapper(%q) = %v, want %v", tt.colType, result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestQuoteIdent(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"simple", `"simple"`},
-		{"with space", `"with space"`},
-		{`with"quote`, `"with""quote"`},
-		{"CamelCase", `"CamelCase"`},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := QuoteIdent(tt.input)
-			if result != tt.expected {
-				t.Errorf("QuoteIdent(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
 	}

@@ -134,7 +134,7 @@ func (s *DuckDBStore) GetLayer(ctx context.Context, id string) (*Layer, error) {
 	var stylesJSON any
 	var nativeExtentJSON any
 	var tileCacheParametersJSON any
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, service_id, source_layer, public_id, title, description, enabled, crs_default, dimensions, is_sql_view, sql_view_config, public, allowed_roles, default_style, styles, native_extent, tile_cache_quota_bytes, tile_cache_parameters, tile_cache_generation, created_at, updated_at
 		FROM layers WHERE id = ?
 	`, id).Scan(&layer.ID, &layer.ServiceID, &layer.SourceLayer, &layer.PublicID, &layer.Title, &layer.Description, &layer.Enabled, &layer.CRSDefault, &dimensionsJSON, &layer.IsSQLView, &sqlViewConfigJSON, &layer.Public, &allowedRolesJSON, &layer.DefaultStyle, &stylesJSON, &nativeExtentJSON, &layer.TileCacheQuotaBytes, &tileCacheParametersJSON, &layer.TileCacheGeneration, &layer.CreatedAt, &layer.UpdatedAt)
@@ -176,7 +176,7 @@ func (s *DuckDBStore) GetLayerByPublicID(ctx context.Context, serviceID, publicI
 	var stylesJSON any
 	var nativeExtentJSON any
 	var tileCacheParametersJSON any
-	err := s.db.QueryRowContext(ctx, `
+	err := s.read.QueryRowContext(ctx, `
 		SELECT id, service_id, source_layer, public_id, title, description, enabled, crs_default, dimensions, is_sql_view, sql_view_config, public, allowed_roles, default_style, styles, native_extent, tile_cache_quota_bytes, tile_cache_parameters, tile_cache_generation, created_at, updated_at
 		FROM layers WHERE service_id = ? AND public_id = ?
 	`, serviceID, publicID).Scan(&layer.ID, &layer.ServiceID, &layer.SourceLayer, &layer.PublicID, &layer.Title, &layer.Description, &layer.Enabled, &layer.CRSDefault, &dimensionsJSON, &layer.IsSQLView, &sqlViewConfigJSON, &layer.Public, &allowedRolesJSON, &layer.DefaultStyle, &stylesJSON, &nativeExtentJSON, &layer.TileCacheQuotaBytes, &tileCacheParametersJSON, &layer.TileCacheGeneration, &layer.CreatedAt, &layer.UpdatedAt)
@@ -211,7 +211,7 @@ func (s *DuckDBStore) GetLayerByPublicID(ctx context.Context, serviceID, publicI
 }
 
 func (s *DuckDBStore) ListLayers(ctx context.Context, serviceID string) ([]*Layer, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.read.QueryContext(ctx, `
 		SELECT id, service_id, source_layer, public_id, title, description, enabled, crs_default, dimensions, is_sql_view, sql_view_config, public, allowed_roles, default_style, styles, native_extent, tile_cache_quota_bytes, tile_cache_parameters, tile_cache_generation, created_at, updated_at
 		FROM layers WHERE service_id = ? ORDER BY public_id
 	`, serviceID)

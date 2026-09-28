@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/tobilg/neoserver/internal/store"
 )
@@ -91,6 +92,8 @@ func (v *APIKeyValidator) Validate(ctx context.Context, key string) (*Identity, 
 type AuthError struct {
 	Message    string
 	StatusCode int
+	// RetryAfter, when positive, is sent as Retry-After.
+	RetryAfter time.Duration
 }
 
 func (e *AuthError) Error() string {

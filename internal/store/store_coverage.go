@@ -64,7 +64,7 @@ func (s *DuckDBStore) CreateCoverage(ctx context.Context, input CreateCoverageIn
 	now := time.Now().UTC()
 	workspaceID := input.WorkspaceID
 	if workspaceID == "" {
-		if err := s.db.QueryRowContext(ctx, "SELECT workspace_id FROM services WHERE id = ?", input.ServiceID).Scan(&workspaceID); err != nil {
+		if err := s.read.QueryRowContext(ctx, "SELECT workspace_id FROM services WHERE id = ?", input.ServiceID).Scan(&workspaceID); err != nil {
 			if err == sql.ErrNoRows {
 				return nil, ErrNotFound
 			}
@@ -97,7 +97,7 @@ func (s *DuckDBStore) CreateCoverage(ctx context.Context, input CreateCoverageIn
 }
 
 func (s *DuckDBStore) GetCoverage(ctx context.Context, id string) (*Coverage, error) {
-	coverage, err := scanCoverage(s.db.QueryRowContext(ctx,
+	coverage, err := scanCoverage(s.read.QueryRowContext(ctx,
 		`SELECT `+coverageColumns+` FROM coverages WHERE id = ?`, id))
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
@@ -109,7 +109,7 @@ func (s *DuckDBStore) GetCoverage(ctx context.Context, id string) (*Coverage, er
 }
 
 func (s *DuckDBStore) GetCoverageByPublicID(ctx context.Context, workspaceID, publicID string) (*Coverage, error) {
-	coverage, err := scanCoverage(s.db.QueryRowContext(ctx,
+	coverage, err := scanCoverage(s.read.QueryRowContext(ctx,
 		`SELECT `+coverageColumns+` FROM coverages WHERE workspace_id = ? AND public_id = ?`, workspaceID, publicID))
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
@@ -121,7 +121,7 @@ func (s *DuckDBStore) GetCoverageByPublicID(ctx context.Context, workspaceID, pu
 }
 
 func (s *DuckDBStore) ListCoverages(ctx context.Context, serviceID string) ([]*Coverage, error) {
-	rows, err := s.db.QueryContext(ctx,
+	rows, err := s.read.QueryContext(ctx,
 		`SELECT `+coverageColumns+` FROM coverages WHERE service_id = ? ORDER BY public_id`, serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("list coverages: %w", err)
@@ -243,7 +243,7 @@ func (s *DuckDBStore) DeleteCoverage(ctx context.Context, id string) error {
 
 func (s *DuckDBStore) GetWCSSettings(ctx context.Context, workspaceID string) (*WCSSettings, error) {
 	var value any
-	err := s.db.QueryRowContext(ctx, "SELECT wcs_settings FROM workspaces WHERE id = ?", workspaceID).Scan(&value)
+	err := s.read.QueryRowContext(ctx, "SELECT wcs_settings FROM workspaces WHERE id = ?", workspaceID).Scan(&value)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}

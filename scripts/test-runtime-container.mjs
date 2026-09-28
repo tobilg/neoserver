@@ -139,7 +139,7 @@ async function start(image, data, name, offline = false, extra = []) {
       client,
       "--network",
       `container:${current}`,
-      "node:24-alpine",
+      "node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1",
       "node",
       "-e",
       "setInterval(()=>{},100000)",
@@ -466,7 +466,30 @@ try {
   assert.equal(fallback.bands[0].maximum, 6);
   const wms =
     "/workspaces/formats/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=points&STYLES=&CRS=EPSG:4326&BBOX=50,7,52,10&WIDTH=64&HEIGHT=64&FORMAT=";
-  await rasterResponse(wms + "application/pdf", "map.pdf", "PDF", [64, 64]);
+  // neoserver writes the georeferenced PDF itself; the image deliberately has
+  // no PDF reader (GDAL's plugin needs GPL-licensed poppler), so check the
+  // structure here. The GDAL round trip runs in the Go unit tests.
+  {
+    const { bytes, contentType } = await request(wms + "application/pdf");
+    assert.equal(contentType, "application/pdf");
+    const pdf = bytes.toString("latin1");
+    assert.ok(
+      pdf.startsWith("%PDF-") && pdf.trimEnd().endsWith("%%EOF"),
+      "PDF envelope",
+    );
+    for (const marker of [
+      "/Subtype /GEO",
+      "/GPTS [",
+      "/EPSG 4326",
+      "/Width 64 /Height 64",
+    ])
+      assert.ok(pdf.includes(marker), `PDF lacks ${marker}`);
+    const formats = docker("exec", current, "gdalinfo", "--formats");
+    assert.ok(
+      !/^\s*PDF\b/m.test(formats),
+      "the image must not ship a PDF reader",
+    );
+  }
   for (const format of ["image/png", "image/jpeg"]) {
     const { bytes, contentType } = await request(wms + format);
     assert.equal(contentType, format);

@@ -34,7 +34,7 @@ func TestReleaseAuthenticationRefreshAndAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer manager.Close(ctx)
-	h := &handler{cfg: cfg, store: catalog, loginRate: newLoginRateLimiter()}
+	h := &handler{cfg: cfg, store: catalog, loginRate: identity.NewFailureLimiter()}
 	auth := identity.Middleware(identity.MiddlewareConfig{Store: catalog, Session: &identity.SessionConfig{}, BasicAuthUsers: cfg.Auth.Users})
 	router := manager.Middleware(auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

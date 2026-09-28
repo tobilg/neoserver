@@ -1,4 +1,4 @@
-FROM node:24-alpine AS ui
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS ui
 
 WORKDIR /ui
 # .npmrc carries legacy-peer-deps, which npm ci needs while typescript-eslint 8
@@ -21,7 +21,7 @@ USER root
 # Use the application's allocator; do not inherit the GDAL CLI image's preload.
 ENV LD_PRELOAD=""
 
-FROM golang:1.26.8-bookworm AS go-toolchain
+FROM golang:1.26.8-bookworm@sha256:a688600ca24f8a4d3ca77f95b0dd40704a9fc787c826660eb7ba0b641b8b175d AS go-toolchain
 FROM native AS build
 COPY --from=go-toolchain /usr/local/go /usr/local/go
 ENV PATH="/usr/local/go/bin:${PATH}"
@@ -44,7 +44,7 @@ COPY config ./config
 COPY --from=ui /internal/admin/dist ./internal/admin/dist
 
 # Build with CGO enabled for DuckDB support
-ARG VERSION=0.1.2
+ARG VERSION=0.2.0
 ARG COMMIT=unknown
 # Bound compiler concurrency on small/emulated builders. This only affects the
 # build processes, not the server's runtime GOMAXPROCS or container CPU limits.
@@ -65,7 +65,7 @@ RUN python3 /build/runtime-closure.py
 
 FROM ubuntu:26.04@sha256:da6fc2be547864451aa253836dd926da33623312df4a9a243e35dc877c378a78 AS runtime
 
-ARG VERSION=0.1.2
+ARG VERSION=0.2.0
 ARG COMMIT=unknown
 LABEL org.opencontainers.image.version=$VERSION \
       org.opencontainers.image.revision=$COMMIT \

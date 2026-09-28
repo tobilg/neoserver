@@ -196,7 +196,7 @@ async function dev() {
     console.log(
       "Use the JWT printed above to sign in. It is not the encryption key. Ctrl-C stops both processes; data is preserved.",
     );
-    const backend = run(executable, ["serve", ...configFlags]);
+    const backend = run(executable, ["serve", "--devel", ...configFlags]);
     // Observe startup failures immediately, even while readiness is being polled.
     let backendError;
     void backend.catch((error) => {

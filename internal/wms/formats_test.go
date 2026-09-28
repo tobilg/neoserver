@@ -87,12 +87,9 @@ func TestDocumentGetMapFormatsHaveSemanticPayloads(t *testing.T) {
 
 func TestGDALGetMapFormatsHaveSemanticPayloads(t *testing.T) {
 	capabilities := gdalcap.Get()
-	formats := []string{}
+	formats := []string{FormatPDF}
 	if capabilities.GeoTIFF {
 		formats = append(formats, FormatGeoTIFF)
-	}
-	if capabilities.PDF {
-		formats = append(formats, FormatPDF)
 	}
 	for _, format := range formats {
 		t.Run(format, func(t *testing.T) {
@@ -125,11 +122,7 @@ func TestCapabilitiesAdvertisesOnlyAvailableGetMapFormats(t *testing.T) {
 	if capabilities.GeoTIFF {
 		want = append(want, FormatGeoTIFF)
 	}
-	want = append(want, FormatSVG)
-	if capabilities.PDF {
-		want = append(want, FormatPDF)
-	}
-	want = append(want, FormatKML, FormatKMZ, FormatMapML, FormatUTFGrid)
+	want = append(want, FormatSVG, FormatPDF, FormatKML, FormatKMZ, FormatMapML, FormatUTFGrid)
 	if !slices.Equal(getMapFormats, want) {
 		t.Fatalf("formats = %v, want %v", getMapFormats, want)
 	}

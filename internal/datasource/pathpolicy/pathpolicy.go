@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -30,6 +31,10 @@ type Options struct {
 	RemoteCachePath string
 	RemoteMaxBytes  int64
 	RemoteTimeout   time.Duration
+	// RemoteCacheMaxBytes bounds all cached downloads; zero disables the quota.
+	RemoteCacheMaxBytes int64
+	// RemoteCacheMaxAge evicts downloads unused for longer; zero disables it.
+	RemoteCacheMaxAge time.Duration
 }
 
 // Configure sets the process-wide allowlist of glob patterns. Call once at startup.
@@ -68,34 +73,52 @@ func Check(path string) error {
 	return AllowPath(path, allowed)
 }
 
-// Resolve validates a datasource path and returns a canonical local filename.
+// Acquire validates a datasource path and leases a canonical local filename.
 // HTTPS resources are downloaded through the SSRF-safe fetcher before DuckDB
-// sees them, preventing httpfs from bypassing network policy.
-func Resolve(ctx context.Context, path string) (string, error) {
+// sees them, preventing httpfs from bypassing network policy. Hold the lease
+// for as long as the path may be opened, and Release it afterwards.
+func Acquire(ctx context.Context, path string) (*Lease, error) {
 	mu.RLock()
 	allowed := append([]string(nil), configured...)
 	opts := options
 	mu.RUnlock()
 	if err := AllowPath(path, allowed); err != nil {
-		return "", err
+		return nil, err
 	}
 	u, _ := url.Parse(path)
 	if u != nil && strings.EqualFold(u.Scheme, "http") {
-		return "", fmt.Errorf("remote datasource URLs must use HTTPS")
+		return nil, fmt.Errorf("remote datasource URLs must use HTTPS")
 	}
 	if u != nil && strings.EqualFold(u.Scheme, "https") {
 		if !exactRemoteAuthorityAllowed(u, allowed) {
-			return "", fmt.Errorf("HTTPS datasource host must be exactly allowlisted")
+			return nil, fmt.Errorf("HTTPS datasource host must be exactly allowlisted")
 		}
-		return fetchHTTPS(ctx, u, allowed, opts)
+		destination, err := cacheLocation(u, opts)
+		if err != nil {
+			return nil, err
+		}
+		// Pin before downloading so a concurrent quota pass cannot evict it.
+		pin(destination)
+		if _, err := fetchHTTPS(ctx, u, destination, allowed, opts); err != nil {
+			unpin(destination)
+			return nil, err
+		}
+		now := time.Now()
+		_ = os.Chtimes(destination, now, now)
+		enforceRemoteCacheQuota(opts, now)
+		return &Lease{Path: destination, Cached: true}, nil
 	}
-	if isRemote(path) {
+	if IsRemote(path) {
 		if !exactRemoteAuthorityAllowed(u, allowed) {
-			return "", fmt.Errorf("object storage bucket must be exactly allowlisted")
+			return nil, fmt.Errorf("object storage bucket must be exactly allowlisted")
 		}
-		return path, nil
+		return &Lease{Path: path}, nil
 	}
-	return canonicalLocalPath(path, allowed)
+	resolved, err := canonicalLocalPath(path, allowed)
+	if err != nil {
+		return nil, err
+	}
+	return &Lease{Path: resolved}, nil
 }
 
 // AllowPath returns nil if path is permitted by the allowlist, otherwise an error.
@@ -105,11 +128,11 @@ func Resolve(ctx context.Context, path string) (string, error) {
 //
 // This static check only rejects literal internal IPs and localhost in the host;
 // hostnames that resolve to internal addresses via DNS are not caught here. That
-// gap is closed at connect time for http(s): Resolve funnels HTTPS through
-// fetchHTTPS, whose safeDialContext re-resolves the host and refuses to dial any
+// gap is closed at connect time for http(s): Acquire funnels HTTPS through
+// fetchHTTPS, whose SafeDialContext re-resolves the host and refuses to dial any
 // private/loopback/link-local address (also defeating DNS-rebinding). Object-store
 // schemes (s3://, gs://, ...) are handed to DuckDB directly and are NOT routed
-// through safeDialContext; they rely on the exact-authority allowlist plus the
+// through SafeDialContext; they rely on the exact-authority allowlist plus the
 // provider's fixed endpoint, so a custom object-store endpoint override must never
 // be accepted without allowlisting.
 func AllowPath(path string, allowed []string) error {
@@ -121,7 +144,7 @@ func AllowPath(path string, allowed []string) error {
 		return fmt.Errorf("path traversal not allowed: %q", path)
 	}
 
-	if isRemote(path) {
+	if IsRemote(path) {
 		if err := checkRemoteHost(path); err != nil {
 			return err
 		}
@@ -145,7 +168,7 @@ func AllowPath(path string, allowed []string) error {
 // separately on the resolved filesystem path.
 func matchPattern(pattern, path string) (bool, error) {
 	ok, err := doublestar.Match(pattern, path)
-	if ok || err != nil || isRemote(pattern) || isRemote(path) {
+	if ok || err != nil || IsRemote(pattern) || IsRemote(path) {
 		return ok, err
 	}
 	absPath, err := filepath.Abs(path)
@@ -177,7 +200,8 @@ func absolutePattern(pattern string) (string, error) {
 	return escaped + string(filepath.Separator) + filepath.Clean(pattern), nil
 }
 
-func isRemote(path string) bool {
+// IsRemote reports whether path names a network or object-store resource.
+func IsRemote(path string) bool {
 	lower := strings.ToLower(path)
 	for _, scheme := range []string{"http://", "https://", "s3://", "gs://", "gcs://", "azure://", "az://", "r2://"} {
 		if strings.HasPrefix(lower, scheme) {
@@ -211,12 +235,66 @@ func checkRemoteHost(raw string) error {
 	return nil
 }
 
+// blockedPrefixes are non-public ranges that net.IP's classifiers do not cover.
+var blockedPrefixes = []netip.Prefix{
+	netip.MustParsePrefix("0.0.0.0/8"),       // "this network"
+	netip.MustParsePrefix("100.64.0.0/10"),   // carrier-grade NAT, including some cloud metadata services
+	netip.MustParsePrefix("192.0.0.0/24"),    // IETF protocol assignments
+	netip.MustParsePrefix("192.0.2.0/24"),    // documentation
+	netip.MustParsePrefix("198.18.0.0/15"),   // benchmarking
+	netip.MustParsePrefix("198.51.100.0/24"), // documentation
+	netip.MustParsePrefix("203.0.113.0/24"),  // documentation
+	netip.MustParsePrefix("240.0.0.0/4"),     // reserved, including broadcast
+	netip.MustParsePrefix("::/96"),           // deprecated IPv4-compatible
+	netip.MustParsePrefix("100::/64"),        // discard-only
+	netip.MustParsePrefix("2001::/32"),       // Teredo
+	netip.MustParsePrefix("2001:db8::/32"),   // documentation
+	netip.MustParsePrefix("fec0::/10"),       // deprecated site-local
+}
+
+// Translation prefixes carry an IPv4 destination that is checked in turn:
+// NAT64 is how IPv6-only networks reach every IPv4 host, so the prefix itself
+// cannot be blocked.
+var nat64Prefixes = []netip.Prefix{
+	netip.MustParsePrefix("64:ff9b::/96"),
+	netip.MustParsePrefix("64:ff9b:1::/48"),
+}
+
+var sixToFourPrefix = netip.MustParsePrefix("2002::/16")
+
 func isBlockedIP(ip net.IP) bool {
-	return ip.IsLoopback() ||
-		ip.IsLinkLocalUnicast() ||
-		ip.IsLinkLocalMulticast() ||
-		ip.IsPrivate() ||
-		ip.IsUnspecified()
+	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsMulticast() ||
+		ip.IsPrivate() || ip.IsUnspecified() {
+		return true
+	}
+	addr, ok := netip.AddrFromSlice(ip)
+	if !ok {
+		return true
+	}
+	addr = addr.Unmap()
+	for _, prefix := range blockedPrefixes {
+		if prefix.Contains(addr) {
+			return true
+		}
+	}
+	if embedded, ok := embeddedIPv4(addr); ok {
+		return isBlockedIP(net.IP(embedded.AsSlice()))
+	}
+	return false
+}
+
+// embeddedIPv4 extracts the IPv4 destination of a NAT64 or 6to4 address.
+func embeddedIPv4(addr netip.Addr) (netip.Addr, bool) {
+	bytes := addr.As16()
+	for _, prefix := range nat64Prefixes {
+		if prefix.Contains(addr) {
+			return netip.AddrFrom4([4]byte(bytes[12:16])), true
+		}
+	}
+	if sixToFourPrefix.Contains(addr) {
+		return netip.AddrFrom4([4]byte(bytes[2:6])), true
+	}
+	return netip.Addr{}, false
 }
 
 func exactRemoteAuthorityAllowed(target *url.URL, allowed []string) bool {
@@ -246,7 +324,7 @@ func canonicalLocalPath(path string, allowed []string) (string, error) {
 		return "", fmt.Errorf("resolve datasource path: %w", err)
 	}
 	for _, pattern := range allowed {
-		if isRemote(pattern) {
+		if IsRemote(pattern) {
 			continue
 		}
 		matched, _ := matchPattern(pattern, path)

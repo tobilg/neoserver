@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/tobilg/neoserver/internal/store"
 )
 
 func tokenDuration(value string) (time.Duration, error) {
@@ -28,4 +32,32 @@ func tokenDuration(value string) (time.Duration, error) {
 
 func validTokenRole(role string) bool {
 	return role == "super_admin" || role == "admin" || role == "editor" || role == "viewer"
+}
+
+// validTokenScope keeps super_admin global and every other role workspace-bound.
+func validTokenScope(role, workspace string) error {
+	if role == "super_admin" && workspace != "" {
+		return errors.New("super_admin tokens apply to all workspaces; omit --workspace")
+	}
+	if role != "super_admin" && workspace == "" {
+		return fmt.Errorf("--workspace is required for role %s", role)
+	}
+	return nil
+}
+
+type workspaceLookup interface {
+	GetWorkspace(context.Context, string) (*store.Workspace, error)
+	GetWorkspaceByName(context.Context, string) (*store.Workspace, error)
+}
+
+// resolveTokenWorkspace accepts a workspace ID or name, as the management API does.
+func resolveTokenWorkspace(ctx context.Context, workspaces workspaceLookup, identifier string) (*store.Workspace, error) {
+	ws, err := workspaces.GetWorkspace(ctx, identifier)
+	if errors.Is(err, store.ErrNotFound) {
+		ws, err = workspaces.GetWorkspaceByName(ctx, identifier)
+	}
+	if errors.Is(err, store.ErrNotFound) {
+		return nil, fmt.Errorf("workspace %q not found", identifier)
+	}
+	return ws, err
 }

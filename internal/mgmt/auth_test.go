@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/tobilg/neoserver/internal/conf"
 )
@@ -61,26 +60,6 @@ func TestConsoleConfigLoginMethodsAndSecretSafety(t *testing.T) {
 				t.Fatalf("wrong redirect URI: %s", recorder.Body.String())
 			}
 		})
-	}
-}
-
-func TestLoginRateLimiterBackoff(t *testing.T) {
-	limiter := newLoginRateLimiter()
-	now := time.Now()
-	for attempt := 1; attempt <= 4; attempt++ {
-		if delay := limiter.fail("client", now); delay > 0 {
-			t.Fatalf("attempt %d unexpectedly blocked for %s", attempt, delay)
-		}
-	}
-	if delay := limiter.fail("client", now); delay < 29*time.Second || delay > 31*time.Second {
-		t.Fatalf("fifth failure delay=%s, want about 30s", delay)
-	}
-	if delay := limiter.allowed("client", now); delay < 29*time.Second {
-		t.Fatalf("allowed delay=%s", delay)
-	}
-	limiter.success("client")
-	if delay := limiter.allowed("client", now); delay != 0 {
-		t.Fatalf("successful login did not reset limiter: %s", delay)
 	}
 }
 

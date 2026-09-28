@@ -23,7 +23,7 @@ export NEOSRV_STORE_KEY=abc123 # Local tutorial only; generate a strong key for 
 export NEOSRV_SERVER_URLBASE="http://localhost:9000"
 ~~~
 
-Keep NEOSRV_STORE_KEY safe. The same value is required whenever the store is opened, and it cannot be changed after initialization. For any non-local deployment, generate a key with `openssl rand -hex 32`; never use the example key. The key encrypts the catalog, it is not a sign-in token.
+Keep NEOSRV_STORE_KEY safe. The same value is required whenever the store is opened, and it cannot be changed after initialization. For any non-local deployment, generate a key with `openssl rand -hex 32`; never use the example key. The key encrypts the catalog, it is not a sign-in token. A leaked key cannot be rotated away; the catalog must be re-initialized (see [Deployment](deployment.md#the-store-key-cannot-be-rotated)).
 
 Initialize the store:
 
