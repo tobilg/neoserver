@@ -17,9 +17,11 @@ docker run --rm --entrypoint sh "$image" -c 'test "$(id -u)" = 65532 && test "$(
 docker run --rm --entrypoint sh "$image" -ec '
   test ! -e /usr/bin/pebble
   neoserver-check-runtime
-  for driver in GTiff COG netCDF GRIB JP2OpenJPEG PDF GPKG; do
+  for driver in GTiff COG netCDF GRIB JP2OpenJPEG GPKG; do
     gdalinfo --format "$driver" >/dev/null
   done
+  # neoserver writes WMS PDFs itself; GDAL'"'"'s PDF driver (GPL poppler) must not ship.
+  if gdalinfo --format PDF >/dev/null 2>&1; then echo "GDAL PDF driver must not ship" >&2; exit 1; fi
   for driver in GeoJSON GPKG "ESRI Shapefile" FlatGeobuf; do
     ogrinfo --format "$driver" >/dev/null
   done
