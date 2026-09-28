@@ -7,6 +7,12 @@
       "run_id": "35575448537",
       "run_number": 4,
       "run_attempt": 1
+    },
+    "v0.2.0": {
+      "commit": "38ce5c493e26d155961e481615e1163ddc12ebc5",
+      "run_id": "36431482257",
+      "run_number": 5,
+      "run_attempt": 2
     }
   },
   "latest": {
