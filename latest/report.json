@@ -2,14 +2,14 @@
   "run": {
     "schema_version": 1,
     "repository": "tobilg/neoserver",
-    "run_id": "36421796158",
+    "run_id": "36425769319",
     "run_attempt": 1,
-    "run_number": 27,
-    "commit": "070e24c51b104a4626ed94e8abdde1f07e1d46f7",
+    "run_number": 28,
+    "commit": "2f88aabdc857adf96794292956f346bbbd965b67",
     "ref": "refs/heads/main",
     "event": "push",
-    "url": "https://github.com/tobilg/neoserver/actions/runs/36421796158",
-    "created_at": "2026-09-28T12:26:00Z",
+    "url": "https://github.com/tobilg/neoserver/actions/runs/36425769319",
+    "created_at": "2026-09-28T13:02:18Z",
     "selected_suites": [
       "ogcapi-features10",
       "ogcapi-tiles10",
@@ -32,5 +32,5 @@
     }
   },
   "status": "Passed with skips",
-  "date": "2026-09-28T12:34:30Z"
+  "date": "2026-09-28T13:11:52Z"
 }
