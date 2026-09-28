@@ -1,8 +1,10 @@
 services:
   minio:
-    # Official public multi-architecture manifest, verified 2026-09-15.
-    # The old Docker Hub cpuv1 pin is no longer anonymously retrievable.
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    # MinIO no longer publishes public images (quay.io/minio/minio and
+    # minio/minio refuse anonymous pulls). Chainguard's free build
+    # is upstream MinIO RELEASE.2026-09-22T19-25-18Z; this digest is its
+    # multi-architecture index, verified 2026-09-28.
+    image: cgr.dev/chainguard/minio@sha256:6a1d0b45c8669726bba580ced0bfa4cb9fdeed1ed636dfabd81d1577beb6937b
     command: server /data
     environment:
       MINIO_ROOT_USER: neoserver-test
