@@ -13,6 +13,12 @@
       "run_id": "36431482257",
       "run_number": 5,
       "run_attempt": 2
+    },
+    "v0.3.0": {
+      "commit": "51be6406ae7252bcb141bcb503be3948cbce1bb6",
+      "run_id": "36889453952",
+      "run_number": 6,
+      "run_attempt": 2
     }
   },
   "latest": {
