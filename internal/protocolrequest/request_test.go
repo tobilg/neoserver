@@ -13,6 +13,9 @@ func TestEffectiveOperation(t *testing.T) {
 		name, method, path, body, want string
 		invalid                        bool
 	}{
+		{"STAC POST search ignores query override", "POST", "/workspaces/demo/stac/search?request=Transaction", `{}`, "SEARCH", false},
+		{"STAC GET search", "GET", "/workspaces/demo/stac/search", "", "SEARCH", false},
+		{"STAC management stays mutating", "POST", "/api/v1/workspaces/demo/stac/imports", `{}`, "POST", false},
 		{"xml wins", "POST", "/maps/workspaces/demo/wfs?request=GetCapabilities", `<w:GetFeature xmlns:w="http://www.opengis.net/wfs/2.0"/>`, "GETFEATURE", false},
 		{"mutation wins", "POST", "/workspaces/demo/wfs?request=GetCapabilities", `<Transaction/>`, "TRANSACTION", false},
 		{"trailing root", "POST", "/workspaces/demo/wfs?request=GetCapabilities", `<GetFeature/><Transaction/>`, "", true},

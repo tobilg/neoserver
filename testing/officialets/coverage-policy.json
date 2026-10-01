@@ -248,5 +248,197 @@
         "maximum": 1
       }
     ]
+  },
+  "ogcapi-features10/stac": {
+    "scope": "One 300-Item STAC Collection; OGC Features Core, GeoJSON and OpenAPI 3.0. Optional CRS extension, numberMatched and response timeStamp are not advertised/provided. The independent multi-Collection Features core profile retains its own baseline.",
+    "minimum_assertions": 125,
+    "allowed_skips": [
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.core.collections.Features",
+        "name": "validateFeaturesResponse_NumberMatched",
+        "maximum": 1,
+        "reason_contains": "Property numberMatched is not set"
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.core.collections.Features",
+        "name": "validateFeaturesResponse_TimeStamp",
+        "maximum": 1,
+        "reason_contains": "No server response timeStamp set"
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.core.collections.FeaturesBBox",
+        "name": "validateFeaturesWithBoundingBoxResponse_NumberMatched",
+        "maximum": 6,
+        "reason_contains": "Property numberMatched is not set"
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.core.collections.FeaturesBBox",
+        "name": "validateFeaturesWithBoundingBoxResponse_TimeStamp",
+        "maximum": 6,
+        "reason_contains": "No server response timeStamp set"
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.core.collections.FeaturesLimit",
+        "name": "validateFeaturesWithLimitResponse_NumberMatched",
+        "maximum": 2,
+        "reason_contains": "Property numberMatched is not set"
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.core.collections.FeaturesLimit",
+        "name": "validateFeaturesWithLimitResponse_TimeStamp",
+        "maximum": 2,
+        "reason_contains": "No server response timeStamp set"
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.CrsRequirementClassPrecondition",
+        "name": "verifyConformanceClass",
+        "maximum": 1,
+        "reason_contains": "Conformance class CRS is not supported by the test instance."
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collection.DiscoveryCollectionCrsUri",
+        "name": "verifyCollectionCrsIdentifierOfCrsProperty",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collection.DiscoveryCollectionCrsUri",
+        "name": "verifyCollectionCrsIdentifierOfStorageCrsProperty",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collection.DiscoveryCollectionDefaultCrs",
+        "name": "verifyCollectionCrsIdentifierOfCrsProperty",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collection.DiscoveryCollectionStorageCrs",
+        "name": "verifyCollectionCrsIdentifierOfCrsProperty",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collections.DiscoveryCollectionsCrsUri",
+        "name": "verifyCollectionsCollectionCrsIdentifierOfCrsProperty",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collections.DiscoveryCollectionsCrsUri",
+        "name": "verifyCollectionsCollectionCrsIdentifierOfStorageCrs",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collections.DiscoveryCollectionsCrsUri",
+        "name": "verifyCollectionsCrsIdentifierOfCrsProperty",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collections.DiscoveryCollectionsCrsUri",
+        "name": "verifyCollectionsCrsIdentifierOfStorageCrs",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collections.DiscoveryCollectionsDefaultCrs",
+        "name": "verifyCollectionsPathCollectionCrsPropertyContainsDefaultCrs",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.discovery.collections.DiscoveryCollectionsStorageCrs",
+        "name": "verifyCollectionsPathCollectionCrsPropertyContainsStorageCrs",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.bboxcrs.BBoxCrsParameter",
+        "name": "verifyBboxCrsParameter",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.bboxcrs.BBoxCrsParameter",
+        "name": "verifyBboxCrsParameterWithDefaultCrs",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.bboxcrs.BBoxCrsParameterDefault",
+        "name": "verifyBboxCrsParameterDefault",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.bboxcrs.BBoxCrsParameterInvalid",
+        "name": "verifyBboxCrsParameterInvalid",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.feature.FeatureCrsParameter",
+        "name": "verifyFeatureCrsParameter",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.feature.FeatureCrsParameterDefault",
+        "name": "verifyFeatureCrsParameterDefault",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.feature.FeatureCrsParameterInvalid",
+        "name": "verifyFeatureCrsParameterInvalid",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.feature.FeatureCrsParameterTransform",
+        "name": "verifyFeatureCrsParameterTransformWithCrsParameter",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.feature.FeatureCrsParameterTransform",
+        "name": "verifyFeatureCrsParameterTransformWithoutCrsParameter",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.features.FeaturesCrsParameter",
+        "name": "verifyFeaturesCrsParameter",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.features.FeaturesCrsParameterDefault",
+        "name": "verifyFeaturesCrsParameterDefault",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.features.FeaturesCrsParameterInvalid",
+        "name": "verifyFeaturesCrsParameterInvalid",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.features.FeaturesCrsParameterTransform",
+        "name": "verifyFeaturesCrsParameterTransformWithCrsParameter",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      },
+      {
+        "class": "assertion.org.opengis.cite.ogcapifeatures10.conformance.crs.query.crs.features.FeaturesCrsParameterTransform",
+        "name": "verifyFeaturesCrsParameterTransformWithoutCrsParameter",
+        "maximum": 1,
+        "reason_contains": "depends on not successfully finished methods in group \"crs-conformance\""
+      }
+    ]
   }
 }

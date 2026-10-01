@@ -15,6 +15,7 @@ import (
 	"github.com/tobilg/neoserver/internal/importer"
 	"github.com/tobilg/neoserver/internal/mosaiccatalog"
 	"github.com/tobilg/neoserver/internal/rbac"
+	"github.com/tobilg/neoserver/internal/stacsource"
 	"github.com/tobilg/neoserver/internal/store"
 	"github.com/tobilg/neoserver/internal/tilecache"
 	"github.com/tobilg/neoserver/internal/tilejobs"
@@ -34,6 +35,7 @@ type Dependencies struct {
 	TileEngine *tiles.Engine
 	TileJobs   *tilejobs.Manager
 	Mosaic     *mosaiccatalog.Manager
+	STAC       *stacsource.Manager
 	Lifecycle  *cataloglifecycle.Coordinator
 	Importer   *importer.Manager
 	Audit      *audit.Manager
@@ -54,6 +56,7 @@ type handler struct {
 	tileEngine *tiles.Engine
 	tileJobs   *tilejobs.Manager
 	mosaic     *mosaiccatalog.Manager
+	stac       *stacsource.Manager
 	lifecycle  *cataloglifecycle.Coordinator
 	importer   *importer.Manager
 	audit      *audit.Manager
@@ -83,6 +86,7 @@ func RegisterRoutes(r chi.Router, deps Dependencies) {
 		tileEngine: deps.TileEngine,
 		tileJobs:   deps.TileJobs,
 		mosaic:     deps.Mosaic,
+		stac:       deps.STAC,
 		lifecycle:  deps.Lifecycle,
 		importer:   deps.Importer,
 		audit:      deps.Audit,
@@ -150,6 +154,7 @@ func RegisterRoutes(r chi.Router, deps Dependencies) {
 				r.Use(h.canonicalWorkspace)
 				r.Use(rbac.RequireWorkspaceAdmin(deps.Enforcer))
 				r.Get("/summary", h.workspaceSummary)
+				h.registerSTAC(r)
 				r.Get("/roles", h.listWorkspaceRoles)
 				r.Get("/tile-matrix-sets", h.listWorkspaceTileMatrixSets)
 

@@ -1225,6 +1225,9 @@
               },
               "pprof": {
                 "type": "boolean"
+              },
+              "stac": {
+                "type": "boolean"
               }
             },
             "type": "object"
@@ -1259,6 +1262,9 @@
           "services": {
             "properties": {
               "ogcapi": {
+                "type": "boolean"
+              },
+              "stac": {
                 "type": "boolean"
               },
               "tiles": {
@@ -3845,6 +3851,14 @@
             "HEAD": "read",
             "LISTCOLLECTIONS": "read"
           },
+          "stac": {
+            "GET": "read",
+            "GETFEATURES": "read",
+            "GETITEM": "read",
+            "HEAD": "read",
+            "LISTCOLLECTIONS": "read",
+            "SEARCH": "read"
+          },
           "wcs": {
             "DESCRIBECOVERAGE": "read",
             "GETCAPABILITIES": "read",
@@ -3984,6 +3998,439 @@
           "name",
           "type"
         ],
+        "type": "object"
+      },
+      "STACAssetMapping": {
+        "properties": {
+          "href": {
+            "$ref": "#/components/schemas/STACValue"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "href"
+        ],
+        "type": "object"
+      },
+      "STACBinding": {
+        "properties": {
+          "filter": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mapping": {
+            "$ref": "#/components/schemas/STACMapping"
+          },
+          "mode": {
+            "enum": [
+              "dataset",
+              "mapped",
+              "raster"
+            ],
+            "type": "string"
+          },
+          "refresh_interval_sec": {
+            "default": 900,
+            "minimum": 60,
+            "type": "integer"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "resource_kind": {
+            "enum": [
+              "layer",
+              "coverage"
+            ],
+            "type": "string"
+          },
+          "service_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_id",
+          "resource_id",
+          "resource_kind",
+          "mode",
+          "mapping",
+          "refresh_interval_sec"
+        ],
+        "type": "object"
+      },
+      "STACBindingRequest": {
+        "properties": {
+          "binding": {
+            "$ref": "#/components/schemas/STACBinding"
+          },
+          "collection_id": {
+            "type": "string"
+          },
+          "revision": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "collection_id",
+          "revision",
+          "binding"
+        ],
+        "type": "object"
+      },
+      "STACCollection": {
+        "properties": {
+          "allowed_roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/STACBinding"
+          },
+          "document": {
+            "$ref": "#/components/schemas/STACDocument"
+          },
+          "item_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "public": {
+            "type": "boolean"
+          },
+          "revision": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "document",
+          "public",
+          "revision",
+          "item_count"
+        ],
+        "type": "object"
+      },
+      "STACDocument": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "STACJob": {
+        "properties": {
+          "collection_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "processed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "revision": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "collection_id",
+          "kind",
+          "status",
+          "revision",
+          "processed",
+          "created_at",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "STACLocalAsset": {
+        "properties": {
+          "collection_id": {
+            "type": "string"
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "whole_file_authorized": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "collection_id",
+          "key",
+          "path",
+          "whole_file_authorized"
+        ],
+        "type": "object"
+      },
+      "STACMapping": {
+        "properties": {
+          "assets": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/STACAssetMapping"
+            },
+            "type": "object"
+          },
+          "datetime": {
+            "$ref": "#/components/schemas/STACValue"
+          },
+          "end_datetime": {
+            "$ref": "#/components/schemas/STACValue"
+          },
+          "extensions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id_property": {
+            "type": "string"
+          },
+          "properties": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/STACValue"
+            },
+            "type": "object"
+          },
+          "start_datetime": {
+            "$ref": "#/components/schemas/STACValue"
+          }
+        },
+        "type": "object"
+      },
+      "STACPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/STACDocument"
+            },
+            "type": "array"
+          },
+          "next_token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "STACPreview": {
+        "properties": {
+          "collection": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "extension_validation": {
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/STACDocument"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          },
+          "sample_only": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "STACPublishImport": {
+        "properties": {
+          "upsert": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "upsert"
+        ],
+        "type": "object"
+      },
+      "STACResource": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "id_property": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "modes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "properties": {
+            "items": {
+              "properties": {
+                "json_type": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "public_id": {
+            "type": "string"
+          },
+          "service_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_id",
+          "id",
+          "public_id",
+          "kind",
+          "provider",
+          "title",
+          "modes"
+        ],
+        "type": "object"
+      },
+      "STACSearch": {
+        "properties": {
+          "bbox": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "collections": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "datetime": {
+            "type": "string"
+          },
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "intersects": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "limit": {
+            "default": 100,
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "STACSettings": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "public": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "enabled",
+          "public"
+        ],
+        "type": "object"
+      },
+      "STACValue": {
+        "properties": {
+          "constant": {},
+          "property": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "Service": {
@@ -5396,6 +5843,9 @@
               "ogcapi": {
                 "type": "boolean"
               },
+              "stac": {
+                "type": "boolean"
+              },
               "wcs": {
                 "type": "boolean"
               },
@@ -5442,7 +5892,7 @@
   "info": {
     "description": "REST API for managing workspaces, services, layers, API keys, roles, and OIDC claim mappings.",
     "title": "neoserver Management API",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "openapi": "3.0.3",
   "paths": {
@@ -15975,6 +16425,116 @@
         ]
       }
     },
+    "/workspaces/{workspace}/settings/stac": {
+      "get": {
+        "operationId": "getSTACSettings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACSettings"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "put": {
+        "operationId": "putSTACSettings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACSettings"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
     "/workspaces/{workspace}/settings/wcs": {
       "get": {
         "operationId": "getWCSSettings",
@@ -16828,6 +17388,1936 @@
         "summary": "Update WMTS settings",
         "tags": [
           "Settings"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/assets": {
+      "delete": {
+        "operationId": "stacUnbindAsset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "item_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "post": {
+        "operationId": "stacBindAsset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACLocalAsset"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACLocalAsset"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/bindings": {
+      "get": {
+        "operationId": "stacListBindings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "bindings": {
+                      "items": {
+                        "$ref": "#/components/schemas/STACBindingRequest"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "bindings"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "post": {
+        "operationId": "stacCreateBinding",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACBindingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACJob"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/bindings/preview": {
+      "post": {
+        "operationId": "stacPreviewNewBinding",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACBindingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACPreview"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/bindings/{binding}": {
+      "delete": {
+        "operationId": "stacDeleteBinding",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "binding",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "get": {
+        "operationId": "stacGetBinding",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "binding",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACBindingRequest"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "put": {
+        "operationId": "stacUpdateBinding",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "binding",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACBindingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACJob"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/bindings/{binding}/preview": {
+      "post": {
+        "operationId": "stacPreviewBinding",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "binding",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACPreview"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/bindings/{binding}/refresh": {
+      "post": {
+        "operationId": "stacRefreshBinding",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "binding",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACJob"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/collections": {
+      "get": {
+        "operationId": "stacListCollections",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "collections": {
+                      "items": {
+                        "$ref": "#/components/schemas/STACCollection"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "collections"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "post": {
+        "operationId": "stacCreateCollection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACCollection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACCollection"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/collections/{stacCollection}": {
+      "delete": {
+        "operationId": "stacDeleteCollection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacCollection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "get": {
+        "operationId": "stacGetCollection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacCollection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACCollection"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "put": {
+        "operationId": "stacUpdateCollection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacCollection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACCollection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACCollection"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/collections/{stacCollection}/items": {
+      "get": {
+        "operationId": "stacListItems",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacCollection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "bbox",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "datetime",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "token",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACPage"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "post": {
+        "operationId": "stacCreateItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacCollection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACDocument"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/collections/{stacCollection}/items/{stacItem}": {
+      "delete": {
+        "operationId": "stacDeleteItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacCollection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacItem",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "get": {
+        "operationId": "stacGetItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacCollection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacItem",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACDocument"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "put": {
+        "operationId": "stacUpdateItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacCollection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stacItem",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACDocument"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/imports": {
+      "post": {
+        "operationId": "stacImport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "base_url",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACJob"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/imports/{job}": {
+      "delete": {
+        "operationId": "stacCancelImport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/imports/{job}/preview": {
+      "get": {
+        "operationId": "stacPreviewImport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACPreview"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/imports/{job}/publish": {
+      "post": {
+        "operationId": "stacPublishImport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACPublishImport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACJob"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/imports/{job}/retry": {
+      "post": {
+        "operationId": "stacRetryImport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACJob"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/jobs": {
+      "get": {
+        "operationId": "stacListJobs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "jobs": {
+                      "items": {
+                        "$ref": "#/components/schemas/STACJob"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "jobs"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/jobs/{job}": {
+      "delete": {
+        "operationId": "stacCancelJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      },
+      "get": {
+        "operationId": "stacGetJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACJob"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/jobs/{job}/retry": {
+      "post": {
+        "operationId": "stacRetryJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACJob"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/resources": {
+      "get": {
+        "operationId": "stacListResources",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "resources": {
+                      "items": {
+                        "$ref": "#/components/schemas/STACResource"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "resources"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
+        ]
+      }
+    },
+    "/workspaces/{workspace}/stac/search": {
+      "post": {
+        "operationId": "stacSearch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/STACSearch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/STACPage"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Workspace administration required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Revision or ID conflict"
+          },
+          "413": {
+            "description": "Metadata upload exceeds resource limits"
+          },
+          "503": {
+            "description": "STAC is disabled"
+          }
+        },
+        "tags": [
+          "STAC"
         ]
       }
     },

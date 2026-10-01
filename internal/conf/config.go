@@ -26,6 +26,7 @@ type Config struct {
 	WMS             WMS
 	WFS             WFS
 	WCS             WCS
+	STAC            STAC
 	MosaicCatalog   MosaicCatalog
 	Importer        Importer
 	Tiles           Tiles
@@ -254,6 +255,16 @@ type WCS struct {
 	MaxConcurrentRequests int
 	QueueTimeoutMS        int
 	ProcessingTimeoutMS   int
+}
+
+// STAC configures the workspace-scoped asset catalog and its durable jobs.
+type STAC struct {
+	Enabled            bool
+	DatabasePath       string
+	MaxItems           int64
+	MaxUploadBytes     int64
+	WorkerCount        int
+	RefreshIntervalSec int
 }
 
 // MosaicCatalog configures the operational granule index used by managed
@@ -608,6 +619,12 @@ func setDefaults() {
 
 	// Managed mosaic operational catalog. Static mosaics continue to work when
 	// this is disabled.
+	viper.SetDefault("STAC.Enabled", false)
+	viper.SetDefault("STAC.DatabasePath", "./data/stac.duckdb")
+	viper.SetDefault("STAC.MaxItems", int64(1000000))
+	viper.SetDefault("STAC.MaxUploadBytes", int64(1<<30))
+	viper.SetDefault("STAC.WorkerCount", 1)
+	viper.SetDefault("STAC.RefreshIntervalSec", 900)
 	viper.SetDefault("MosaicCatalog.Enabled", false)
 	viper.SetDefault("MosaicCatalog.DatabasePath", "./data/mosaic-index.duckdb")
 	viper.SetDefault("MosaicCatalog.WorkerCount", 2)
@@ -998,6 +1015,33 @@ func validate(cfg Config) error {
 			strings.TrimSpace(cfg.WCS.TemporaryDirectory) == "" || cfg.WCS.QueueTimeoutMS <= 0 ||
 			cfg.WCS.ProcessingTimeoutMS <= 0 || cfg.WCS.MaxConcurrentRequests < 0 {
 			return errors.New("WCS limits and timeouts must be positive")
+		}
+	}
+	if cfg.STAC.Enabled && (cfg.STAC.DatabasePath == "" || cfg.STAC.MaxItems <= 0 || cfg.STAC.MaxUploadBytes <= 0 || cfg.STAC.WorkerCount <= 0 || cfg.STAC.RefreshIntervalSec < 60) {
+		return errors.New("invalid STAC database path or resource limits (refresh interval must be at least 60 seconds)")
+	}
+	if cfg.STAC.Enabled {
+		stacPath, err := filepath.Abs(cfg.STAC.DatabasePath)
+		if err != nil {
+			return err
+		}
+		for _, path := range []string{cfg.Store.Path, cfg.MosaicCatalog.DatabasePath, cfg.Audit.DatabasePath, cfg.PersistentCache.DatabasePath} {
+			if path == "" {
+				continue
+			}
+			other, err := filepath.Abs(path)
+			if err != nil {
+				return err
+			}
+			same := stacPath == other
+			if first, e := os.Stat(stacPath); e == nil {
+				if second, e := os.Stat(other); e == nil {
+					same = same || os.SameFile(first, second)
+				}
+			}
+			if same {
+				return errors.New("STAC.DatabasePath must be separate from other server databases")
+			}
 		}
 	}
 	if cfg.MosaicCatalog.Enabled {

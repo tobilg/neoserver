@@ -1,0 +1,102 @@
+{
+  "https://geojson.org/schema/Feature.json": {
+    "file": "geojson-feature.json",
+    "sha256": "3957840b2ff19f9450ea97a12f85944d938c68a7a6bf115a2e69b98e007b9922",
+    "source": "https://geojson.org/schema/Feature.json"
+  },
+  "https://geojson.org/schema/Geometry.json": {
+    "file": "geojson-geometry.json",
+    "sha256": "152369d7eb6b3314ffc7deca1d66f9d498ed5b614ca38ed4e2c813fed01024fd",
+    "source": "https://geojson.org/schema/Geometry.json"
+  },
+  "https://geojson.org/schema/GeometryCollection.json": {
+    "file": "geojson-geometry-collection.json",
+    "sha256": "f33321639349bcb02300f560e5bb46bfc786cec2d6a5195778c5d480856e2e71",
+    "source": "https://geojson.org/schema/GeometryCollection.json"
+  },
+  "https://schemas.stacspec.org/v1.0.0/collection-spec/json-schema/collection.json": {
+    "file": "stac-1.0.0-collection.json",
+    "sha256": "f0e98830f53a44b03456e488be30d8230c0a1df9045cb25a8348a63c6c5fee1c",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.0.0/collection-spec/json-schema/collection.json"
+  },
+  "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/basics.json": {
+    "file": "stac-1.0.0-basics.json",
+    "sha256": "66a60a5f7bba2baac3dd69bce0a8569e56ddbc31cfe6a77e1586e38c84b73040",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.0.0/item-spec/json-schema/basics.json"
+  },
+  "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/datetime.json": {
+    "file": "stac-1.0.0-datetime.json",
+    "sha256": "f487bd076213091289bc496c1a641fd05e79834b8bca108374cd693ecff3a1fc",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.0.0/item-spec/json-schema/datetime.json"
+  },
+  "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/instrument.json": {
+    "file": "stac-1.0.0-instrument.json",
+    "sha256": "886d00cc1f4256ea57e42047761ac7f15afa33fd773eb9675a58bfdb73f18d79",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.0.0/item-spec/json-schema/instrument.json"
+  },
+  "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json": {
+    "file": "stac-1.0.0-item.json",
+    "sha256": "bdf0e4f5b5b37b609d10e6383191ce55a2a18f8105d1d3b0b1cb3064ce70a4a0",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.0.0/item-spec/json-schema/item.json"
+  },
+  "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/licensing.json": {
+    "file": "stac-1.0.0-licensing.json",
+    "sha256": "3dbdb067f887f04f6d398d5947b5f0a857c75b647544c10076796a985b23b10b",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.0.0/item-spec/json-schema/licensing.json"
+  },
+  "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/provider.json": {
+    "file": "stac-1.0.0-provider.json",
+    "sha256": "9f7e7c3840b53f487ae855c21f6fd05deedee51de5dfb51fa4be7a53f5797132",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.0.0/item-spec/json-schema/provider.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/collection-spec/json-schema/collection.json": {
+    "file": "stac-1.1.0-collection.json",
+    "sha256": "c2106427e6b7a7a2c1b6fef980d9df332c4000e8676efa2aba7a1dbcd1914ccf",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/collection-spec/json-schema/collection.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/bands.json": {
+    "file": "stac-1.1.0-bands.json",
+    "sha256": "0a44673eda5cf49ad83247ebf50bffc9eac6cd126d4778c0f17a64b21002818e",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/item-spec/json-schema/bands.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/basics.json": {
+    "file": "stac-1.1.0-basics.json",
+    "sha256": "c11193fa08465b53257e93ea4e8c0c671806485ece9b2482447c792f2e9b7809",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/item-spec/json-schema/basics.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/common.json": {
+    "file": "stac-1.1.0-common.json",
+    "sha256": "9f1bb9d24a94d7f519cc2c478b6581c0d9a66117518376ac1a71ec5643ad3fd7",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/item-spec/json-schema/common.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/data-values.json": {
+    "file": "stac-1.1.0-data-values.json",
+    "sha256": "5ca5d324272b76188fd70391b6d57fa0438d87fa8dfa5b6f2fd15af57bff9539",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/item-spec/json-schema/data-values.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/datetime.json": {
+    "file": "stac-1.1.0-datetime.json",
+    "sha256": "2656b4bec14ee63b0c17c7a68caeba4a10a5ba3bfe018e4d23ebd8b6efb5fd9f",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/item-spec/json-schema/datetime.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/instrument.json": {
+    "file": "stac-1.1.0-instrument.json",
+    "sha256": "09cd369e88c2f7c248683d922fd90e3ab2e7e832b86e6130722d8a0bf27cdd78",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/item-spec/json-schema/instrument.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json": {
+    "file": "stac-1.1.0-item.json",
+    "sha256": "d38ed83cda8c93f5f2f4967ba2be398e9d7407aa1c3210f9c27bbbc4e8ba35e2",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/item-spec/json-schema/item.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/licensing.json": {
+    "file": "stac-1.1.0-licensing.json",
+    "sha256": "b4f882c70c6616698fa3c390d1efbdc59816129f36a6173769fbf07655313726",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/item-spec/json-schema/licensing.json"
+  },
+  "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/provider.json": {
+    "file": "stac-1.1.0-provider.json",
+    "sha256": "2db89bb50a352aaece743173742fa450cbb5fb4583fe3a237968054aeaea86ad",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/item-spec/json-schema/provider.json"
+  }
+}

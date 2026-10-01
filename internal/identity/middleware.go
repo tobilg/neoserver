@@ -174,14 +174,14 @@ func Middleware(cfg MiddlewareConfig) func(http.Handler) http.Handler {
 }
 
 // staleSessionMayReadAnonymously reports whether a request whose only
-// credential is an invalid session cookie proceeds as anonymous: safe,
-// non-mutating protocol requests only. Anonymous access grants less than any
+// credential is an invalid session cookie proceeds as anonymous: safe methods
+// and the explicitly read-only STAC POST search operation. Anonymous access grants less than any
 // session did, and protocol handlers still enforce workspace and layer policy.
 // Management and console routes keep failing with 401 so the console can
 // prompt for sign-in.
 func staleSessionMayReadAnonymously(r *http.Request) bool {
 	descriptor := protocolrequest.Get(r)
-	return descriptor.Service != "" && !isUnsafeMethod(r.Method) && !descriptor.Mutating(r.Method)
+	return descriptor.Service != "" && (!isUnsafeMethod(r.Method) || (descriptor.Service == "stac" && descriptor.Name == "SEARCH" && r.Method == http.MethodPost)) && !descriptor.Mutating(r.Method)
 }
 
 func hasExplicitCredential(r *http.Request, allowQuery bool) bool {

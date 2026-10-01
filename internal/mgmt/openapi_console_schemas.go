@@ -173,10 +173,10 @@ func getConsoleSchemas() openapi3.Schemas {
 		"enabled": boolValue(), "method": stringValue(), "password_login": boolValue(), "token_login": boolValue(), "oidc": oidcConfig,
 	}, "enabled", "method", "password_login", "token_login", "oidc")
 	serviceFlags := schemaObject(openapi3.Schemas{
-		"ogcapi": boolValue(), "wms": boolValue(), "wfs": boolValue(), "wcs": boolValue(), "wmts": boolValue(), "tiles": boolValue(),
+		"stac": boolValue(), "ogcapi": boolValue(), "wms": boolValue(), "wfs": boolValue(), "wcs": boolValue(), "wmts": boolValue(), "tiles": boolValue(),
 	})
 	featureFlags := schemaObject(openapi3.Schemas{
-		"imports": boolValue(), "audit": boolValue(), "persistent_tile_cache": boolValue(), "mosaic": boolValue(), "pprof": boolValue(),
+		"stac": boolValue(), "imports": boolValue(), "audit": boolValue(), "persistent_tile_cache": boolValue(), "mosaic": boolValue(), "pprof": boolValue(),
 	})
 	consoleLimits := schemaObject(openapi3.Schemas{
 		"upload_bytes": int64Value(), "source_bytes": int64Value(), "layers": {Value: openapi3.NewIntegerSchema()},
@@ -219,7 +219,7 @@ func getConsoleSchemas() openapi3.Schemas {
 		"services": int64Value(), "layers": int64Value(), "coverages": int64Value(), "styles": int64Value(), "api_keys": int64Value(), "imports": int64Value(),
 	})
 	protocolFlags := schemaObject(openapi3.Schemas{
-		"ogcapi": boolValue(), "wms": boolValue(), "wfs": boolValue(), "wcs": boolValue(), "wmts": boolValue(), "ogc_tiles": boolValue(),
+		"stac": boolValue(), "ogcapi": boolValue(), "wms": boolValue(), "wfs": boolValue(), "wcs": boolValue(), "wmts": boolValue(), "ogc_tiles": boolValue(),
 	})
 	activeJobs := schemaObject(openapi3.Schemas{"imports": {Value: openapi3.NewIntegerSchema()}, "tile_cache": {Value: openapi3.NewIntegerSchema()}})
 	workspaceSummary := schemaObject(openapi3.Schemas{

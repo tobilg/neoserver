@@ -5,7 +5,7 @@ package store
 // supported current version. Versions before catalogBaselineVersion are refused;
 // released baseline catalogs are upgraded by catalogMigrations.
 const catalogBaselineVersion = 25
-const schemaVersion = 26
+const schemaVersion = 27
 
 // schemaSQL contains the DDL for creating all backing store tables.
 const schemaSQL = dataRevisionSchema + `
@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::VARCHAR,
     name VARCHAR NOT NULL UNIQUE,
     description VARCHAR,
+    stac_settings JSON DEFAULT '{"enabled":false,"public":false}',
     wms_settings JSON DEFAULT '{"enabled":false}',
     wfs_settings JSON DEFAULT '{"enabled":false}',
     ogcapi_settings JSON DEFAULT '{"enabled":true}',

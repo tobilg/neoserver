@@ -8,6 +8,27 @@ import (
 	"github.com/tobilg/neoserver/internal/datasource"
 )
 
+// StreamFeatures scans the published query, including SQL views, in one source
+// snapshot. It never substitutes the physical table for a SQL-view publication.
+func (l *Layer) StreamFeatures(ctx context.Context, ds datasource.DataSource, params datasource.QueryParams) (datasource.FeatureStream, error) {
+	if !l.IsSQLView {
+		source, ok := ds.(datasource.StreamingDataSource)
+		if !ok {
+			return nil, fmt.Errorf("source does not support streaming features")
+		}
+		return source.QueryStream(ctx, l.SourceLayer, params)
+	}
+	_, config, err := l.sqlViewSource(ds)
+	if err != nil {
+		return nil, err
+	}
+	source, ok := ds.(datasource.SQLViewStreamingDataSource)
+	if !ok {
+		return nil, fmt.Errorf("source does not support streaming SQL views")
+	}
+	return source.QuerySQLViewStream(ctx, config, params)
+}
+
 // FeatureInfo and the query methods below resolve a publication, not a
 // physical table. A SQL view must never fall back to SourceLayer.
 func (l *Layer) FeatureInfo(ctx context.Context, ds datasource.DataSource) (*datasource.LayerInfo, error) {

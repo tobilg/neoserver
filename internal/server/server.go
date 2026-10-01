@@ -32,6 +32,7 @@ import (
 	"github.com/tobilg/neoserver/internal/mosaiccatalog"
 	"github.com/tobilg/neoserver/internal/protocolrequest"
 	"github.com/tobilg/neoserver/internal/rbac"
+	"github.com/tobilg/neoserver/internal/stacsource"
 	"github.com/tobilg/neoserver/internal/store"
 	"github.com/tobilg/neoserver/internal/tilecache"
 	"github.com/tobilg/neoserver/internal/tilejobs"
@@ -58,6 +59,7 @@ type Server struct {
 	tileJobs        *tilejobs.Manager
 	mosaicCatalog   *mosaiccatalog.Manager
 	lifecycle       *cataloglifecycle.Coordinator
+	stac            *stacsource.Manager
 	importer        *importer.Manager
 	audit           *internalaudit.Manager
 	workspaceRouter *WorkspaceRouter
@@ -179,7 +181,11 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 	registry := workspace.NewRegistry(s, datasource.CreateFromService)
 	registry.SetCacheManager(cacheManager)
 	var tileJobManager *tilejobs.Manager
+	var stacManager *stacsource.Manager
 	cleanupTileResources := func() {
+		if stacManager != nil {
+			_ = stacManager.Close()
+		}
 		if tileJobManager != nil {
 			cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			_ = tileJobManager.Close(cleanupCtx)
@@ -232,6 +238,13 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 		}
 	}
 
+	if cfg.STAC.Enabled {
+		stacManager, err = stacsource.New(ctx, cfg, registry, mosaicManager, logger)
+		if err != nil {
+			cleanupTileResources()
+			return nil, fmt.Errorf("initialize STAC: %w", err)
+		}
+	}
 	// Load the shared authorization model from the encrypted catalog so custom
 	// service and operation grants survive restart.
 	rbacAdapter := rbac.NewStoreAdapter(s)
@@ -241,6 +254,7 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 		return nil, fmt.Errorf("failed to create RBAC enforcer: %w", err)
 	}
 	wsRouter := NewWorkspaceRouter(cfg, logger, registry, enforcer, s, cacheManager, tileEngine)
+	wsRouter.stac = stacManager
 	lifecycleDeps := cataloglifecycle.Dependencies{
 		Catalog: s, Deletions: s, Registry: registry, Cache: cacheManager,
 		Enforcer: enforcer, WFSState: wsRouter.WFSState(), StyleAssetRoot: cfg.WMS.StyleAssetPath,
@@ -256,6 +270,9 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 	}
 	if mosaicManager != nil {
 		lifecycleDeps.Mosaic = mosaicManager
+	}
+	if stacManager != nil {
+		lifecycleDeps.STAC = stacManager
 	}
 	lifecycle, err := cataloglifecycle.New(ctx, lifecycleDeps)
 	if err != nil {
@@ -309,7 +326,11 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 	if cfg.Importer.Enabled {
 		importUploadLimit = cfg.Importer.MaxUploadBytes
 	}
-	r.Use(limitBody(cfg.Server.MaxBodyBytes, importUploadLimit))
+	var stacUploadLimit int64
+	if cfg.STAC.Enabled {
+		stacUploadLimit = cfg.STAC.MaxUploadBytes
+	}
+	r.Use(limitBody(cfg.Server.MaxBodyBytes, importUploadLimit, stacUploadLimit))
 	r.Use(protocolrequest.Middleware(cfg.Server.BasePath))
 	r.Use(exportWriteDeadline(time.Duration(cfg.Server.ExportWriteTimeoutSec)*time.Second, time.Duration(cfg.Server.WriteTimeoutSec)*time.Second))
 	r.Use(middleware.Compress(5))
@@ -321,10 +342,12 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 	// Do NOT enable AllowCredentials while origins may be "*" — pair credentials
 	// only with an explicit origin allowlist.
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   splitComma(cfg.Server.CORSOrigins),
-		AllowedMethods:   []string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Origin", "X-API-Key"},
-		ExposedHeaders:   []string{"Content-Length", "Content-Type"},
+		AllowedOrigins: splitComma(cfg.Server.CORSOrigins),
+		AllowedMethods: []string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"},
+		// Range and the validators let browser clients read Cloud Optimized
+		// GeoTIFFs, such as STAC local assets, in byte ranges.
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Origin", "X-API-Key", "Range", "If-None-Match", "If-Modified-Since", "If-Range"},
+		ExposedHeaders:   []string{"Content-Length", "Content-Type", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified"},
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
@@ -344,6 +367,7 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 		{name: "tile_jobs", enabled: tileJobManager != nil, check: func(ctx context.Context) error { return tileJobManager.Health(ctx) }},
 		{name: "mosaic_catalog", enabled: mosaicManager != nil, check: func(ctx context.Context) error { return mosaicManager.Health(ctx) }},
 		{name: "catalog_lifecycle", enabled: true, check: lifecycle.Health},
+		{name: "stac", enabled: stacManager != nil, check: func(ctx context.Context) error { return stacManager.Health(ctx) }},
 		{name: "imports", enabled: importManager != nil, check: func(ctx context.Context) error { return importManager.Health(ctx) }},
 		{name: "audit", enabled: auditManager != nil, check: func(ctx context.Context) error { return auditManager.Health(ctx) }},
 	}
@@ -413,6 +437,7 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 			TileEngine: tileEngine,
 			TileJobs:   tileJobManager,
 			Mosaic:     mosaicManager,
+			STAC:       stacManager,
 			Lifecycle:  lifecycle,
 			Importer:   importManager,
 			Audit:      auditManager,
@@ -482,6 +507,7 @@ func New(ctx context.Context, cfg conf.Config, logger *slog.Logger, s *store.Duc
 		tileJobs:        tileJobManager,
 		mosaicCatalog:   mosaicManager,
 		lifecycle:       lifecycle,
+		stac:            stacManager,
 		importer:        importManager,
 		audit:           auditManager,
 		workspaceRouter: wsRouter,
@@ -546,6 +572,9 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 	if s.lifecycle != nil {
 		s.lifecycle.Close()
+	}
+	if s.stac != nil {
+		_ = s.stac.Close()
 	}
 	if s.tileJobs != nil {
 		jobsCtx := ctx
@@ -649,10 +678,13 @@ func toCacheConfig(c conf.Cache) cache.Config {
 
 // limitBody caps the size of incoming request bodies to guard against
 // memory-exhaustion denial of service. A non-positive limit disables the cap.
-func limitBody(maxBytes, importMaxBytes int64) func(http.Handler) http.Handler {
+func limitBody(maxBytes, importMaxBytes, stacMaxBytes int64) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			requestLimit := maxBytes
+			if isSTACUpload(r) && stacMaxBytes > requestLimit {
+				requestLimit = stacMaxBytes
+			}
 			if isImportUpload(r) && importMaxBytes > requestLimit {
 				// Multipart framing is small but not fixed, so leave a bounded margin
 				// beyond the importer's independently enforced file-byte limit.
@@ -717,4 +749,18 @@ func securityHeaders(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func isSTACUpload(r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		return false
+	}
+	path := strings.TrimSuffix(r.URL.Path, "/")
+	marker := "/api/v1/workspaces/"
+	i := strings.LastIndex(path, marker)
+	if i < 0 {
+		return false
+	}
+	parts := strings.Split(path[i+len(marker):], "/")
+	return len(parts) == 3 && parts[0] != "" && parts[1] == "stac" && parts[2] == "imports"
 }

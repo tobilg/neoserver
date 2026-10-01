@@ -25,10 +25,18 @@ type Profile struct {
 }
 
 type Document struct {
-	SchemaVersion int                `json:"schema_version"`
-	TeamEngineAPI string             `json:"teamengine_api"`
-	Suites        map[string]Suite   `json:"suites"`
-	Profiles      map[string]Profile `json:"profiles"`
+	SchemaVersion  int                `json:"schema_version"`
+	TeamEngineAPI  string             `json:"teamengine_api"`
+	Suites         map[string]Suite   `json:"suites"`
+	Profiles       map[string]Profile `json:"profiles"`
+	STACValidation *STACValidation    `json:"stac_validation,omitempty"`
+}
+
+// STAC validation is separate from official ETS profiles. Its absence in older
+// manifests means those runs did not promise STAC validator evidence.
+type STACValidation struct {
+	Suite string            `json:"selected_with"`
+	Tools map[string]string `json:"tools"`
 }
 
 func Load(path string) (Document, error) {

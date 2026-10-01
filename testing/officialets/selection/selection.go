@@ -37,7 +37,8 @@ func ForPaths(paths []string) []string {
 			add(selected, "wcs20")
 		case strings.HasPrefix(path, "internal/wmts/"):
 			add(selected, "wmts10")
-		case strings.HasPrefix(path, "internal/ogc/") || strings.HasPrefix(path, "testing/ogcapi/"):
+		case strings.HasPrefix(path, "internal/ogc/") || strings.HasPrefix(path, "testing/ogcapi/") ||
+			strings.HasPrefix(path, "internal/stac") || strings.HasPrefix(path, "testing/stac/"):
 			add(selected, "ogcapi-features10")
 		case strings.HasPrefix(path, "internal/tiles/") || strings.HasPrefix(path, "testing/ogcapitiles/"):
 			add(selected, "ogcapi-tiles10", "wmts10")

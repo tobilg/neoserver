@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# The runtime closure and stock ETS images target the supported amd64 image.
+export DOCKER_DEFAULT_PLATFORM="${DOCKER_DEFAULT_PLATFORM:-linux/amd64}"
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COMPOSE=(docker compose -p "${CONFORMANCE_PROJECT_NAME:-neoserver-official-$$}" -f "$ROOT/docker-compose.conformance.yml")
 COMPOSE_ALL=("${COMPOSE[@]}" --profile wms13 --profile wfs20 --profile wcs20 --profile wcs20-derived --profile wfs20-derived --profile wmts10 --profile ogcapi-features10 --profile ogcapi-tiles10)
@@ -97,13 +100,23 @@ execute_suite() {
     # A suite is selected from the fixed allowlist above, so removing only its
     # previous generated evidence cannot affect source files or another suite.
     rm -rf "$RESULT_ROOT/$suite"
+    if [[ "$suite" == "ogcapi-features10" ]]; then
+        rm -rf "$RESULT_ROOT/stac"
+    fi
     prepare_environment "$suite"
     CURRENT_TEAMENGINE="teamengine-$suite"
     "${COMPOSE[@]}" --profile "$suite" up -d "$CURRENT_TEAMENGINE"
 
+    if [[ "${STAC_VALIDATION:-true}" == "true" && "$suite" == "ogcapi-features10" ]]; then
+        mkdir -p "$RESULT_ROOT/stac"
+        "${COMPOSE[@]}" build stac-validator
+        "${COMPOSE[@]}" run -T --rm --no-deps stac-validator || suite_failed=1
+    fi
+
     local profile args_json found=0
     while IFS=$'\t' read -r profile args_json <&3; do
         [[ -z "$profile" ]] && continue
+        [[ -n "${CONFORMANCE_PROFILE:-}" && "$profile" != "$CONFORMANCE_PROFILE" ]] && continue
         found=1
         run_controller "$suite" "$profile" "$suite_code" "$image" "$args_json" || suite_failed=1
         if [[ -f "$RESULT_ROOT/$suite/$profile/junit.xml" ]]; then

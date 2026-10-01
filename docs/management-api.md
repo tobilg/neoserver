@@ -21,9 +21,10 @@ Workspaces
   +-- Styles
   +-- API keys
   +-- Claim mappings
-  +-- WMS, WFS, WCS, OGC API, OGC Tiles, and WMTS settings
+  +-- WMS, WFS, WCS, OGC API, OGC Tiles, WMTS, and STAC settings
   +-- Persistent tile-cache jobs and usage
   +-- Durable managed imports
+  +-- STAC Collections, Items, source bindings, and jobs
 
 Global resources
   +-- Roles
@@ -67,11 +68,12 @@ Listing, creating, or deleting workspaces, global cache operations, role managem
 | Coverages | /workspaces/{workspace}/services/{service}/coverages |
 | Mosaic catalog | /workspaces/{workspace}/services/{service}/mosaic/{granules,harvest-jobs} |
 | Layer groups | /workspaces/{workspace}/layer-groups |
+| STAC catalog | /workspaces/{workspace}/stac |
 | API keys | /workspaces/{workspace}/apikeys |
 | Styles | /workspaces/{workspace}/styles |
 | Claim mappings | /workspaces/{workspace}/claim-mappings and /claim-mappings |
 | Roles | /roles |
-| Settings | /workspaces/{workspace}/settings/{wms,wfs,wcs,wmts,ogcapi,ogc-tiles} |
+| Settings | /workspaces/{workspace}/settings/{wms,wfs,wcs,wmts,ogcapi,ogc-tiles,stac} |
 | Workspace cache | /workspaces/{workspace}/cache/clear |
 | Persistent tile cache | /workspaces/{workspace}/tile-cache/stats and /tile-cache/jobs |
 | Global cache | /cache/stats and /cache/clear |
@@ -140,6 +142,10 @@ The [getting started guide](getting-started.md) contains runnable commands for t
 When `Importer.Enabled=true`, create an import with either JSON `{"source_uri":"...","name":"..."}` or multipart fields `file` and optional `name` at `POST /workspaces/{workspace}/imports`. URI sources are local allowlisted paths or HTTPS resources acquired through the bounded remote fetcher; uploads, ZIP expansion, discovery, transformation, and worker concurrency use the independent importer ceilings.
 
 Jobs first discover source layers and stop at `awaiting_plan`. Submit a plan to `PUT /imports/{import}/plan`, inspect bounded GeoJSON with `GET /imports/{import}/preview?layer=...`, and explicitly publish with `POST /imports/{import}/publish`. Publication moves one encrypted DuckDB database into managed storage and commits its service, layers, asset ownership, and job state in one catalog transaction. `DELETE` requests cancellation, `POST /retry` retries a failed job within the configured limit, and `POST /rollback` starts the normal durable service-deletion lifecycle. Publishing and rollback jobs resume after restart; rollback responses expose `rollback_operation_id` so their linked catalog deletion remains inspectable. Direct recursive deletion of a managed service uses the same staged-file cleanup.
+
+## STAC management
+
+Workspace administrators manage Collections, Items, source bindings, import/refresh jobs and local asset bindings beneath `/api/v1/workspaces/{workspace}/stac`. Settings use `/api/v1/workspaces/{workspace}/settings/stac`. See [STAC](stac.md) for workflows and the generated management OpenAPI definition for request schemas.
 
 ## Fine-grained service and operation grants
 

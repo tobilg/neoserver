@@ -9,6 +9,7 @@ import (
 // Names are the canonical operations emitted by the request resolver.
 func PolicyOperations() map[string]map[string]string {
 	services := map[string][]string{
+		"stac":      {"GET", "HEAD", "SEARCH", "LISTCOLLECTIONS", "GETFEATURES", "GETITEM"},
 		"wfs":       {"GETCAPABILITIES", "DESCRIBEFEATURETYPE", "GETFEATURE", "GETPROPERTYVALUE", "LISTSTOREDQUERIES", "DESCRIBESTOREDQUERIES", "TRANSACTION", "LOCKFEATURE", "GETFEATUREWITHLOCK", "CREATESTOREDQUERY", "DROPSTOREDQUERY"},
 		"wms":       {"GETCAPABILITIES", "GETMAP", "GETFEATUREINFO", "GETLEGENDGRAPHIC", "DESCRIBELAYER"},
 		"wcs":       {"GETCAPABILITIES", "DESCRIBECOVERAGE", "GETCOVERAGE"},

@@ -98,6 +98,7 @@ const workspaceGroups = [
       ["Overview", "", Waypoints],
       ["Stores", "stores", Database],
       ["Imports", "imports", Upload],
+      ["STAC", "stac", Waypoints],
       ["Layers", "layers", Layers],
       ["Layer groups", "layer-groups", Group],
       ["Coverages", "coverages", Grid3X3],

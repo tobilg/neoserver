@@ -243,6 +243,24 @@ func (ds *DataSource) Query(ctx context.Context, layer string, params datasource
 	return out, rows.Err()
 }
 
+func (ds *DataSource) QueryStream(ctx context.Context, layer string, params datasource.QueryParams) (datasource.FeatureStream, error) {
+	info, err := ds.GetLayerInfo(ctx, layer)
+	if err != nil {
+		return nil, err
+	}
+
+	query, args, err := ds.buildListSQL(info, layer, params)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := ds.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query: %w", err)
+	}
+	return datasource.NewSQLFeatureStream(rows), nil
+}
+
 // QueryByID retrieves a single feature by ID.
 func (ds *DataSource) QueryByID(ctx context.Context, layer, featureID string, outputSRID int) (json.RawMessage, bool, error) {
 	info, err := ds.GetLayerInfo(ctx, layer)

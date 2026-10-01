@@ -1,0 +1,29 @@
+{
+  "type": "Collection",
+  "stac_version": "1.1.0",
+  "id": "conformance-scenes",
+  "title": "STAC conformance scenes",
+  "description": "Deterministic synthetic footprints for STAC and OGC Features validation.",
+  "license": "CC0-1.0",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -75,
+          -87,
+          178.2,
+          87.2
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2020-01-01T00:00:00Z",
+          "2020-10-26T00:00:00Z"
+        ]
+      ]
+    }
+  },
+  "links": []
+}

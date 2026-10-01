@@ -101,6 +101,8 @@ services:
       NEOSRV_WFS_ENABLED: "true"
       NEOSRV_WCS_ENABLED: "true"
       NEOSRV_TILES_ENABLED: "true"
+      NEOSRV_STAC_ENABLED: "true"
+      NEOSRV_STAC_DATABASEPATH: /data/state/stac.duckdb
       NEOSRV_WMTS_ENABLED: "true"
       NEOSRV_PERSISTENTCACHE_ENABLED: "false"
       NEOSRV_IMPORTER_ENABLED: "true"

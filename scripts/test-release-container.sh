@@ -2,7 +2,7 @@
 # Disposable resources only. Never uses the developer's Compose project/data.
 set -eu
 image=${1:-neoserver:candidate}
-version=${2:-0.2.0}
+version=${2:-0.3.0}
 fixture="neoserver-release-smoke-$$"
 container="$fixture-server"
 volume="$fixture-data"

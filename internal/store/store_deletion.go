@@ -50,13 +50,15 @@ type DeletionRef struct {
 }
 
 type DeletionAuxiliary struct {
-	TileEntries    int64 `json:"tile_entries,omitempty"`
-	TileBytes      int64 `json:"tile_bytes,omitempty"`
-	TileJobs       int64 `json:"tile_jobs,omitempty"`
-	MosaicGranules int64 `json:"mosaic_granules,omitempty"`
-	MosaicJobs     int64 `json:"mosaic_jobs,omitempty"`
-	MosaicServices int64 `json:"mosaic_services,omitempty"`
-	ManagedAssets  int64 `json:"managed_assets,omitempty"`
+	STACCollections int64 `json:"stac_collections,omitempty"`
+	STACItems       int64 `json:"stac_items,omitempty"`
+	TileEntries     int64 `json:"tile_entries,omitempty"`
+	TileBytes       int64 `json:"tile_bytes,omitempty"`
+	TileJobs        int64 `json:"tile_jobs,omitempty"`
+	MosaicGranules  int64 `json:"mosaic_granules,omitempty"`
+	MosaicJobs      int64 `json:"mosaic_jobs,omitempty"`
+	MosaicServices  int64 `json:"mosaic_services,omitempty"`
+	ManagedAssets   int64 `json:"managed_assets,omitempty"`
 }
 
 // DeletionPlan is both the public dependency report and the durable execution
@@ -84,7 +86,7 @@ type DeletionPlan struct {
 func (p DeletionPlan) HasDependencies() bool {
 	return len(p.Blockers)+len(p.Services)+len(p.Layers)+len(p.Coverages)+len(p.LayerGroups)+len(p.Styles)+
 		len(p.StyleAssets)+len(p.APIKeys)+len(p.StoredQueries)+len(p.ClaimMappings)+len(p.Policies) > 0 ||
-		p.Auxiliary.TileEntries > 0 || p.Auxiliary.TileJobs > 0 || p.Auxiliary.MosaicGranules > 0 ||
+		p.Auxiliary.STACCollections > 0 || p.Auxiliary.STACItems > 0 || p.Auxiliary.TileEntries > 0 || p.Auxiliary.TileJobs > 0 || p.Auxiliary.MosaicGranules > 0 ||
 		p.Auxiliary.MosaicJobs > 0 || p.Auxiliary.MosaicServices > 0 || p.Auxiliary.ManagedAssets > 0
 }
 

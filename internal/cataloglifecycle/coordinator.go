@@ -32,6 +32,7 @@ type Dependencies struct {
 	TileCache      TileCacheLifecycle
 	TileJobs       TileJobLifecycle
 	Mosaic         MosaicLifecycle
+	STAC           STACLifecycle
 	Enforcer       *rbac.Enforcer
 	WFSState       *wfs.RuntimeState
 	StyleAssetRoot string
@@ -55,6 +56,10 @@ type TileJobLifecycle interface {
 	QuiesceLifecycle(ctx context.Context, workspaceID string, resourceIDs []string) error
 }
 
+type STACLifecycle interface {
+	LifecycleStats(context.Context, string, []string) (int64, int64, error)
+	QuiesceAndDeleteLifecycle(context.Context, string, []string) error
+}
 type MosaicLifecycle interface {
 	LifecycleStats(ctx context.Context, workspaceID string, serviceIDs []string) (services, granules, jobs int64, err error)
 	QuiesceAndDeleteLifecycle(ctx context.Context, workspaceID string, serviceIDs []string) error
@@ -288,6 +293,11 @@ func (c *Coordinator) execute(ctx context.Context, operation *store.DeletionOper
 		return err
 	}
 	serviceIDs := deletionServiceIDs(plan)
+	if c.deps.STAC != nil {
+		if err := c.deps.STAC.QuiesceAndDeleteLifecycle(ctx, plan.WorkspaceID, servicesForScope(plan, serviceIDs)); err != nil {
+			return fmt.Errorf("remove STAC lifecycle state: %w", err)
+		}
+	}
 	if c.deps.Mosaic != nil {
 		if err := c.deps.Mosaic.QuiesceAndDeleteLifecycle(ctx, plan.WorkspaceID, servicesForScope(plan, serviceIDs)); err != nil {
 			return fmt.Errorf("remove mosaic lifecycle state: %w", err)
@@ -400,6 +410,14 @@ func (c *Coordinator) enrich(ctx context.Context, plan *store.DeletionPlan) erro
 			return fmt.Errorf("inspect persistent tile cache: %w", err)
 		}
 		plan.Auxiliary.TileEntries, plan.Auxiliary.TileBytes, plan.Auxiliary.TileJobs = entries, bytes, jobs
+	}
+	if c.deps.STAC != nil {
+		collections, items, err := c.deps.STAC.LifecycleStats(ctx, plan.WorkspaceID, servicesForScope(*plan, deletionServiceIDs(*plan)))
+		if err != nil {
+			return err
+		}
+		plan.Auxiliary.STACCollections = collections
+		plan.Auxiliary.STACItems = items
 	}
 	if c.deps.Mosaic != nil {
 		services, granules, jobs, err := c.deps.Mosaic.LifecycleStats(ctx, plan.WorkspaceID, servicesForScope(*plan, deletionServiceIDs(*plan)))

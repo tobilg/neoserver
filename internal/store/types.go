@@ -466,6 +466,7 @@ func DefaultOGCTilesAPISettings() OGCTilesAPISettings {
 
 // WorkspaceSettings aggregates all OGC service settings for a workspace.
 type WorkspaceSettings struct {
+	STAC        STACSettings        `json:"stac"`
 	WMS         WMSSettings         `json:"wms"`
 	WFS         WFSSettings         `json:"wfs"`
 	OGCAPI      OGCAPISettings      `json:"ogc_api"`

@@ -175,7 +175,7 @@ jobs:
           node-version: 24
       - run: node --test scripts/release-evidence.test.mjs
       - run: docker build -t neoserver:candidate .
-      - run: ./scripts/test-release-container.sh neoserver:candidate 0.2.0
+      - run: ./scripts/test-release-container.sh neoserver:candidate 0.3.0
       - name: Offline queries, released schema and format parity
         run: node scripts/test-runtime-container.mjs neoserver:candidate
       - name: Datum grids and image size budget

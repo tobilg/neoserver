@@ -1,34 +1,39 @@
 {{define "page"}}<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{.Title}} — neoserver</title><link rel="canonical" href="{{.Canonical}}">
-<meta name="description" content="neoserver OGC conformance results, test details, and reproducible evidence.">
+<meta name="description" content="neoserver OGC and STAC validation results, test details, and reproducible evidence.">
 <link rel="stylesheet" href="{{.Root}}assets/report.css"><script src="{{.Root}}assets/report.js" defer></script></head>
 <body><a class="skip-link" href="#main">Skip to results</a>
 <header class="masthead"><a class="brand" href="https://conformance.neoserver.cloud/">neoserver<span> / conformance</span></a><nav aria-label="Project"><a href="https://github.com/tobilg/neoserver">Repository</a><a href="https://github.com/tobilg/neoserver/blob/main/docs/conformance.md">Methodology</a></nav></header>
 <main id="main">
 {{if .Archive}}
-<div class="intro"><p class="eyebrow">OGC test evidence</p><h1>Conformance, on record.</h1><p>Explore protocol results, individual assertions, and the evidence behind each run.</p></div>
+<div class="intro"><p class="eyebrow">OGC and STAC test evidence</p><h1>Conformance, on record.</h1><p>Explore protocol results, individual assertions, and the evidence behind each run.</p></div>
 <h2>Reports</h2><div class="table-wrap" role="region" aria-label="Available reports" tabindex="0"><table><thead><tr><th>Report</th><th>Outcome</th><th>Tested commit</th><th>Completed (UTC)</th></tr></thead><tbody>
 {{range .Entries}}<tr><th><a href="{{.Href}}">{{.Title}}</a></th><td><span class="status {{statusClass .Report.Status}}">{{.Report.Status}}</span></td><td class="mono">{{short .Report.Run.Commit}}</td><td>{{.Report.Date}}</td></tr>{{else}}<tr><td colspan="4">The first report will appear after a conformance run is published.</td></tr>{{end}}
 </tbody></table></div><p class="note">Latest tracks completed main-branch runs, including failures. Release reports retain their original evidence.</p>
 {{else}}
 <div class="breadcrumbs"><a href="{{.Root}}index.html">{{if .Profile}}Report overview{{else}}This report{{end}}</a><span>/</span>{{if .Profile}}{{.Profile.Protocol}} / {{.Profile.Name}}{{else}}{{if .Report.Run.Release}}{{.Report.Run.Release}}{{else}}{{if .Report.Run.PRHead}}Pull request{{else}}{{if .Report.Run.ID}}{{refName .Report.Run.Ref}}{{else}}Local evidence{{end}}{{end}}{{end}}{{end}}</div>
-<div class="intro"><p class="eyebrow">{{if .Profile}}{{kind .Profile.Kind}}{{else}}OGC test evidence{{end}}</p><h1>{{if .Profile}}{{.Profile.Protocol}}<span class="subtitle">{{.Profile.Name}}</span>{{else}}Conformance report{{end}}</h1><span class="status {{if .Profile}}{{statusClass .Profile.Status}}{{else}}{{statusClass .Report.Status}}{{end}}">{{if .Profile}}{{.Profile.Status}}{{else}}{{.Report.Status}}{{end}}</span>{{if .Report.Run.Prerelease}} <span class="status">Prerelease</span>{{end}}</div>
+<div class="intro"><p class="eyebrow">{{if .Profile}}{{kind .Profile.Kind}}{{else}}OGC and STAC test evidence{{end}}</p><h1>{{if .Profile}}{{.Profile.Protocol}}<span class="subtitle">{{.Profile.Name}}</span>{{else}}Conformance report{{end}}</h1><span class="status {{if .Profile}}{{statusClass .Profile.Status}}{{else}}{{statusClass .Report.Status}}{{end}}">{{if .Profile}}{{.Profile.Status}}{{else}}{{.Report.Status}}{{end}}</span>{{if .Report.Run.Prerelease}} <span class="status">Prerelease</span>{{end}}</div>
 <dl class="run-meta"><div><dt>Tested checkout</dt><dd class="mono">{{if .Report.Run.Commit}}{{.Report.Run.Commit}}{{else}}See profile evidence{{end}}</dd></div><div><dt>Completed (UTC)</dt><dd>{{if .Report.Date}}{{.Report.Date}}{{else}}Unavailable{{end}}</dd></div>{{if .Report.Run.URL}}<div><dt>CI run</dt><dd><a href="{{.Report.Run.URL}}">Run {{.Report.Run.ID}} · attempt {{.Report.Run.Attempt}}</a></dd></div>{{end}}{{if .Report.Run.PRHead}}<div><dt>PR head (before merge)</dt><dd class="mono">{{.Report.Run.PRHead}}</dd></div>{{end}}</dl>
-{{if .Profile}}{{template "profile" .}}{{else}}{{template "overview" .}}{{end}}
+{{if .Profile}}{{if .Profile.Validation}}{{template "validation" .}}{{else}}{{template "profile" .}}{{end}}{{else}}{{template "overview" .}}{{end}}
 {{end}}
-</main><footer><span>neoserver · OGC conformance evidence</span><span>Stock official and derived results are identified separately.</span></footer></body></html>{{end}}
+</main><footer><span>neoserver · Conformance evidence</span><span>Official suites, community validators and client checks are identified separately.</span></footer></body></html>{{end}}
 
 {{define "overview"}}
 {{if not .Report.Run.SelectionKnown}}<p class="notice">Suite selection was unavailable. This report cannot establish complete coverage.</p>{{else if not .Report.Run.Selected}}<p class="notice">No suites were selected for this change.</p>{{end}}
-<div class="filters" data-filters hidden><label>Find a protocol or profile<input type="search" data-search placeholder="e.g. WCS, scaling"></label><label><span id="status-label">Status</span><select data-status aria-labelledby="status-label"><option value="">All outcomes</option>Passed</option>Passed with skips</option><option>Failed</option><option>Incomplete</option><option>Not run</option></select></label><p data-count role="status"></p></div>
-<div class="table-wrap" role="region" aria-label="Conformance profiles" tabindex="0"><table><thead><tr><th>Protocol / profile</th><th>Evidence</th><th>Status</th><th class="number">Passed</th><th class="number">Failed</th><th class="number">Skipped</th><th>Duration</th></tr></thead><tbody>
-{{range .Report.Profiles}}<tr data-result data-status="{{.Status}}"><th><a href="profiles/{{.Key}}/index.html">{{.Protocol}}</a><span class="subline">{{.Name}}</span></th><td>{{kind .Kind}}</td><td><span class="status {{statusClass .Status}}">{{.Status}}</span></td>{{if .Metadata.Result.Format}}<td class="number">{{.Metadata.Result.Leaf.Passed}}</td><td class="number">{{.Metadata.Result.Leaf.Failed}}</td><td class="number">{{.Metadata.Result.Leaf.Skipped}}</td>{{else}}<td class="number">—</td><td class="number">—</td><td class="number">—</td>{{end}}<td class="mono">{{.Duration}}</td></tr>{{end}}
-</tbody></table></div><p class="note">Counts describe leaf assertion executions within each profile. Infrastructure outcomes, upstream totals, and skip reasons are available in the details.</p>
+<div class="filters" data-filters hidden><label>Find a protocol or profile<input type="search" data-search placeholder="e.g. WCS, scaling"></label><label><span id="status-label">Status</span><select data-status aria-labelledby="status-label"><option value="">All outcomes</option><option>Passed</option><option>Passed with skips</option><option>Passed with warnings</option><option>Failed</option><option>Incomplete</option><option>Not run</option></select></label><p data-count role="status"></p></div>
+<h2>OGC protocol suites</h2>
+<div class="table-wrap" role="region" aria-label="OGC protocol profiles" tabindex="0">{{template "results-table" .Report.OGCProfiles}}</div>
+<p class="note">Counts describe leaf assertion executions within each profile. Infrastructure outcomes, upstream totals, and skip reasons are available in the details.</p>
+{{if .Report.STACProfiles}}<h2>STAC validation</h2>
+<p>STAC API and document validation use community tools. PySTAC checks demonstrate client interoperability. The stock OGC Features suite checks requirements inherited by STAC. These results do not constitute OGC STAC certification.</p>
+<div class="table-wrap" role="region" aria-label="STAC validation profiles" tabindex="0">{{template "results-table" .Report.STACProfiles}}</div>
+<p class="note">Validator exit codes and advisory warnings are recorded separately from ETS assertion counts. Warnings can describe recommended metadata or a limitation in test coverage. Duplicate warning occurrences are retained. Validator durations cover the shared validation batch.</p>{{end}}
 {{if .Report.Run.Jobs}}<details><summary>CI job outcomes</summary><dl class="metadata">{{range $name, $status := .Report.Run.Jobs}}<dt>{{$name}}</dt><dd>{{$status}}</dd>{{end}}</dl></details>{{end}}
 {{end}}
 
 {{define "profile"}}{{$p := .Profile}}
+{{if $p.Scope}}<p>{{$p.Scope}}</p>{{end}}
 {{if $p.Issue}}<p class="notice">{{$p.Issue}}</p>{{end}}{{if $p.Metadata.Error}}<details class="notice" open><summary>Execution diagnostic</summary><pre>{{$p.Metadata.Error}}</pre></details>{{end}}
 {{if $p.Evidence}}<p><a class="download" href="{{.Root}}evidence/{{$p.Evidence}}" download>Download {{kind $p.Kind}} suite evidence (.zip)</a></p>{{end}}
 <h2>Recorded outcomes</h2>{{if $p.Metadata.Result.Format}}<div class="table-wrap" role="region" aria-label="Recorded outcome counts" tabindex="0"><table><thead><tr><th>Category</th><th>Total</th><th>Passed</th><th>Failed</th><th>Skipped</th></tr></thead><tbody>
@@ -36,9 +41,30 @@
 <tr><th>Wrapper outcomes</th><td>{{$p.Metadata.Result.Wrapper.Total}}</td><td>{{$p.Metadata.Result.Wrapper.Passed}}</td><td>{{$p.Metadata.Result.Wrapper.Failed}}</td><td>{{$p.Metadata.Result.Wrapper.Skipped}}</td></tr>
 <tr><th>Infrastructure</th><td>{{$p.Metadata.Result.Infrastructure.Total}}</td><td>{{$p.Metadata.Result.Infrastructure.Passed}}</td><td>{{$p.Metadata.Result.Infrastructure.Failed}}</td><td>{{$p.Metadata.Result.Infrastructure.Skipped}}</td></tr>
 <tr><th>Upstream totals ({{$p.Metadata.Result.Format}})</th><td>{{$p.Metadata.Result.Total}}</td><td>{{$p.Metadata.Result.Passed}}</td><td>{{$p.Metadata.Result.Failed}}</td><td>{{$p.Metadata.Result.Skipped}}</td></tr></tbody></table></div>{{else}}<p class="note">No recorded outcome counts are available.</p>{{end}}
-{{if $p.Metadata.Result.SkipCategories}}<h2>Skip reasons</h2><dl class="metadata">{{range $key, $count := $p.Metadata.Result.SkipCategories}}<dt>{{$key}}</dt><dd>{{$count}}</dd>{{end}}</dl>{{end}}
+{{if $p.Metadata.Result.SkipCategories}}<h2>Skip reasons</h2>{{if $p.ReviewedSkips}}<p class="note">The repository coverage policy accepted all {{$p.Metadata.Result.Leaf.Skipped}} skipped executions for this fixture. The recorded policy check is included in the evidence archive.</p>{{end}}<dl class="metadata">{{range $key, $count := $p.Metadata.Result.SkipCategories}}<dt>{{$key}}</dt><dd>{{$count}}</dd>{{end}}</dl>{{end}}
 <details class="provenance"><summary>Build provenance and invocation</summary><dl class="metadata"><dt>Evidence commit</dt><dd class="mono">{{$p.Metadata.Commit}}</dd><dt>Server image ID</dt><dd class="mono">{{$p.Metadata.CandidateImageID}}</dd><dt>Suite image</dt><dd class="mono">{{$p.Metadata.Image}}</dd>{{if $p.Metadata.DerivedImageID}}<dt>Derived image ID</dt><dd class="mono">{{$p.Metadata.DerivedImageID}}</dd><dt>Patch set</dt><dd>{{$p.Metadata.PatchSet}}</dd><dt>Patch SHA-256</dt><dd class="mono">{{$p.Metadata.PatchSHA256}}</dd>{{end}}{{range $key, $value := $p.Metadata.Arguments}}<dt>{{$key}}</dt><dd class="mono">{{range $value}}<div>{{.}}</div>{{end}}</dd>{{end}}</dl></details>
 <h2>Test executions <span class="muted">{{len $p.Cases}}</span></h2>
 <div class="filters" data-filters hidden><label>Search test executions<input type="search" data-search placeholder="Test name, class, or message"></label><label><span id="status-label">Status</span><select data-status aria-labelledby="status-label"><option value="">All outcomes</option><option>Passed</option><option>Failed</option><option>Skipped</option></select></label><label><span id="category-label">Skip category</span><select data-category aria-labelledby="category-label"><option value="">All categories</option>{{range $key, $count := $p.Metadata.Result.SkipCategories}}<option>{{$key}}</option>{{end}}</select></label><p data-count role="status"></p></div>
 <div class="cases">{{range $p.Cases}}<details id="{{.ID}}" data-result data-status="{{.Status}}" data-category="{{.Category}}"><summary><span class="status {{statusClass .Status}}">{{.Status}}</span><span class="case-name">{{.Name}}</span><span class="case-kind">{{.Kind}}</span></summary><div class="case-body"><a href="#{{.ID}}">Link to this execution</a><p class="mono">{{.Class}}</p>{{if .Category}}<p>Skip category: <strong>{{.Category}}</strong></p>{{end}}{{if .Message}}<pre>{{.Message}}</pre>{{end}}</div></details>{{else}}<p class="note">No test execution details are available for this profile.</p>{{end}}</div>
+{{end}}
+
+{{define "results-table"}}
+<table><thead><tr><th>Protocol / profile</th><th>Evidence</th><th>Status</th><th class="number">Passed</th><th class="number">Failed</th><th class="number">Skipped</th><th>Duration</th></tr></thead><tbody>
+{{range .}}<tr data-result data-status="{{.Status}}"><th><a href="profiles/{{.Key}}/index.html">{{.Protocol}}</a><span class="subline">{{.Name}}</span></th><td>{{kind .Kind}}{{if .Validation}}{{if .Validation.Version}}<span class="subline">v{{.Validation.Version}}</span>{{end}}{{end}}</td><td><span class="status {{statusClass .Status}}">{{.Status}}</span>{{if .ReviewedSkips}}<span class="subline">Skips reviewed by coverage policy</span>{{end}}{{if .Validation}}{{if .Validation.Warnings}}<span class="subline">{{len .Validation.Warnings}} advisory warning occurrences</span>{{end}}{{end}}</td>{{if .Metadata.Result.Format}}<td class="number">{{.Metadata.Result.Leaf.Passed}}</td><td class="number">{{.Metadata.Result.Leaf.Failed}}</td><td class="number">{{.Metadata.Result.Leaf.Skipped}}</td>{{else}}<td class="number">—</td><td class="number">—</td><td class="number">—</td>{{end}}<td class="mono">{{.Duration}}</td></tr>{{end}}
+</tbody></table>
+{{end}}
+
+{{define "validation"}}{{$p := .Profile}}{{$v := $p.Validation}}
+<p>{{$p.Scope}}</p>
+{{if $p.Issue}}<p class="notice">{{$p.Issue}}</p>{{end}}
+{{if $p.Evidence}}<p><a class="download" href="{{.Root}}evidence/{{$p.Evidence}}" download>Download STAC validation evidence (.zip)</a></p>{{end}}
+<h2>Recorded outcome</h2>
+<dl class="metadata"><dt>Tool</dt><dd>{{$v.Tool}} {{$v.Version}}</dd><dt>Exit code</dt><dd>{{if ne $v.ExitCode nil}}{{$v.ExitCode}}{{else}}Unavailable{{end}}</dd><dt>Assertion counts</dt><dd>Not reported by this check.</dd></dl>
+{{if $v.Warnings}}<h2>Advisory warnings <span class="muted">{{len $v.Warnings}} occurrences</span></h2>
+<p class="note">These are upstream warnings, separate from validation errors and ETS skips. Repeated messages remain separate. Coverage limitations identify checks the validator could not complete.</p>
+{{range $i, $warning := $v.Warnings}}<details id="warning-{{$i}}" open><summary>{{$warning.Category}}</summary><p>{{$warning.Explanation}}</p><pre>{{$warning.Message}}</pre></details>{{end}}
+{{else if and (eq $p.Status "Passed") (eq $v.Tool "stac-api-validator")}}<p class="note">No advisory warnings recorded.</p>{{end}}
+<details class="provenance"><summary>Build provenance and invocation</summary><dl class="metadata"><dt>Evidence commit</dt><dd class="mono">{{$p.Metadata.Commit}}</dd><dt>Server image ID</dt><dd class="mono">{{$p.Metadata.CandidateImageID}}</dd><dt>Validation batch started (UTC)</dt><dd>{{$p.Metadata.StartedAt}}</dd><dt>Validation batch completed (UTC)</dt><dd>{{$p.Metadata.CompletedAt}}</dd>{{range $key, $value := $p.Metadata.Arguments}}<dt>{{$key}}</dt><dd class="mono">{{range $value}}{{.}}{{end}}</dd>{{end}}</dl>
+{{range $v.Commands}}<pre>{{range .}}{{printf "%q " .}}{{end}}</pre>{{end}}</details>
+{{if $v.Output}}<h2>Original tool output</h2><details><summary>{{$v.Log}}</summary><pre>{{$v.Output}}</pre></details>{{end}}
 {{end}}

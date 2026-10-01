@@ -43,6 +43,11 @@ const APIKeysPage = lazy(() =>
     default: module.APIKeysPage,
   })),
 );
+const STACPage = lazy(() =>
+  import("@/features/stac/STACPage").then((module) => ({
+    default: module.STACPage,
+  })),
+);
 const ImportsPage = lazy(() =>
   import("@/features/imports/ImportsPage").then((module) => ({
     default: module.ImportsPage,
@@ -273,6 +278,14 @@ export const router = createBrowserRouter(
                   element: (
                     <Suspense fallback={fallback}>
                       <StyleEditorPage />
+                    </Suspense>
+                  ),
+                },
+                {
+                  path: "stac",
+                  element: (
+                    <Suspense fallback={fallback}>
+                      <STACPage />
                     </Suspense>
                   ),
                 },

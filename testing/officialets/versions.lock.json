@@ -134,6 +134,22 @@
       "patch_set": "wfs202-locking-v2",
       "patch": "testing/officialets/patches/wfs202-locking.go",
       "patch_sha256": "874a346949311973dacef974f353b25b255ca7efd0db78a64e3b4374ff717eee"
+    },
+    "ogcapi-features10/stac": {
+      "suite": "ogcapi-features10",
+      "evidence_kind": "official",
+      "arguments": {
+        "iut": "${SERVER}/workspaces/demo/stac/",
+        "noofcollections": "-1"
+      }
+    }
+  },
+  "stac_validation": {
+    "selected_with": "ogcapi-features10",
+    "tools": {
+      "stac-api-validator": "0.6.8",
+      "stac-validator": "4.1.2",
+      "pystac-client": "0.9.0"
     }
   }
 }

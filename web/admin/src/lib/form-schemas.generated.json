@@ -403,6 +403,14 @@
         "HEAD": "read",
         "LISTCOLLECTIONS": "read"
       },
+      "stac": {
+        "GET": "read",
+        "GETFEATURES": "read",
+        "GETITEM": "read",
+        "HEAD": "read",
+        "LISTCOLLECTIONS": "read",
+        "SEARCH": "read"
+      },
       "wcs": {
         "DESCRIBECOVERAGE": "read",
         "GETCAPABILITIES": "read",

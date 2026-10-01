@@ -781,6 +781,9 @@ main() {
         configure_wmts_conformance
         configure_dataset_map_fixture
     fi
+    if [[ "${CONFORMANCE_SUITE:-}" == "ogcapi-features10" ]]; then
+        NEOSERVER_TOKEN="$TOKEN" /bin/bash /usr/local/bin/setup-stac
+    fi
     validate_conformance_wfs_fixture
 
     echo ""

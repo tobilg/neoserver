@@ -51,6 +51,12 @@ export function EndpointsPage() {
   const summary = useGetWorkspaceSummary(ws);
   const endpoints: EndpointDefinition[] = [
     {
+      name: "STAC",
+      url: `${root}/stac/`,
+      serverFlag: "stac",
+      workspaceFlag: "stac",
+    },
+    {
       name: "OGC API – Features",
       url: `${root}/ogc/`,
       serverFlag: "ogcapi",

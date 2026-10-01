@@ -62,7 +62,7 @@ func resolve(r *http.Request, service, path string) Descriptor {
 			break
 		}
 		switch parts[i+2] {
-		case "wfs", "wms", "wcs", "wmts", "ogc", "ogc-tiles":
+		case "wfs", "wms", "wcs", "wmts", "ogc", "ogc-tiles", "stac":
 			if service == "" || service == parts[i+2] || (service == "ogcapi" && parts[i+2] == "ogc") {
 				service, tail = parts[i+2], parts[i+3:]
 			}
@@ -74,6 +74,23 @@ func resolve(r *http.Request, service, path string) Descriptor {
 	}
 	d := Descriptor{Service: service, Workspace: workspace, Name: r.Method}
 	if service == "" {
+		return d
+	}
+	if service == "stac" {
+		if len(tail) == 1 && tail[0] == "search" && (r.Method == http.MethodGet || r.Method == http.MethodPost) {
+			d.Name = "SEARCH"
+		}
+		if r.Method == http.MethodGet || r.Method == http.MethodHead {
+			if len(tail) == 1 && tail[0] == "collections" {
+				d.Name = "LISTCOLLECTIONS"
+			}
+			if len(tail) == 3 && tail[2] == "items" {
+				d.Name = "GETFEATURES"
+			}
+			if len(tail) == 4 && tail[2] == "items" {
+				d.Name = "GETITEM"
+			}
+		}
 		return d
 	}
 	if service == "ogcapi" || service == "ogc-tiles" {
@@ -225,6 +242,10 @@ func xmlRoot(body []byte) (xml.StartElement, error) {
 // administration needs manage, not the ordinary editor's write grant.
 func Action(service, operation, method string) string {
 	switch strings.ToUpper(operation) {
+	case "SEARCH":
+		if service == "stac" {
+			return "read"
+		}
 	case "CREATESTOREDQUERY", "DROPSTOREDQUERY":
 		if service == "wfs" {
 			return "manage"

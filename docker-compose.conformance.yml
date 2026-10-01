@@ -59,6 +59,8 @@ services:
       NEOSRV_WCS_ENABLED: "true"
       NEOSRV_TILES_ENABLED: "true"
       NEOSRV_WMTS_ENABLED: "true"
+      NEOSRV_STAC_ENABLED: "true"
+      NEOSRV_STAC_DATABASEPATH: /state/stac.duckdb
       NEOSRV_PERSISTENTCACHE_ENABLED: "false"
     volumes:
       - conformance-state:/state
@@ -99,24 +101,28 @@ services:
 
   teamengine-wms13:
     profiles: ["wms13"]
+    platform: linux/amd64
     image: "ogccite/ets-wms13:1.33-teamengine-5.7@sha256:3f9012ca9b2a5a67075e64781ec504507a735cf6df31df94d0d09a2f4f375784"
     tmpfs:
       - /root/te_base/users/ogctest/rest
 
   teamengine-wfs20:
     profiles: ["wfs20"]
+    platform: linux/amd64
     image: "ogccite/ets-wfs20:1.42-teamengine-5.7@sha256:d8099237033172d23ba1beefbb16f6bd46025354a3f57c74ae009d9b91d7525b"
     tmpfs:
       - /root/te_base/users/ogctest/rest
 
   teamengine-wcs20:
     profiles: ["wcs20"]
+    platform: linux/amd64
     image: "ogccite/ets-wcs20:1.21-teamengine-5.7@sha256:07aa1ce786e89bd00bef63a270b63c962b6f60b854712f112bc660a31f5a5f9e"
     tmpfs:
       - /root/te_base/users/ogctest/rest
 
   teamengine-wfs20-derived:
     profiles: ["wfs20-derived"]
+    platform: linux/amd64
     image: "neoserver/ets-wfs202-derived:wfs20-1.42-locking-v2"
     build:
       context: .
@@ -129,6 +135,7 @@ services:
 
   teamengine-wcs20-derived:
     profiles: ["wcs20-derived"]
+    platform: linux/amd64
     image: "neoserver/ets-wcs20-interpolation-derived:wcs20-1.21-uri-xpath-v1"
     build:
       context: .
@@ -141,18 +148,33 @@ services:
 
   teamengine-wmts10:
     profiles: ["wmts10"]
+    platform: linux/amd64
     image: "ogccite/ets-wmts10:1.10-teamengine-5.7@sha256:0ec86d3db80575741b4d8364709e3058f2b8fd875728961deae60dad3b138a2c"
     tmpfs:
       - /root/te_base/users/ogctest/rest
 
+  stac-validator:
+    profiles: ["ogcapi-features10"]
+    build:
+      context: .
+      dockerfile: testing/stac/Dockerfile
+    environment:
+      STAC_URL: http://server:9000/workspaces/demo/stac/
+      NEOSERVER_COMMIT: ${NEOSERVER_COMMIT:-unknown}
+      NEOSERVER_IMAGE_ID: ${NEOSERVER_IMAGE_ID:-unknown}
+    volumes:
+      - ./test-results:/results
+
   teamengine-ogcapi-features10:
     profiles: ["ogcapi-features10"]
+    platform: linux/amd64
     image: "ogccite/ets-ogcapi-features10:1.8-teamengine-5.7@sha256:d884de89ac8dae6ea153766886c706f9ddf6ce172de0c4bd4bdd591d28bdaffe"
     tmpfs:
       - /root/te_base/users/ogctest/rest
 
   teamengine-ogcapi-tiles10:
     profiles: ["ogcapi-tiles10"]
+    platform: linux/amd64
     image: "ogccite/ets-ogcapi-tiles10:1.1-teamengine-5.7@sha256:ceab021daa7a1054403e3c175c6553a96cbf38bafb9021aa7246b5dd39dd0b1b"
     tmpfs:
       - /root/te_base/users/ogctest/rest

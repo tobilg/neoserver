@@ -42,7 +42,7 @@ these three grid installation methods:
    mkdir -p proj-grids
    sudo chown 65532:65532 proj-grids
    docker run --rm --entrypoint projsync \
-     -v "$PWD/proj-grids:/proj-grids" tobilg/neoserver:0.2.0 \
+     -v "$PWD/proj-grids:/proj-grids" tobilg/neoserver:0.3.0 \
      --file us_noaa_conus.tif --target-dir /proj-grids
    ```
 
@@ -59,7 +59,7 @@ these three grid installation methods:
 3. **Build an image with your grids.** Download the grids first, then build:
 
    ```dockerfile
-   FROM tobilg/neoserver:0.2.0
+   FROM tobilg/neoserver:0.3.0
    COPY proj-grids/ /usr/local/gdal-internal/share/proj/
    ```
 
@@ -160,6 +160,7 @@ Persist:
 - The encrypted DuckDB store configured by Store.Path
 - The standalone encrypted persistent tile-cache index and its filesystem/S3 payloads when `PersistentCache.Enabled=true`
 - The standalone encrypted mosaic catalog when `MosaicCatalog.Enabled=true`
+- The standalone encrypted STAC catalog at `STAC.DatabasePath` when `STAC.Enabled=true`, including standalone metadata, bindings, overrides and staged imports
 - The managed import root (published encrypted DuckDB files) when `Importer.Enabled=true`
 - `Importer.TemporaryDirectory`, including retained uploads and extracted inputs, when pending/revisable imports must survive restore
 - The standalone encrypted audit history when `Audit.Enabled=true`
@@ -170,7 +171,7 @@ Persist:
 
 The store contains workspaces, service connection details, layers, styles, API-key hashes, claim mappings, RBAC state, signing keys, import lifecycle links, and the pending audit-delivery outbox. Feature data remains in its datasource.
 
-Back up a quiescent consistency set containing the main catalog, managed style assets, managed import root, audit history, mosaic catalog, persistent tile index and payload store, and the configuration needed to locate them. The tile payload cache is rebuildable, but its durable jobs and quota index must either be backed up with matching payloads or deliberately discarded and reseeded. Store the encryption key separately in a secret manager; a backup without its original key cannot be opened.
+Back up a quiescent consistency set containing the main catalog, managed style assets, managed import root, audit history, mosaic catalog, STAC catalog, persistent tile index and payload store, and the configuration needed to locate them. The tile payload cache is rebuildable, but its durable jobs and quota index must either be backed up with matching payloads or deliberately discarded and reseeded. Store the encryption key separately in a secret manager; a backup without its original key cannot be opened.
 
 Include retained import inputs from `Importer.TemporaryDirectory` in that set. Catalog schema v24 records their owned relative paths; startup reconciles both staged/published output and retained inputs beneath the configured replacement roots. Pre-v24 managed upload/extract paths are reconciled using their owned directory names. Arbitrary URI/local datasource paths are not relocated. Restoring outputs without retained inputs may preserve a staged result but cannot support revision; restore the missing input or reupload it. The recovery drill also transforms a restored pending source before declaring success.
 
@@ -279,7 +280,7 @@ Before upgrading:
 
 A binary refuses a state database whose schema is older than its baseline or newer than it supports; it never modifies a database it refuses. Avoid rolling back to an older binary without a compatible backup.
 
-In neoserver 0.2.0, catalogs at the released 0.1.0 baseline (25) upgrade
+In neoserver 0.3.0, catalogs at the released 0.1.0 baseline (25) upgrade
 transactionally to schema 26. Tile-cache (2) and mosaic (1) schemas already
 match the supported versions. The unversioned 0.1.0 audit log is recognized
 and stamped at baseline 1. DuckDB 1.5.5 can update

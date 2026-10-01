@@ -28,6 +28,11 @@ func (h *handler) workspaceSummary(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	protocols := map[string]bool{}
+	if catalog, ok := h.store.(store.STACSettingsStore); ok {
+		if settings, err := catalog.GetSTACSettings(r.Context(), workspaceID); err == nil {
+			protocols["stac"] = settings.Enabled
+		}
+	}
 	if value, getErr := h.store.GetWMSSettings(r.Context(), workspaceID); getErr == nil {
 		protocols["wms"] = value.Enabled
 	}

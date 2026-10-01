@@ -1,0 +1,7 @@
+{
+  "https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json": {
+    "file": "stac-1.1.0-catalog.json",
+    "sha256": "d82974d084fb600ec0e92d6962ef536157eda6d36bbb4299e8235a6042efbeed",
+    "source": "https://raw.githubusercontent.com/radiantearth/stac-spec/v1.1.0/catalog-spec/json-schema/catalog.json"
+  }
+}

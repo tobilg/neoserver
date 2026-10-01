@@ -14,6 +14,7 @@ func TestForPaths(t *testing.T) {
 		{"documentation", []string{"docs/conformance.md", "README.md"}, []string{}},
 		{"shared WMS legend renderer", []string{"internal/wms/resource_legend.go"}, []string{"wms13", "wmts10"}},
 		{"WMS tests", []string{"testing/wms/map_test.go"}, []string{"wms13"}},
+		{"STAC", []string{"internal/stacsource/manager.go", "testing/stac/run.py"}, []string{"ogcapi-features10"}},
 		{"filter", []string{"internal/filter/compiler.go"}, []string{"ogcapi-features10", "wfs20"}},
 		{"tiles", []string{"internal/tiles/map.go"}, []string{"ogcapi-tiles10", "wmts10"}},
 		{"renderer", []string{"internal/renderer/render.go"}, []string{"ogcapi-tiles10", "wms13", "wmts10"}},

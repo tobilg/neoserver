@@ -1,8 +1,9 @@
 # Protocol testing and OGC conformance
 
 neoserver separates ordinary correctness tests, native protocol regression,
-unmodified official OGC suites, and locally adapted upstream suites. Results
-from one category must not be presented as results from another.
+unmodified official OGC suites, locally adapted upstream suites, and STAC
+community validation and client interoperability checks. Results from one
+category must not be presented as results from another.
 
 | Category | Command | Meaning |
 | --- | --- | --- |
@@ -10,6 +11,7 @@ from one category must not be presented as results from another.
 | Protocol integration | `make test-protocol-integration` | Native black-box regression against a live disposable neoserver fixture |
 | Official conformance | `make test-conformance` | Unmodified digest-pinned OGC TEAM Engine execution |
 | Official-derived | `make test-conformance-derived` | Published suite executed with a recorded compatibility adaptation |
+| STAC validation | `make test-conformance-stac` | Community API/document validation, PySTAC interoperability, and separately reported inherited OGC Features ETS evidence |
 | Complete assurance | `make test-assurance-all` | Failure-exhaustive execution of every category without merging their meaning |
 
 Passing any local category is not, by itself, an OGC product certification.
@@ -57,6 +59,13 @@ for suite image digests, profile selection, and arguments. Every official suite
 gets a newly initialized catalog and database. This is required for mutating WFS
 transaction/locking tests and prevents one suite from contaminating another.
 
+The runner builds and tests the supported `linux/amd64` image by default, which
+also matches the single-architecture TEAM Engine images. On ARM hosts this runs
+under emulation and is slow. For a faster local iteration, set
+`DOCKER_DEFAULT_PLATFORM=linux/arm64` to build neoserver natively; the TEAM
+Engine images still run emulated, and the results do not describe the released
+amd64 image.
+
 The WMS profile selects Basic, Queryable, and Time but not the recommendations
 checklist. WMTS exercises the KVP raster profile; optional WMTS MVT remains
 disabled and OGC API vector tiles are tested separately. Stock WCS execution
@@ -81,6 +90,24 @@ profile-version, fixture-not-applicable, conditional-protocol-branch,
 unclaimed-optional-capability, or unclassified. An unclassified skip is not
 silently treated as a pass. Results from different engines and profiles are
 never summed into a repository-wide requirement count.
+
+### Fixture coverage and reviewed skips
+
+Official runs prepare isolated data for each suite before publishing layers.
+WFS adds populated numeric and temporal properties and actual NULL samples.
+OGC API Features retains all 16 feature types and adds geometries in the suite's
+five fixed bbox regions, including the antimeridian and polar regions. WMTS
+uses a time-and-elevation layer and opts into published tile-matrix limits.
+The WMS and WCS data are unchanged by these preparations.
+
+`testing/officialets/coverage-policy.json` records minimum assertion counts and
+reviewed residual skips. Both official and official-derived runners write a
+`coverage-check.json` beside their unchanged raw results, metadata and JUnit,
+and fail on unreviewed skips or lost assertions. WFS point exclusions and
+unclaimed joins/versioning (including dependent setup/cleanup) remain explicitly
+accounted for. The Tiles fixture configures a curated workspace map and requires
+the dataset-tilesets assertion to pass without a skip allowance. CTL messages are
+retained in normalized results. Rendering assessment remains advisory.
 
 ## Official-derived WCS Interpolation
 
@@ -107,6 +134,43 @@ not classified as stock official ETS execution or certification evidence.
 When the upstream image pin changes, the stock Interpolation profile must be
 re-evaluated. Remove the adaptation and reclassify the profile as official only
 after the unmodified published suite executes successfully.
+
+## WFS 2.0.2 compatibility profile
+
+`make test-conformance-derived-wfs20-core202` runs WFS 2.0.2 against the pinned
+WFS ETS image with two corrections. The locking test reads the lock ID from
+`LockFeatureResponse`. The stock test incorrectly looks for `FeatureCollection`,
+throws a null-pointer exception, and leaves the acquired lock out of its cleanup
+list. This defect was also reproduced in the latest published Docker image,
+`1.43-teamengine-6.0.0-RC2` (digest
+`sha256:101ff2737a36b1b8f7ac6e6bc2347fc4e0132b48ef66c5ab349bb122aeac1878`),
+and is tracked in [upstream issue #288](https://github.com/opengeospatial/ets-wfs20/issues/288).
+
+The destructive transaction group runs last. Its delete tests restore features
+by inserting them with new IDs, but the suite retains the original sampled IDs.
+Running locking tests afterward can therefore randomly select a deleted feature.
+Moving the intact transaction group after all consumers of that snapshot avoids
+this stale-data failure, tracked in
+[upstream issue #289](https://github.com/opengeospatial/ets-wfs20/issues/289).
+
+The `wfs202-locking-v2` patch verifies the original class and suite XML checksums,
+changes the response element constant, and moves the transaction group.
+Assertions, test selection, and skip accounting are preserved.
+CI and the dashboard label these results **official-derived**, record the base
+image and patch identity, and keep them separate from stock WFS 2.0.0 evidence.
+The 2.0.2-only assertion remains an explicit version-applicability skip in the
+stock 2.0.0 profile and executes in `core202`.
+
+Both regular profiles retain ETS 1.42 for now: a local evaluation of 1.43 also
+reported new temporal parsing failures in `afterPeriod` and `beforePeriod`.
+Adopting that image requires resolving those failures independently; the latest
+image evaluation is not represented as passing conformance evidence.
+
+## STAC validation
+
+`make test-conformance-stac` runs the workspace STAC fixture through pinned STAC API/document validators and PySTAC, then the stock OGC API Features ETS profile `ogcapi-features10/stac`. Reports remain separate: passing an underlying OGC suite does not establish full STAC certification. See [STAC validation](stac.md#operation-and-validation).
+
+These checks also run with `make test-conformance-ogcapi-features10` and the complete conformance and assurance targets.
 
 ## Truthful declarations and evidence mapping
 
@@ -137,8 +201,9 @@ always upload their available evidence.
 
 The public dashboard is hosted by GitHub Pages at
 [conformance.neoserver.cloud](https://conformance.neoserver.cloud/). It includes
-the six stock official suites and the separately labelled derived WCS
-Interpolation and WFS 2.0.2 profiles. Native protocol integration remains a separate CI lane.
+the six stock official suites, the separately labelled derived WCS
+Interpolation and WFS 2.0.2 profiles, and a separate **STAC validation** section.
+Native protocol integration remains a separate CI lane.
 
 `/latest/` shows the most recent eligible main-branch conformance run, including
 failures. `/releases/<tag>/` retains evidence from the successful release workflow
@@ -160,6 +225,32 @@ Each suite writes a short Actions summary, including on failure. The final
 `inputs/` (the source manifest, run context, and original evidence). These reports
 work locally without a web server; filtering is optional JavaScript. Reporting
 errors do not change test outcomes or become release qualification gates.
+
+### STAC validation results
+
+The STAC section distinguishes four kinds of evidence:
+
+| Result | Evidence and scope |
+| --- | --- |
+| STAC API 1.0 | Community `stac-api-validator`: Core, Collections, Features and Item Search |
+| STAC 1.1 documents | Community `stac-validator`: pinned core schemas for Catalog, Collections and fixture Items |
+| PySTAC client interoperability | Repository checks using `pystac-client`: GET/POST pagination, unique Items, limit clamping and combined `ids`/`bbox` filtering |
+| Inherited OGC Features requirements | Stock official OGC API Features ETS against the workspace STAC endpoint |
+
+These results do not constitute OGC STAC certification. The validator pages
+record pinned tool versions, exit codes, endpoint, timestamps, server build,
+commands and original logs. Validator results do not supply ETS assertion
+counts. Successful API validation with advisories appears as **Passed with
+warnings**, with each warning occurrence preserved, including duplicates.
+Warnings are separate from failures and skipped ETS assertions; some indicate
+limits in test coverage. See [STAC advisory warnings](stac.md#advisory-warnings).
+
+CI uploads the three STAC checks as the separate `stac-validation` artifact.
+The inherited ETS evidence remains in `official-ets-ogcapi-features10`, under
+`stac/`. The source manifest declares the expected validators and versions;
+missing or inconsistent records are incomplete. Historical manifests that did
+not declare these checks retain their original scope. Disabling STAC validation
+while selecting its suite leaves its expected validator results incomplete.
 
 ### Generate a report locally
 
@@ -266,53 +357,4 @@ publishing workflow's logs and summary. Inspect that workflow independently of
 the source test or release outcome.
 
 Related: [Development](development.md) · [WCS](wcs.md) ·
-[OGC API - Tiles](ogc-api-tiles.md) · [WMTS](wmts.md)
-
-### Fixture coverage and reviewed skips
-
-Official runs prepare isolated data for each suite before publishing layers.
-WFS adds populated numeric and temporal properties and actual NULL samples.
-OGC API Features retains all 16 feature types and adds geometries in the suite's
-five fixed bbox regions, including the antimeridian and polar regions. WMTS
-uses a time-and-elevation layer and opts into published tile-matrix limits.
-The WMS and WCS data are unchanged by these preparations.
-
-`testing/officialets/coverage-policy.json` records minimum assertion counts and
-reviewed residual skips. Both official and official-derived runners write a
-`coverage-check.json` beside their unchanged raw results, metadata and JUnit,
-and fail on unreviewed skips or lost assertions. WFS point exclusions and
-unclaimed joins/versioning (including dependent setup/cleanup) remain explicitly
-accounted for. The Tiles fixture configures a curated workspace map and requires
-the dataset-tilesets assertion to pass without a skip allowance. CTL messages are
-retained in normalized results. Rendering assessment remains advisory.
-
-### WFS 2.0.2 compatibility profile
-
-`make test-conformance-derived-wfs20-core202` runs WFS 2.0.2 against the pinned
-WFS ETS image with two corrections. The locking test reads the lock ID from
-`LockFeatureResponse`. The stock test incorrectly looks for `FeatureCollection`,
-throws a null-pointer exception, and leaves the acquired lock out of its cleanup
-list. This defect was also reproduced in the latest published Docker image,
-`1.43-teamengine-6.0.0-RC2` (digest
-`sha256:101ff2737a36b1b8f7ac6e6bc2347fc4e0132b48ef66c5ab349bb122aeac1878`),
-and is tracked in [upstream issue #288](https://github.com/opengeospatial/ets-wfs20/issues/288).
-
-The destructive transaction group runs last. Its delete tests restore features
-by inserting them with new IDs, but the suite retains the original sampled IDs.
-Running locking tests afterward can therefore randomly select a deleted feature.
-Moving the intact transaction group after all consumers of that snapshot avoids
-this stale-data failure, tracked in
-[upstream issue #289](https://github.com/opengeospatial/ets-wfs20/issues/289).
-
-The `wfs202-locking-v2` patch verifies the original class and suite XML checksums,
-changes the response element constant, and moves the transaction group.
-Assertions, test selection, and skip accounting are preserved.
-CI and the dashboard label these results **official-derived**, record the base
-image and patch identity, and keep them separate from stock WFS 2.0.0 evidence.
-The 2.0.2-only assertion remains an explicit version-applicability skip in the
-stock 2.0.0 profile and executes in `core202`.
-
-Both regular profiles retain ETS 1.42 for now: a local evaluation of 1.43 also
-reported new temporal parsing failures in `afterPeriod` and `beforePeriod`.
-Adopting that image requires resolving those failures independently; the latest
-image evaluation is not represented as passing conformance evidence.
+[STAC](stac.md) · [OGC API - Tiles](ogc-api-tiles.md) · [WMTS](wmts.md)

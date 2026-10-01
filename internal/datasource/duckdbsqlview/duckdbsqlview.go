@@ -285,6 +285,19 @@ func (h *Helper) QuerySQLView(ctx context.Context, config *datasource.SQLViewCon
 	return out, rows.Err()
 }
 
+func (h *Helper) QuerySQLViewStream(ctx context.Context, config *datasource.SQLViewConfig, params datasource.QueryParams) (datasource.FeatureStream, error) {
+	query, args, err := h.BuildSQLViewListSQL(config, params)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := h.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query sql view: %w", err)
+	}
+	return datasource.NewSQLFeatureStream(rows), nil
+}
+
 // QuerySQLViewWKB executes a SQL View query and returns WKB geometry with properties for rendering.
 func (h *Helper) QuerySQLViewWKB(ctx context.Context, config *datasource.SQLViewConfig, params datasource.QueryParams) ([]datasource.RenderFeature, error) {
 	query, args, err := h.BuildSQLViewWKBSQL(config, params)

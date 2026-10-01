@@ -90,6 +90,13 @@ jobs:
           name: official-ets-${{ matrix.suite }}
           path: test-results/conformance/${{ matrix.suite }}
           if-no-files-found: warn
+      - name: Upload STAC validation evidence
+        if: always() && matrix.suite == 'ogcapi-features10'
+        uses: actions/upload-artifact@v7
+        with:
+          name: stac-validation
+          path: test-results/conformance/stac
+          if-no-files-found: warn
       - name: Summarize official ETS results
         if: always()
         continue-on-error: true
@@ -98,7 +105,7 @@ jobs:
           REPORT_SUITE: ${{ matrix.suite }}
         run: |
           ETS_REPORT_SELECTED="[$ETS_REPORT_SELECTED]" go run ./testing/officialets/cmd/etsreport \
-            --summary-only --suite "$REPORT_SUITE" --kind official --summary "$GITHUB_STEP_SUMMARY"
+            --summary-only --suite "$REPORT_SUITE" --kind official-and-stac --summary "$GITHUB_STEP_SUMMARY"
 
   official-derived-wcs-interpolation:
     name: Official-derived ETS - WCS 2.0 Interpolation
@@ -171,7 +178,14 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           pattern: official-*
-          path: ${{ runner.temp }}/conformance-artifacts
+          # v6 flattens a single match into this directory; the report loader
+          # also accepts that layout. Keep STAC validation outside this tree.
+          path: ${{ runner.temp }}/conformance-artifacts/official-artifacts
+      - name: Download STAC validation evidence
+        uses: actions/download-artifact@v6
+        with:
+          pattern: stac-validation
+          path: ${{ runner.temp }}/conformance-artifacts/stac-validation
       - name: Generate portable dashboard and summary
         env:
           ETS_REPORT_SELECTED: ${{ needs.select-official-suites.outputs.suites }}

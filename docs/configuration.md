@@ -112,6 +112,10 @@ Advanced portrayal extensions are disabled by default. An extension must be pres
 
 `WMS.StyleAssetPath` and `WMS.ExternalGraphicCachePath` contain binary payloads only. Managed asset metadata remains in the encrypted catalog. Writes are atomic, names are path-safe, asset/style bodies and decoded dimensions are bounded, and remote redirects are rechecked against the origin allowlist. Process feature, cell, memory, and time ceilings bound rendering transformations independently from ordinary GetMap limits.
 
+## SpatioTemporal Asset Catalog
+
+`STAC.Enabled` defaults to false. Set `STAC.DatabasePath` to a separate encrypted DuckDB database (default `./data/stac.duckdb`). `MaxItems` defaults to 1,000,000 active Items across all workspaces; `MaxUploadBytes` to 1 GiB; `WorkerCount` to 1; and `RefreshIntervalSec` to 900 seconds (minimum 60). Each workspace also has enabled/public settings, both false by default. Environment variables follow the usual convention, such as `NEOSRV_STAC_ENABLED=true`. See [STAC](stac.md) for publication, search, asset access and operational limits.
+
 ## Managed imports and audit history
 
 `Importer.Enabled` opts into durable vector import jobs. `Root` contains one encrypted DuckDB database per published import; `TemporaryDirectory` contains uploads and bounded archive expansion only. Upload, source, expanded-byte, archive-file, layer, feature, worker, retry, transform, and shutdown limits are independent. URI sources are restricted to local allowlisted paths and HTTPS resources handled by the bounded remote fetch policy; object-store URIs are not accepted because their byte size cannot be enforced before DuckDB reads them. Keep both paths on private persistent storage and include `Importer.Root` in backup and restore drills.

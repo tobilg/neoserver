@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# The runtime closure and stock ETS images target the supported amd64 image.
+export DOCKER_DEFAULT_PLATFORM="${DOCKER_DEFAULT_PLATFORM:-linux/amd64}"
+
 # Brings up a disposable neoserver (with Keycloak) and runs the console's
 # Playwright suite against it. The console is served by the Go binary from the
 # embedded build, so this exercises the real deployment shape rather than the

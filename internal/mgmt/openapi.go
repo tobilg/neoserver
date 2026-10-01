@@ -15,6 +15,7 @@ func BuildOpenAPI(cfg conf.Config) *openapi3.T {
 	schemas := getSchemas()
 	params := getPathParams()
 	paths := getPaths(params)
+	addSTACOpenAPI(schemas, paths)
 
 	doc := &openapi3.T{
 		OpenAPI: "3.0.3",

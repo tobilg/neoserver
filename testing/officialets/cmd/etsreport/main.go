@@ -29,7 +29,7 @@ func run() error {
 	summary := flag.String("summary", "", "append Markdown summary to this file")
 	summaryOnly := flag.Bool("summary-only", false, "write summary without generating HTML or archives")
 	suite := flag.String("suite", "", "limit summary to one suite")
-	kind := flag.String("kind", "", "limit summary to official or official-derived")
+	kind := flag.String("kind", "", "limit summary to official, official-derived, community-validator, client-interoperability, or official-and-stac")
 	prefix := flag.String("prefix", "", "published path: latest or releases/vVERSION")
 	index := flag.String("index", "", "regenerate the archive index in an existing site directory")
 	flag.Parse()

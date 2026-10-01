@@ -29,8 +29,13 @@ var templates = template.Must(template.New("reports").Funcs(template.FuncMap{
 		return s
 	},
 	"kind": func(s string) string {
-		if s == "official-derived" {
+		switch s {
+		case "official-derived":
 			return "Official-derived"
+		case "community-validator":
+			return "Community validator"
+		case "client-interoperability":
+			return "Client interoperability"
 		}
 		return "Stock official"
 	},
@@ -73,6 +78,9 @@ func Generate(input, output, manifestPath string, run Run, prefix string) (Repor
 		if within(SuiteRoot(input, p.Suite, p.EvidenceKind, strings.Split(key, "/")[1]), output) {
 			return r, fmt.Errorf("output must not be inside a suite's evidence directory")
 		}
+	}
+	if doc.STACValidation != nil && within(SuiteRoot(input, "", "community-validator", ""), output) {
+		return r, fmt.Errorf("output must not be inside STAC evidence directory")
 	}
 	if err := prepareOutput(output); err != nil {
 		return r, err
@@ -343,16 +351,23 @@ func Summary(w io.Writer, r Report, suite, kind string) error {
 	if suite != "" || kind != "" {
 		status = "Not run"
 		for _, p := range r.Profiles {
-			if (suite == "" || p.Suite == suite) && (kind == "" || p.Kind == kind) {
+			if summaryIncludes(p, suite, kind) {
 				status = worse(status, p.Status)
 			}
 		}
 	}
-	fmt.Fprintf(&b, "## OGC conformance · %s\n\n", status)
-	fmt.Fprintln(&b, "| Profile | Evidence | Status | Assertions passed / failed / skipped | Infrastructure failed / skipped |\n|---|---|---|---:|---:|")
+	title := "OGC conformance"
+	for _, p := range r.STACProfiles() {
+		if summaryIncludes(p, suite, kind) {
+			title = "OGC and STAC validation"
+			break
+		}
+	}
+	fmt.Fprintf(&b, "## %s · %s\n\n", title, status)
+	fmt.Fprintln(&b, "| Profile | Evidence | Status | Assertions passed / failed / skipped | Infrastructure failed / skipped | Advisory warnings |\n|---|---|---|---:|---:|---:|")
 	var examples []string
 	for _, p := range r.Profiles {
-		if suite != "" && p.Suite != suite || kind != "" && p.Kind != kind {
+		if !summaryIncludes(p, suite, kind) {
 			continue
 		}
 		counts := "—"
@@ -360,7 +375,17 @@ func Summary(w io.Writer, r Report, suite, kind string) error {
 			c := p.Metadata.Result.Leaf
 			counts = fmt.Sprintf("%d / %d / %d", c.Passed, c.Failed, c.Skipped)
 		}
-		fmt.Fprintf(&b, "| %s | %s | %s | %s | %d / %d |\n", markdown(p.Key), p.Kind, p.Status, counts, p.Metadata.Result.Infrastructure.Failed, p.Metadata.Result.Infrastructure.Skipped)
+		infrastructure, warnings := "—", "—"
+		if p.Metadata.Result.Format != "" {
+			infrastructure = fmt.Sprintf("%d / %d", p.Metadata.Result.Infrastructure.Failed, p.Metadata.Result.Infrastructure.Skipped)
+		}
+		if p.Validation != nil && p.Validation.Tool == "stac-api-validator" {
+			warnings = fmt.Sprint(len(p.Validation.Warnings))
+			if p.Status == "Incomplete" || p.Status == "Not run" {
+				warnings = "—"
+			}
+		}
+		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %s |\n", markdown(p.Key), p.Kind, p.Status, counts, infrastructure, warnings)
 		if p.Issue != "" {
 			examples = append(examples, p.Key+": "+p.Issue)
 		}
@@ -374,6 +399,9 @@ func Summary(w io.Writer, r Report, suite, kind string) error {
 		}
 	}
 	fmt.Fprintln(&b, "\nCounts are per profile; stock official and derived evidence remain separate.")
+	if len(r.STACProfiles()) > 0 {
+		fmt.Fprintln(&b, "\nSTAC API and document checks use community validators; PySTAC results are client interoperability checks. The stock OGC Features profile covers inherited requirements. These results do not constitute OGC STAC certification. Advisory warnings are separate from failures and skipped assertions; they can include limitations in test coverage.")
+	}
 	if !r.Run.SelectionKnown {
 		fmt.Fprintln(&b, "\nSuite selection was unavailable; expected evidence is incomplete.")
 	}
@@ -381,8 +409,13 @@ func Summary(w io.Writer, r Report, suite, kind string) error {
 		fmt.Fprintln(&b, "\nNo suites were selected for this change.")
 	}
 	for _, p := range r.Profiles {
-		if suite != "" && p.Suite != suite || kind != "" && p.Kind != kind {
+		if !summaryIncludes(p, suite, kind) {
 			continue
+		}
+		if p.Validation != nil {
+			for _, warning := range p.Validation.Warnings {
+				fmt.Fprintf(&b, "\n- %s · %s: %s\n", markdown(p.Key), warning.Category, markdown(warning.Message))
+			}
 		}
 		if len(p.Metadata.Result.SkipCategories) == 0 {
 			continue
@@ -403,4 +436,9 @@ func Summary(w io.Writer, r Report, suite, kind string) error {
 	fmt.Fprintf(&b, "\n[Public dashboard](%s/) · Full details and raw evidence are in this run’s artifacts.\n", Origin)
 	_, err := io.WriteString(w, b.String())
 	return err
+}
+
+func summaryIncludes(p Profile, suite, kind string) bool {
+	return (suite == "" || p.Suite == suite) && (kind == "" || p.Kind == kind ||
+		kind == "official-and-stac" && p.Kind != "official-derived")
 }

@@ -1469,6 +1469,19 @@ func (ds *DataSource) QuerySQLView(ctx context.Context, config *datasource.SQLVi
 	return out, rows.Err()
 }
 
+func (ds *DataSource) QuerySQLViewStream(ctx context.Context, config *datasource.SQLViewConfig, params datasource.QueryParams) (datasource.FeatureStream, error) {
+	sql, args, err := ds.buildSQLViewListSQL(config, params)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := ds.sqlViewPool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query sql view: %w", err)
+	}
+	return &featureStream{rows: rows}, nil
+}
+
 // QuerySQLViewWKB executes a SQL View query and returns WKB geometry with properties for rendering.
 func (ds *DataSource) QuerySQLViewWKB(ctx context.Context, config *datasource.SQLViewConfig, params datasource.QueryParams) ([]datasource.RenderFeature, error) {
 	sql, args, err := ds.buildSQLViewWKBSQL(config, params)

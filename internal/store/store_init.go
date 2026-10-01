@@ -68,6 +68,7 @@ func Open(cfg Config) (*DuckDBStore, error) {
 // catalogMigrations contains only upgrades after the released 0.1.0 baseline.
 var catalogMigrations = []dbschema.Migration{
 	{Version: 26, SQL: `ALTER TABLE workspaces ADD COLUMN capabilities_revision BIGINT DEFAULT 1;`},
+	{Version: 27, SQL: `ALTER TABLE workspaces ADD COLUMN stac_settings JSON DEFAULT '{"enabled":false,"public":false}';`},
 }
 
 func (s *DuckDBStore) runMigrations(currentVersion int) error {

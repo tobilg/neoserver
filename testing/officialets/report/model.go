@@ -82,17 +82,21 @@ type Case struct {
 }
 
 type Profile struct {
-	Key      string
-	Suite    string
-	Name     string
-	Protocol string
-	Kind     string
-	Status   string
-	Issue    string
-	Metadata Metadata
-	Cases    []Case
-	Evidence string
-	Duration string
+	Key           string
+	Suite         string
+	Name          string
+	Protocol      string
+	Kind          string
+	Status        string
+	Issue         string
+	Metadata      Metadata
+	Cases         []Case
+	Evidence      string
+	Duration      string
+	STAC          bool
+	Scope         string
+	Validation    *ValidationCheck
+	ReviewedSkips bool
 }
 
 type Report struct {
@@ -160,6 +164,11 @@ func Load(input string, doc manifest.Document, run Run) (Report, error) {
 		expected := doc.Profiles[key]
 		p := Profile{Key: key, Suite: expected.Suite, Name: strings.Split(key, "/")[1], Kind: expected.EvidenceKind,
 			Protocol: protocolNames[expected.Suite], Status: "Not run", Duration: "—"}
+		if key == "ogcapi-features10/stac" {
+			p.STAC = true
+			p.Protocol = "Inherited OGC Features requirements"
+			p.Scope = "Stock OGC API Features ETS against the workspace STAC endpoint. Covers inherited Features requirements; does not validate all of STAC."
+		}
 		if p.Protocol == "" {
 			p.Protocol = p.Suite
 		}
@@ -210,12 +219,29 @@ func Load(input string, doc manifest.Document, run Run) (Report, error) {
 		if !p.Metadata.StartedAt.IsZero() && !p.Metadata.CompletedAt.Before(p.Metadata.StartedAt) {
 			p.Duration = p.Metadata.CompletedAt.Sub(p.Metadata.StartedAt).Round(time.Second).String()
 		}
+		if p.Key == "ogcapi-features10/stac" {
+			var coverage struct {
+				Passed     bool     `json:"passed"`
+				Assertions int      `json:"assertions"`
+				Skipped    int      `json:"skipped_executions"`
+				Errors     []string `json:"errors"`
+			}
+			if err := readJSON(filepath.Join(dir, "coverage-check.json"), &coverage); err == nil {
+				p.ReviewedSkips = coverage.Passed && len(coverage.Errors) == 0 && coverage.Assertions == p.Metadata.Result.Leaf.Total && coverage.Skipped == p.Metadata.Result.Leaf.Skipped
+				if !coverage.Passed || len(coverage.Errors) > 0 {
+					p.Status, p.Issue = "Failed", "The inherited OGC profile did not pass the repository coverage policy."
+				}
+			}
+		}
 		date := p.Metadata.CompletedAt.UTC().Format(time.RFC3339)
 		if !p.Metadata.CompletedAt.IsZero() && date > r.Date {
 			r.Date = date
 		}
 		r.Status = worse(r.Status, p.Status)
 		r.Profiles = append(r.Profiles, p)
+	}
+	if err := loadSTAC(input, doc, &r); err != nil {
+		return r, err
 	}
 	if !run.SelectionKnown {
 		r.Status = worse(r.Status, "Incomplete")
@@ -339,6 +365,9 @@ func readJUnit(path string) ([]Case, error) {
 }
 
 func artifactName(suite, kind, profile string) string {
+	if kind == "community-validator" || kind == "client-interoperability" {
+		return "stac-validation"
+	}
 	if kind == "official-derived" {
 		return "official-derived-ets-" + suite + "-" + profile
 	}
@@ -352,6 +381,25 @@ func SuiteRoot(input, suite, kind, profile string) string {
 	if _, err := os.Stat(artifact); err == nil {
 		return artifact
 	}
+	if kind == "community-validator" || kind == "client-interoperability" {
+		return filepath.Join(input, "conformance", "stac")
+	}
+	// download-artifact v6 extracts one pattern match directly into `path`,
+	// but creates artifact-name directories when multiple artifacts match.
+	// CI isolates this tree so a flattened official archive cannot include
+	// the separately downloaded STAC validators' evidence.
+	downloads := filepath.Join(input, "official-artifacts")
+	if info, err := os.Stat(filepath.Join(downloads, artifactName(suite, kind, profile))); err == nil && info.IsDir() {
+		return filepath.Join(downloads, artifactName(suite, kind, profile))
+	}
+	metadata := filepath.Join(downloads, "metadata.json")
+	if kind == "official" {
+		metadata = filepath.Join(downloads, profile, "metadata.json")
+	}
+	var m Metadata
+	if readJSON(metadata, &m) == nil && m.Suite == suite+"-"+profile && m.EvidenceKind == kind {
+		return downloads
+	}
 	if kind == "official-derived" {
 		return filepath.Join(input, "conformance-derived", suite, profile)
 	}
@@ -359,7 +407,7 @@ func SuiteRoot(input, suite, kind, profile string) string {
 }
 
 func worse(a, b string) string {
-	order := map[string]int{"Not run": 0, "Passed": 1, "Passed with skips": 2, "Incomplete": 3, "Failed": 4}
+	order := map[string]int{"Not run": 0, "Passed": 1, "Passed with warnings": 2, "Passed with skips": 2, "Incomplete": 3, "Failed": 4}
 	if order[b] > order[a] {
 		return b
 	}

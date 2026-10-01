@@ -76,11 +76,9 @@ The style editor reads and saves the canonical `body`. **New style** offers SLD 
 
 Below 1024 pixels, **Editor** and **Preview** tabs replace the stacked style panels. Arrow keys move between tabs; Apply preview selects the Preview tab. Unsaved source stays mounted across tab, theme and viewport changes. Wider screens show both panels side by side.
 
-For live local verification, run `make ui-e2e` with Docker running. It starts disposable PostGIS/Keycloak/server services and tests the embedded production assets. Chromium maps the fixture's Keycloak hostname to loopback without editing `/etc/hosts`; issuer verification stays enabled. `CONSOLE_PROJECT_NAME` selects a separate test project, whose volumes are removed after the run unless `KEEP_CONSOLE_ENVIRONMENT=true`.
+### STAC
 
-The fixture rebuilds by default. For test-only reruns, `CONSOLE_SKIP_BUILD=true`
-reuses the project's local images without refreshing base-image metadata. Use
-it only after those images have been built from the current backend/UI code.
+The workspace **STAC** page manages Collections, previews publication from existing sources, imports metadata, searches and edits Items, monitors jobs and configures catalog visibility. See [STAC](stac.md).
 
 ### Following a deletion
 
@@ -89,6 +87,14 @@ Deleting a store opens **Deletions** in its workspace with a bookmarkable operat
 History filters and pagination run on the server, after authorization. Select **Failed** or **Needs attention** to find older unfinished work. **Next page** fetches older records, **First page** returns to the latest, and browser Back restores previous page URLs. Polling pauses when the tab is hidden and stops when work finishes. Reloading an operation link resumes tracking.
 
 API clients can call `GET /api/v1/deletions?workspace={workspace-uuid}&status=failed&limit=50`. The optional workspace filter uses the UUID, including for a deleted workspace. Omit it to list all workspaces the caller administers. Follow `next_cursor` with the same filters; restart pagination if permissions or filters change. Limits are 1–1000 (default 200); `status` accepts `pending`, `running`, `failed`, `completed`, or `actionable`. Invalid filters/cursors return 400 and inaccessible workspace scopes return 403.
+
+## Local verification
+
+For live local verification, run `make ui-e2e` with Docker running. It starts disposable PostGIS/Keycloak/server services and tests the embedded production assets. Chromium maps the fixture's Keycloak hostname to loopback without editing `/etc/hosts`; issuer verification stays enabled. `CONSOLE_PROJECT_NAME` selects a separate test project, whose volumes are removed after the run unless `KEEP_CONSOLE_ENVIRONMENT=true`.
+
+The fixture rebuilds by default. For test-only reruns, `CONSOLE_SKIP_BUILD=true`
+reuses the project's local images without refreshing base-image metadata. Use
+it only after those images have been built from the current backend/UI code.
 
 ## Security and deployment
 

@@ -56,6 +56,26 @@ class EligibilityTests(unittest.TestCase):
 
 
 class ArtifactTests(unittest.TestCase):
+    def test_stac_is_a_separate_expected_artifact_only_for_new_manifests(self):
+        manifest = {"suites": {"ogcapi-features10": {}}, "profiles": {
+            "ogcapi-features10/stac": {"suite": "ogcapi-features10", "evidence_kind": "official"},
+        }}
+        self.assertEqual(pages.expected_artifacts(manifest), {"official-ets-ogcapi-features10"})
+        manifest["stac_validation"] = {"selected_with": "ogcapi-features10"}
+        self.assertEqual(pages.expected_artifacts(manifest), {"official-ets-ogcapi-features10", "stac-validation"})
+        manifest["stac_validation"]["selected_with"] = "unknown"
+        with self.assertRaises(ValueError):
+            pages.expected_artifacts(manifest)
+
+    def test_report_tool_versions_match_runner_pins(self):
+        root = Path(__file__).resolve().parents[2]
+        manifest = json.loads((root / "testing/officialets/versions.lock.json").read_text())
+        pins = dict(line.split("==") for line in (root / "testing/stac/requirements.in").read_text().splitlines() if line)
+        self.assertEqual(manifest["stac_validation"]["tools"], pins)
+        lock = (root / "testing/stac/requirements.lock").read_text()
+        for tool, version in pins.items():
+            self.assertIn(f"{tool}=={version} \\\n", lock)
+
     def test_derived_profile_artifact_names(self):
         manifest = {"profiles": {
             "wfs20/core": {"suite": "wfs20", "evidence_kind": "official"},

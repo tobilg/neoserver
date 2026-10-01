@@ -24,6 +24,7 @@ require (
 	github.com/klauspost/compress v1.18.3
 	github.com/paulmach/orb v0.13.0
 	github.com/pganalyze/pg_query_go/v6 v6.2.2
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/spf13/viper v1.21.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0
 	go.opentelemetry.io/otel v1.44.0

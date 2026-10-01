@@ -108,6 +108,10 @@ def extract(data, destination):
 
 def expected_artifacts(manifest):
     result = set()
+    if manifest.get("stac_validation") is not None:
+        if manifest["stac_validation"]["selected_with"] not in manifest["suites"]:
+            raise ValueError("Invalid STAC suite selection in source manifest")
+        result.add("stac-validation")
     for name, profile in manifest["profiles"].items():
         suite = profile["suite"]
         if not SLUG.fullmatch(suite):

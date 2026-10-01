@@ -503,3 +503,12 @@ RetryBatchSize = 100
 # PropertiesExclude = ["internal_note"] # Exclude these properties
 # CrsDefault = 4326                    # Default output CRS (EPSG code)
 # CrsAllowed = [4326, 3857]            # Allowed CRS transformations
+
+# Workspace-scoped SpatioTemporal Asset Catalog (also enable each workspace).
+[STAC]
+Enabled = false
+DatabasePath = "./data/stac.duckdb"
+MaxItems = 1000000
+MaxUploadBytes = 1073741824
+WorkerCount = 1
+RefreshIntervalSec = 900

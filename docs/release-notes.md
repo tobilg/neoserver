@@ -1,5 +1,57 @@
 # Release notes
 
+## 0.3.0 — 1 October 2026
+
+neoserver now publishes a SpatioTemporal Asset Catalog (STAC) for each
+workspace at `/workspaces/{workspace}/stac/`. It implements STAC API 1.0.0
+Core, Collections, Features and Item Search, and generates STAC 1.1.0
+documents. STAC is disabled by default: set `[STAC] Enabled = true`, then
+enable the catalog per workspace. See [SpatioTemporal Asset Catalog](stac.md).
+
+- **Publish existing data.** A Collection can describe a published layer, SQL
+  view or coverage, or carry one Item per source row or raster file, using
+  explicit mappings for the Item ID, acquisition time and asset URLs.
+  Durable jobs refresh a linked Collection when a change made through
+  neoserver affects its source, and poll for external changes at the binding's
+  refresh interval (900 seconds by default). Unchanged sources are not
+  rescanned, including after a restart. Removing the source removes its
+  Collection; disabling it hides the Collection.
+- **Import metadata.** Upload STAC Collections, Items, FeatureCollections or
+  NDJSON, review the staged records, then publish. Each workspace may hold 8
+  unpublished imports, and staged imports expire after 24 hours.
+- **Search.** GET and POST Item Search support `collections`, `ids`, `bbox`,
+  `datetime`, `intersects` and `limit`, with signed pagination tokens.
+- **Access control.** Catalogs and Collections are private by default.
+  Collections can be limited to roles, and Collections linked to a source also
+  follow that source's layer or coverage visibility.
+- **Local assets.** An existing allowlisted file can be served as a STAC asset,
+  with HEAD, Range and conditional requests. Arbitrary files require
+  `super_admin`. A workspace administrator can expose only the single GeoTIFF
+  behind its own coverage.
+- **Console and API.** A STAC area in the console and endpoints under
+  `/api/v1/workspaces/{workspace}/stac` and `/settings/stac` manage settings,
+  Collections, Items, source bindings, imports, jobs and assets.
+- **Operations.** STAC state lives in its own encrypted database
+  (`STAC.DatabasePath`, default `./data/stac.duckdb`), which must be separate
+  from the other databases and belongs in backups. Readiness includes the STAC
+  store, and OpenTelemetry records refresh metrics.
+- **Conformance.** `make test-conformance-stac` runs the STAC API validator,
+  core document validation, PySTAC interoperability and the official OGC API -
+  Features suite against a workspace STAC root. For this release the three
+  STAC checks passed, and the Features suite passed 82 assertions with 43
+  skipped and none failed. This is evidence, not STAC certification.
+- CORS now accepts the `Range`, `If-None-Match`, `If-Modified-Since` and
+  `If-Range` request headers and exposes `Content-Range`, `Accept-Ranges`,
+  `ETag` and `Last-Modified`. Browser clients on other origins can therefore
+  read Cloud Optimized GeoTIFFs in byte ranges. Credentialed cross-origin
+  requests remain disabled.
+
+**Upgrading from 0.2.0:** the catalog upgrades from schema 26 to 27 on first
+start, whether or not STAC is enabled. 0.2.0 refuses an upgraded catalog. To
+roll back, restore the pre-upgrade backup. Back up the complete consistency set
+first, as described in [upgrades](deployment.md#upgrades). When STAC is
+enabled, its database is created at schema 2.
+
 ## 0.2.0 — 28 September 2026
 
 **Breaking:** self-signed JWTs for `admin`, `editor`, and `viewer` are now

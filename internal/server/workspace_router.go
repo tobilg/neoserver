@@ -8,6 +8,8 @@ import (
 	"github.com/tobilg/neoserver/internal/conf"
 	"github.com/tobilg/neoserver/internal/ogc"
 	"github.com/tobilg/neoserver/internal/rbac"
+	"github.com/tobilg/neoserver/internal/stac"
+	"github.com/tobilg/neoserver/internal/stacsource"
 	"github.com/tobilg/neoserver/internal/store"
 	"github.com/tobilg/neoserver/internal/tiles"
 	"github.com/tobilg/neoserver/internal/wcs"
@@ -27,6 +29,7 @@ type WorkspaceRouter struct {
 	cache      *cache.Manager
 	tileEngine *tiles.Engine
 	wfsState   *wfs.RuntimeState
+	stac       *stacsource.Manager
 }
 
 // NewWorkspaceRouter creates a new workspace router.
@@ -62,6 +65,12 @@ func (wr *WorkspaceRouter) Mount(r chi.Router) {
 		// Load workspace into context
 		r.Use(workspace.Middleware(wr.registry))
 
+		if wr.cfg.STAC.Enabled && wr.stac != nil {
+			r.Route("/stac", func(r chi.Router) {
+				r.Use(rbac.RequireServiceOperation(wr.enforcer, "stac"))
+				stac.Register(r, wr.cfg, wr.stac)
+			})
+		}
 		// Mount OGC API Features
 		r.Route("/ogc", func(r chi.Router) {
 			r.Use(rbac.RequireServiceOperation(wr.enforcer, "ogcapi"))

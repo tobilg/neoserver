@@ -1,6 +1,6 @@
 # neoserver
 
-Current version: **0.2.0**.
+Current version: **0.3.0**.
 
 neoserver is a modern, multi-workspace geospatial server written in Go. It publishes PostGIS, DuckDB, GeoParquet, vector-file, and raster data through OGC API - Features, WMS 1.3.0, WFS 2.0, WCS 2.1/2.0.1, OGC API - Tiles, a management REST API, and an embedded administration console.
 
@@ -15,6 +15,7 @@ It is designed as a lightweight, API-driven alternative to GeoServer, with isola
 - WFS 2.0 with GML/GeoJSON/CSV/GeoPackage/SHAPE-ZIP output, FES filters, stored queries, transactions, and feature locking
 - WCS 2.1 with WCS 2.0.1 compatibility, GeoTIFF/COG and PostGIS raster sources, GML/GeoTIFF output, and 2D subsetting
 - OGC API - Tiles and WMTS 1.0 with Mapbox Vector Tiles, raster map tiles, TileJSON, standard tile matrix sets, and a shared persistent cache
+- Optional workspace [STAC catalogs](docs/stac.md) for dataset discovery, mapped asset records, raster Items, and imported metadata
 - Management API and generated Swagger UI
 - Embedded React administration console for catalog, security, imports, caches, styles, settings, and map preview
 - API keys, self-signed JWTs, static/basic authentication, OIDC, workspace RBAC, and per-layer read controls
@@ -29,6 +30,7 @@ Management API
     +-- Workspace
         +-- Services (datasource connections)
         |   +-- Published layers and SQL views
+        +-- STAC Collections, Items, and source bindings
         +-- Styles
         +-- API keys and claim mappings
         +-- OGC service settings
@@ -40,6 +42,7 @@ Published endpoints:
   /workspaces/{workspace}/ogc-tiles
   /workspaces/{workspace}/wcs
   /workspaces/{workspace}/wmts
+  /workspaces/{workspace}/stac (when enabled)
   /admin
 ~~~
 
@@ -58,7 +61,7 @@ See [Deployment](docs/deployment.md#single-active-node) for details on locking, 
 Released images are published to Docker Hub for Linux amd64:
 
 ~~~bash
-docker pull tobilg/neoserver:0.2.0     # use :latest for the latest stable release
+docker pull tobilg/neoserver:0.3.0     # use :latest for the latest stable release
 ~~~
 
 Each [GitHub release](https://github.com/tobilg/neoserver/releases) also carries
@@ -142,6 +145,7 @@ For containers and production deployments, persist the backing-store path, suppl
 
 - [Data sources](docs/data-sources.md) — connection formats, discovery, files, remote data, and SQL views
 - [WCS 2.1](docs/wcs.md) — raster publication, subsetting, formats, and compatibility
+- [SpatioTemporal Asset Catalog](docs/stac.md) — publish existing datasets or import metadata, then search assets within a workspace
 - [Management API](docs/management-api.md) — task-oriented administration and API reference links
 
 ### Consume OGC services
@@ -170,6 +174,7 @@ After startup:
 - Management OpenAPI JSON: http://localhost:9000/api/v1/api
 - Management Swagger UI: http://localhost:9000/api/v1/api.html
 - Workspace OGC API docs: http://localhost:9000/workspaces/demo/ogc/api.html
+- Workspace STAC API docs (when enabled): http://localhost:9000/workspaces/demo/stac/api.html
 - Administration console: http://localhost:9000/admin/
 
 Replace demo with a workspace name or UUID for workspace endpoints. If Server.BasePath is configured, prepend it to every path.

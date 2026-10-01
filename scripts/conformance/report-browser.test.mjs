@@ -24,6 +24,19 @@ before(async () => {
     schema_version: 2,
     suites: { wms13: { image: "test-image@sha256:abc" } },
     profiles: { "wms13/core": { suite: "wms13", evidence_kind: "official" } },
+    stac_validation: {
+      selected_with: "ogcapi-features10",
+      tools: {
+        "stac-api-validator": "0.6.8",
+        "stac-validator": "4.1.2",
+        "pystac-client": "0.9.0",
+      },
+    },
+  };
+  manifest.suites["ogcapi-features10"] = { image: "features-image" };
+  manifest.profiles["ogcapi-features10/stac"] = {
+    suite: "ogcapi-features10",
+    evidence_kind: "official",
   };
   await writeFile(
     path.join(temporary, "manifest.json"),
@@ -51,6 +64,65 @@ before(async () => {
     '<testsuite tests="2" failures="0" skipped="1"><testcase name="time-default" classname="assertion.wms"/><testcase name="optional-dimension" classname="assertion.wms"><skipped type="unclassified" message="&lt;script&gt;window.injected=true&lt;/script&gt;"/></testcase></testsuite>',
   );
   await writeFile(path.join(profile, "result.xml"), "<execution/>");
+  const inherited = path.join(evidence, "conformance/ogcapi-features10/stac");
+  await mkdir(inherited, { recursive: true });
+  const metadata = JSON.parse(
+    await readFile(path.join(profile, "metadata.json"), "utf8"),
+  );
+  Object.assign(metadata, {
+    suite: "ogcapi-features10-stac",
+    image: "features-image",
+    neoserver_image_id: "sha256:server",
+  });
+  await writeFile(
+    path.join(inherited, "metadata.json"),
+    JSON.stringify(metadata),
+  );
+  for (const file of ["junit.xml", "result.xml"]) {
+    await writeFile(
+      path.join(inherited, file),
+      await readFile(path.join(profile, file)),
+    );
+  }
+  await writeFile(
+    path.join(inherited, "coverage-check.json"),
+    JSON.stringify({
+      passed: true,
+      assertions: 2,
+      skipped_executions: 1,
+      errors: [],
+    }),
+  );
+  const stac = path.join(evidence, "conformance/stac");
+  await mkdir(stac, { recursive: true });
+  const checks = {};
+  for (const [tool, version] of Object.entries(
+    manifest.stac_validation.tools,
+  )) {
+    checks[tool] = {
+      version,
+      exit_code: 0,
+      commands: [[tool]],
+      log: `${tool}.log`,
+    };
+    const log =
+      tool === "stac-api-validator"
+        ? "Warnings:\n- [Collections] stac-check recommendations: <script>window.injected=true</script>\n- [Item Search] to validate ids does not override all other parameters returned 0 results\nErrors: none\n"
+        : "Validation passed.\n";
+    await writeFile(path.join(stac, `${tool}.log`), log);
+  }
+  await writeFile(
+    path.join(stac, "results.json"),
+    JSON.stringify({
+      schema_version: 1,
+      root: "http://server/workspaces/demo/stac",
+      neoserver_commit: "test-commit",
+      neoserver_image_id: "sha256:server",
+      started_at: metadata.started_at,
+      completed_at: metadata.completed_at,
+      checks,
+    }),
+  );
   const output = path.join(temporary, "report");
   const result = spawnSync(
     "go",
@@ -70,7 +142,7 @@ before(async () => {
       env: {
         ...process.env,
         GITHUB_SHA: "",
-        ETS_REPORT_SELECTED: '["wms13"]',
+        ETS_REPORT_SELECTED: '["wms13","ogcapi-features10"]',
         ETS_REPORT_JOBS: "",
         GITHUB_EVENT_PATH: "",
       },
@@ -123,7 +195,7 @@ test("overview, filtering, details, permalink and evidence download", async () =
     .getByLabel("Find a protocol or profile")
     .fill("no matching protocol");
   assert.equal(await page.locator("[data-result]:visible").count(), 0);
-  assert.equal(await page.getByRole("status").textContent(), "0 of 1 shown");
+  assert.equal(await page.getByRole("status").textContent(), "0 of 5 shown");
   await page.getByLabel("Find a protocol or profile").fill("WMS");
   await page.getByRole("link", { name: "WMS 1.3", exact: true }).click();
   await page.getByLabel("Status", { exact: true }).selectOption("Skipped");
@@ -151,23 +223,65 @@ test("keyboard access, mobile layout, light and dark accessibility", async () =>
       colorScheme,
     });
     const page = await context.newPage();
-    await page.goto(`${baseURL}/profiles/wms13/core/index.html`);
-    await page.keyboard.press("Tab");
-    assert.equal(
-      await page.evaluate(() => document.activeElement.textContent),
-      "Skip to results",
-    );
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > innerWidth,
-    );
-    assert.equal(overflow, false, "page must not overflow the mobile viewport");
-    const results = await new AxeBuilder({ page }).analyze();
-    assert.deepEqual(
-      results.violations.map(({ id, description }) => ({ id, description })),
-      [],
-    );
+    for (const url of [
+      "/",
+      "/profiles/wms13/core/index.html",
+      "/profiles/stac/api/index.html",
+    ]) {
+      await page.goto(`${baseURL}${url}`);
+      await page.keyboard.press("Tab");
+      assert.equal(
+        await page.evaluate(() => document.activeElement.textContent),
+        "Skip to results",
+      );
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      );
+      assert.equal(
+        overflow,
+        false,
+        "page must not overflow the mobile viewport",
+      );
+      const results = await new AxeBuilder({ page }).analyze();
+      assert.deepEqual(
+        results.violations.map(({ id, description }) => ({ id, description })),
+        [],
+      );
+    }
     await context.close();
   }
+});
+
+test("STAC scope, warning details and separate evidence download", async () => {
+  const page = await browser.newPage();
+  await page.goto(baseURL);
+  assert.ok(
+    await page
+      .getByRole("heading", { name: "STAC validation", exact: true })
+      .isVisible(),
+  );
+  await page
+    .getByLabel("Status", { exact: true })
+    .selectOption("Passed with warnings");
+  assert.equal(await page.locator("[data-result]:visible").count(), 1);
+  await page.getByRole("link", { name: "STAC API 1.0", exact: true }).click();
+  assert.ok(
+    await page
+      .getByText("Test coverage limitation", { exact: true })
+      .isVisible(),
+  );
+  assert.ok(
+    await page
+      .getByText("Metadata recommendation", { exact: true })
+      .isVisible(),
+  );
+  assert.equal(await page.evaluate(() => window.injected), undefined);
+  const download = page.waitForEvent("download");
+  await page
+    .getByRole("link", { name: "Download STAC validation evidence (.zip)" })
+    .click();
+  assert.equal((await download).suggestedFilename(), "stac-validation.zip");
+  await page.close();
 });
 
 test("downloaded report works with JavaScript disabled", async () => {
@@ -178,5 +292,14 @@ test("downloaded report works with JavaScript disabled", async () => {
   assert.equal(await page.locator("[data-filters]").isVisible(), false);
   await page.locator("#case-2 summary").click();
   assert.ok(await page.locator("#case-2 pre").isVisible());
+  await page.goto(
+    pathToFileURL(path.join(site, "profiles/stac/api/index.html")).href,
+  );
+  assert.ok(
+    await page
+      .getByText("Test coverage limitation", { exact: true })
+      .isVisible(),
+  );
+  assert.ok(await page.locator("#warning-0 pre").isVisible());
   await page.close();
 });

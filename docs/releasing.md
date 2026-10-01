@@ -10,7 +10,7 @@ Native builds require GDAL and a matching C/C++ runtime; they are not portable
 standalone binaries. macOS arm64 is a development/test platform. Other OS/CPU
 targets are not release-certified until their native and container suites run.
 
-`make release-build VERSION=v0.2.0` requires the real console build and stamps
+`make release-build VERSION=v0.3.0` requires the real console build and stamps
 the native binary. Container builds accept `VERSION` and `COMMIT` build args.
 `neoserver version`, console config and image labels expose release identity.
 
@@ -18,7 +18,7 @@ A release build takes its version from those flags, so the literals in the tree
 are what an unstamped development build reports. Keep them in step with:
 
 ```sh
-make set-version VERSION=v0.2.0   # rewrites the literals, then regenerates openapi.json
+make set-version VERSION=v0.3.0   # rewrites the literals, then regenerates openapi.json
 make check-version                # what CI enforces
 ```
 

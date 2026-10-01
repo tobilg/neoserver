@@ -42,6 +42,7 @@ type DataSourceFactory func(svc *store.Service) (datasource.DataSource, error)
 
 // Registry manages workspaces at runtime.
 type Registry struct {
+	publicationListeners  sync.Map
 	capabilitiesRevisions sync.Map // workspace ID -> *atomic.Int64
 	store                 store.Store
 	workspaces            map[string]*Workspace // keyed by name
@@ -72,6 +73,7 @@ func (r *Registry) SetCacheManager(cm *cache.Manager) {
 
 // invalidateWorkspaceCache invalidates all caches for a workspace.
 func (r *Registry) invalidateWorkspaceCache(workspaceID string) {
+	defer r.notifyPublicationChange()
 	r.refreshCapabilitiesRevision(context.Background(), workspaceID)
 	if r.cache != nil {
 		r.cache.InvalidateWorkspace(workspaceID)
@@ -80,6 +82,7 @@ func (r *Registry) invalidateWorkspaceCache(workspaceID string) {
 
 // invalidateLayerCache invalidates caches when a layer changes.
 func (r *Registry) invalidateLayerCache(workspaceID, layerID string) {
+	defer r.notifyPublicationChange()
 	r.refreshCapabilitiesRevision(context.Background(), workspaceID)
 	if r.cache != nil {
 		r.cache.InvalidateLayer(workspaceID, layerID)
@@ -88,6 +91,7 @@ func (r *Registry) invalidateLayerCache(workspaceID, layerID string) {
 
 // invalidateCapabilitiesCache invalidates capabilities caches for a workspace.
 func (r *Registry) invalidateCapabilitiesCache(workspaceID string) {
+	defer r.notifyPublicationChange()
 	r.refreshCapabilitiesRevision(context.Background(), workspaceID)
 	if r.cache != nil {
 		r.cache.InvalidateCapabilities(workspaceID)
@@ -131,6 +135,14 @@ func (r *Registry) Load(ctx context.Context) error {
 		wmsSettings, _ := r.store.GetWMSSettings(ctx, wsData.ID)
 		wfsSettings, _ := r.store.GetWFSSettings(ctx, wsData.ID)
 		ogcapiSettings, _ := r.store.GetOGCAPISettings(ctx, wsData.ID)
+		var stacSettings store.STACSettings
+		if catalog, ok := r.store.(store.STACSettingsStore); ok {
+			settings, err := catalog.GetSTACSettings(ctx, wsData.ID)
+			if err != nil {
+				return err
+			}
+			stacSettings = *settings
+		}
 		ogcTilesSettings, _ := r.store.GetOGCTilesAPISettings(ctx, wsData.ID)
 		var wcsSettings *store.WCSSettings
 		if coverageStore, ok := r.store.(store.CoverageStore); ok {
@@ -165,6 +177,7 @@ func (r *Registry) Load(ctx context.Context) error {
 			WMS:         derefWMSSettings(wmsSettings),
 			WFS:         derefWFSSettings(wfsSettings),
 			OGCAPI:      derefOGCAPISettings(ogcapiSettings),
+			STAC:        stacSettings,
 			OGCTilesAPI: derefOGCTilesAPISettings(ogcTilesSettings),
 			WCS:         derefWCSSettings(wcsSettings),
 			WMTS:        derefWMTSSettings(wmtsSettings),

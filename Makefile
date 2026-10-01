@@ -115,7 +115,7 @@ vet:
 
 .PHONY: test-race
 test-race:
-	go test -p 1 -race -ldflags='$(GO_APP_LINK_FLAGS)' ./internal/rbac ./internal/identity ./internal/cache ./internal/wms ./internal/mgmt ./internal/workspace ./internal/tilecache ./internal/tilejobs ./internal/tiles ./internal/wfs ./internal/mosaiccatalog ./internal/store ./internal/importer ./internal/cataloglifecycle ./internal/datasource ./internal/datasource/pathpolicy
+	go test -p 1 -race -ldflags='$(GO_APP_LINK_FLAGS)' ./internal/rbac ./internal/identity ./internal/cache ./internal/wms ./internal/mgmt ./internal/workspace ./internal/tilecache ./internal/tilejobs ./internal/tiles ./internal/wfs ./internal/mosaiccatalog ./internal/store ./internal/importer ./internal/cataloglifecycle ./internal/datasource ./internal/datasource/pathpolicy ./internal/staccatalog ./internal/stacsource
 
 .PHONY: test-s3-lease-integration
 test-s3-lease-integration:
@@ -238,3 +238,7 @@ test-conformance-report:
 .PHONY: test-assurance-all
 test-assurance-all:
 	./scripts/conformance/run-assurance-all.sh
+
+.PHONY: test-conformance-stac
+test-conformance-stac:
+	CONFORMANCE_PROFILE=stac STAC_VALIDATION=true ./scripts/conformance/run-official.sh ogcapi-features10
