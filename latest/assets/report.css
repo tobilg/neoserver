@@ -208,6 +208,7 @@ tbody tr:hover {
   color: #17603c;
 }
 .passed-with-skips,
+.passed-with-warnings,
 .skipped {
   background: #fff0cf;
   color: #77520a;
@@ -448,6 +449,7 @@ footer {
     color: #a2e3b9;
   }
   .passed-with-skips,
+  .passed-with-warnings,
   .skipped {
     background: #514321;
     color: #f6d791;

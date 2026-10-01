@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PySTAC client interoperability · pystac-client — neoserver</title><link rel="canonical" href="https://conformance.neoserver.cloud/latest/profiles/stac/client/">
+<meta name="description" content="neoserver OGC and STAC validation results, test details, and reproducible evidence.">
+<link rel="stylesheet" href="../../../assets/report.css"><script src="../../../assets/report.js" defer></script></head>
+<body><a class="skip-link" href="#main">Skip to results</a>
+<header class="masthead"><a class="brand" href="https://conformance.neoserver.cloud/">neoserver<span> / conformance</span></a><nav aria-label="Project"><a href="https://github.com/tobilg/neoserver">Repository</a><a href="https://github.com/tobilg/neoserver/blob/main/docs/conformance.md">Methodology</a></nav></header>
+<main id="main">
+
+<div class="breadcrumbs"><a href="../../../index.html">Report overview</a><span>/</span>PySTAC client interoperability / pystac-client</div>
+<div class="intro"><p class="eyebrow">Client interoperability</p><h1>PySTAC client interoperability<span class="subtitle">pystac-client</span></h1><span class="status passed">Passed</span></div>
+<dl class="run-meta"><div><dt>Tested checkout</dt><dd class="mono">2e27cdd0e6affd1498e20d2a0960036fcdbd461c</dd></div><div><dt>Completed (UTC)</dt><dd>2026-10-01T14:52:25Z</dd></div><div><dt>CI run</dt><dd><a href="https://github.com/tobilg/neoserver/actions/runs/36878416590">Run 36878416590 · attempt 1</a></dd></div></dl>
+
+<p>Repository checks using PySTAC: GET and POST pagination return the same 300 unique Items; oversized limits are clamped.</p>
+
+<p><a class="download" href="../../../evidence/stac-validation.zip" download>Download STAC validation evidence (.zip)</a></p>
+<h2>Recorded outcome</h2>
+<dl class="metadata"><dt>Tool</dt><dd>pystac-client 0.9.0</dd><dt>Exit code</dt><dd>0</dd><dt>Assertion counts</dt><dd>Not reported by this check.</dd></dl>
+
+<details class="provenance"><summary>Build provenance and invocation</summary><dl class="metadata"><dt>Evidence commit</dt><dd class="mono">2e27cdd0e6affd1498e20d2a0960036fcdbd461c</dd><dt>Server image ID</dt><dd class="mono">sha256:d859f5a0a31098205aaa8a6c7f62c7009e4a81eb0464fc19351a73b8be9b1688</dd><dt>Validation batch started (UTC)</dt><dd>2026-10-01 14:46:47.74366 &#43;0000 UTC</dd><dt>Validation batch completed (UTC)</dt><dd>2026-10-01 14:46:56.672738 &#43;0000 UTC</dd><dt>root</dt><dd class="mono">http://server:9000/workspaces/demo/stac</dd></dl>
+<pre>&#34;/usr/local/bin/python&#34; &#34;/app/testing/stac/run.py&#34; </pre></details>
+<h2>Original tool output</h2><details><summary>pystac-client.log</summary><pre>GET and POST pagination returned the same 300 unique Items. Limit clamping passed.
+GET ids&#43;bbox: scene-0294, matching bbox [20, 20, 21, 21]: 1 Item; non-intersecting bbox [21.4, 21.4, 22.4, 22.4]: 0 Items.
+POST ids&#43;bbox: scene-0294, matching bbox [20, 20, 21, 21]: 1 Item; non-intersecting bbox [21.4, 21.4, 22.4, 22.4]: 0 Items.
+</pre></details>
+
+
+</main><footer><span>neoserver · Conformance evidence</span><span>Official suites, community validators and client checks are identified separately.</span></footer></body></html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STAC API 1.0 · stac-api-validator — neoserver</title><link rel="canonical" href="https://conformance.neoserver.cloud/latest/profiles/stac/api/">
+<meta name="description" content="neoserver OGC and STAC validation results, test details, and reproducible evidence.">
+<link rel="stylesheet" href="../../../assets/report.css"><script src="../../../assets/report.js" defer></script></head>
+<body><a class="skip-link" href="#main">Skip to results</a>
+<header class="masthead"><a class="brand" href="https://conformance.neoserver.cloud/">neoserver<span> / conformance</span></a><nav aria-label="Project"><a href="https://github.com/tobilg/neoserver">Repository</a><a href="https://github.com/tobilg/neoserver/blob/main/docs/conformance.md">Methodology</a></nav></header>
+<main id="main">
+
+<div class="breadcrumbs"><a href="../../../index.html">Report overview</a><span>/</span>STAC API 1.0 / stac-api-validator</div>
+<div class="intro"><p class="eyebrow">Community validator</p><h1>STAC API 1.0<span class="subtitle">stac-api-validator</span></h1><span class="status passed-with-warnings">Passed with warnings</span></div>
+<dl class="run-meta"><div><dt>Tested checkout</dt><dd class="mono">2e27cdd0e6affd1498e20d2a0960036fcdbd461c</dd></div><div><dt>Completed (UTC)</dt><dd>2026-10-01T14:52:25Z</dd></div><div><dt>CI run</dt><dd><a href="https://github.com/tobilg/neoserver/actions/runs/36878416590">Run 36878416590 · attempt 1</a></dd></div></dl>
+
+<p>Core, Collections, Features and Item Search, including pagination, against the workspace STAC fixture.</p>
+
+<p><a class="download" href="../../../evidence/stac-validation.zip" download>Download STAC validation evidence (.zip)</a></p>
+<h2>Recorded outcome</h2>
+<dl class="metadata"><dt>Tool</dt><dd>stac-api-validator 0.6.8</dd><dt>Exit code</dt><dd>0</dd><dt>Assertion counts</dt><dd>Not reported by this check.</dd></dl>
+<h2>Advisory warnings <span class="muted">2 occurrences</span></h2>
+<p class="note">These are upstream warnings, separate from validation errors and ETS skips. Repeated messages remain separate. Coverage limitations identify checks the validator could not complete.</p>
+<details id="warning-0" open><summary>Metadata recommendation</summary><p>Recommended descriptive metadata, such as collection summaries and link titles. Band summaries apply when band metadata exists. These recommendations are not schema validation errors.</p><pre>[Collections] : GET http://server:9000/workspaces/demo/stac/collections/conformance-scenes has these stac-check recommendations: A STAC collection should contain a summaries field,It is recommended to store information like eo:bands in summaries,,Links in catalogs and collections should always have a &#39;title&#39; field,</pre></details><details id="warning-1" open><summary>Metadata recommendation</summary><p>Recommended descriptive metadata, such as collection summaries and link titles. Band summaries apply when band metadata exists. These recommendations are not schema validation errors.</p><pre>[Collections] : GET http://server:9000/workspaces/demo/stac/collections/conformance-scenes has these stac-check recommendations: A STAC collection should contain a summaries field,It is recommended to store information like eo:bands in summaries,,Links in catalogs and collections should always have a &#39;title&#39; field,</pre></details>
+
+<details class="provenance"><summary>Build provenance and invocation</summary><dl class="metadata"><dt>Evidence commit</dt><dd class="mono">2e27cdd0e6affd1498e20d2a0960036fcdbd461c</dd><dt>Server image ID</dt><dd class="mono">sha256:d859f5a0a31098205aaa8a6c7f62c7009e4a81eb0464fc19351a73b8be9b1688</dd><dt>Validation batch started (UTC)</dt><dd>2026-10-01 14:46:47.74366 &#43;0000 UTC</dd><dt>Validation batch completed (UTC)</dt><dd>2026-10-01 14:46:56.672738 &#43;0000 UTC</dd><dt>root</dt><dd class="mono">http://server:9000/workspaces/demo/stac</dd></dl>
+<pre>&#34;stac-api-validator&#34; &#34;--root-url&#34; &#34;http://server:9000/workspaces/demo/stac/&#34; &#34;--collection&#34; &#34;conformance-scenes&#34; &#34;--geometry&#34; &#34;{\&#34;type\&#34;: \&#34;Polygon\&#34;, \&#34;coordinates\&#34;: [[[-10, -10], [10, -10], [10, 10], [-10, 10], [-10, -10]]]}&#34; &#34;--validate-pagination&#34; &#34;--conformance&#34; &#34;core&#34; &#34;--conformance&#34; &#34;collections&#34; &#34;--conformance&#34; &#34;features&#34; &#34;--conformance&#34; &#34;item-search&#34; </pre></details>
+<h2>Original tool output</h2><details><summary>stac-api-validator.log</summary><pre>INFO:stac_api_validator.validations:Validating STAC API - Core conformance class.
+INFO:stac_api_validator.validations:Validating STAC API - Collections conformance class.
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/collection-spec/json-schema/collection.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/collection-spec/json-schema/collection.json
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/common.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/common.json
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/basics.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/basics.json
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/bands.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/bands.json
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/datetime.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/datetime.json
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/data-values.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/data-values.json
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/instrument.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/instrument.json
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/licensing.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/licensing.json
+INFO:stac_validator.utilities:Fetching schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/provider.json
+INFO:stac_validator.utilities:✓ Cached schema: https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/provider.json
+INFO:stac_api_validator.validations:Validating STAC API - Features conformance class.
+INFO:stac_validator.utilities:Fetching schema: https://geojson.org/schema/Feature.json
+INFO:stac_validator.utilities:✓ Cached schema: https://geojson.org/schema/Feature.json
+INFO:stac_validator.utilities:Fetching schema: https://geojson.org/schema/Geometry.json
+INFO:stac_validator.utilities:✓ Cached schema: https://geojson.org/schema/Geometry.json
+INFO:stac_api_validator.validations:Validating STAC API - Item Search conformance class.
+Warnings:
+- [Collections] : GET http://server:9000/workspaces/demo/stac/collections/conformance-scenes has these stac-check recommendations: A STAC collection should contain a summaries field,It is recommended to store information like eo:bands in summaries,,Links in catalogs and collections should always have a &#39;title&#39; field,
+- [Collections] : GET http://server:9000/workspaces/demo/stac/collections/conformance-scenes has these stac-check recommendations: A STAC collection should contain a summaries field,It is recommended to store information like eo:bands in summaries,,Links in catalogs and collections should always have a &#39;title&#39; field,
+Errors: none
+</pre></details>
+
+
+</main><footer><span>neoserver · Conformance evidence</span><span>Official suites, community validators and client checks are identified separately.</span></footer></body></html>

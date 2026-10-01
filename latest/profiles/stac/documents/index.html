@@ -1,0 +1,3086 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STAC 1.1 documents · stac-validator — neoserver</title><link rel="canonical" href="https://conformance.neoserver.cloud/latest/profiles/stac/documents/">
+<meta name="description" content="neoserver OGC and STAC validation results, test details, and reproducible evidence.">
+<link rel="stylesheet" href="../../../assets/report.css"><script src="../../../assets/report.js" defer></script></head>
+<body><a class="skip-link" href="#main">Skip to results</a>
+<header class="masthead"><a class="brand" href="https://conformance.neoserver.cloud/">neoserver<span> / conformance</span></a><nav aria-label="Project"><a href="https://github.com/tobilg/neoserver">Repository</a><a href="https://github.com/tobilg/neoserver/blob/main/docs/conformance.md">Methodology</a></nav></header>
+<main id="main">
+
+<div class="breadcrumbs"><a href="../../../index.html">Report overview</a><span>/</span>STAC 1.1 documents / stac-validator</div>
+<div class="intro"><p class="eyebrow">Community validator</p><h1>STAC 1.1 documents<span class="subtitle">stac-validator</span></h1><span class="status passed">Passed</span></div>
+<dl class="run-meta"><div><dt>Tested checkout</dt><dd class="mono">2e27cdd0e6affd1498e20d2a0960036fcdbd461c</dd></div><div><dt>Completed (UTC)</dt><dd>2026-10-01T14:52:25Z</dd></div><div><dt>CI run</dt><dd><a href="https://github.com/tobilg/neoserver/actions/runs/36878416590">Run 36878416590 · attempt 1</a></dd></div></dl>
+
+<p>Core schema validation of the root Catalog, Collections and fixture Items using pinned schemas. This does not assert support for every STAC extension.</p>
+
+<p><a class="download" href="../../../evidence/stac-validation.zip" download>Download STAC validation evidence (.zip)</a></p>
+<h2>Recorded outcome</h2>
+<dl class="metadata"><dt>Tool</dt><dd>stac-validator 4.1.2</dd><dt>Exit code</dt><dd>0</dd><dt>Assertion counts</dt><dd>Not reported by this check.</dd></dl>
+
+<details class="provenance"><summary>Build provenance and invocation</summary><dl class="metadata"><dt>Evidence commit</dt><dd class="mono">2e27cdd0e6affd1498e20d2a0960036fcdbd461c</dd><dt>Server image ID</dt><dd class="mono">sha256:d859f5a0a31098205aaa8a6c7f62c7009e4a81eb0464fc19351a73b8be9b1688</dd><dt>Validation batch started (UTC)</dt><dd>2026-10-01 14:46:47.74366 &#43;0000 UTC</dd><dt>Validation batch completed (UTC)</dt><dd>2026-10-01 14:46:56.672738 &#43;0000 UTC</dd><dt>root</dt><dd class="mono">http://server:9000/workspaces/demo/stac</dd></dl>
+<pre>&#34;stac-validator&#34; &#34;validate&#34; &#34;http://server:9000/workspaces/demo/stac/&#34; &#34;--core&#34; &#34;--schema-map&#34; &#34;https://geojson.org/schema/Feature.json&#34; &#34;/app/internal/stacmodel/schemas/geojson-feature.json&#34; &#34;--schema-map&#34; &#34;https://geojson.org/schema/Geometry.json&#34; &#34;/app/internal/stacmodel/schemas/geojson-geometry.json&#34; &#34;--schema-map&#34; &#34;https://geojson.org/schema/GeometryCollection.json&#34; &#34;/app/internal/stacmodel/schemas/geojson-geometry-collection.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/collection-spec/json-schema/collection.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-collection.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/basics.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-basics.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/datetime.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-datetime.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/instrument.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-instrument.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-item.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/licensing.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-licensing.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/provider.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-provider.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/collection-spec/json-schema/collection.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-collection.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/bands.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-bands.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/basics.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-basics.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/common.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-common.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/data-values.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-data-values.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/datetime.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-datetime.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/instrument.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-instrument.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/licensing.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-licensing.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/provider.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-provider.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json&#34; &#34;/app/testing/stac/schemas/stac-1.1.0-catalog.json&#34; </pre><pre>&#34;stac-validator&#34; &#34;validate&#34; &#34;http://server:9000/workspaces/demo/stac/collections&#34; &#34;--core&#34; &#34;--schema-map&#34; &#34;https://geojson.org/schema/Feature.json&#34; &#34;/app/internal/stacmodel/schemas/geojson-feature.json&#34; &#34;--schema-map&#34; &#34;https://geojson.org/schema/Geometry.json&#34; &#34;/app/internal/stacmodel/schemas/geojson-geometry.json&#34; &#34;--schema-map&#34; &#34;https://geojson.org/schema/GeometryCollection.json&#34; &#34;/app/internal/stacmodel/schemas/geojson-geometry-collection.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/collection-spec/json-schema/collection.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-collection.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/basics.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-basics.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/datetime.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-datetime.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/instrument.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-instrument.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-item.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/licensing.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-licensing.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/provider.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-provider.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/collection-spec/json-schema/collection.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-collection.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/bands.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-bands.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/basics.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-basics.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/common.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-common.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/data-values.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-data-values.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/datetime.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-datetime.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/instrument.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-instrument.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/licensing.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-licensing.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/provider.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-provider.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json&#34; &#34;/app/testing/stac/schemas/stac-1.1.0-catalog.json&#34; &#34;--collections&#34; </pre><pre>&#34;stac-validator&#34; &#34;validate&#34; &#34;http://server:9000/workspaces/demo/stac/search?limit=1000&#34; &#34;--core&#34; &#34;--schema-map&#34; &#34;https://geojson.org/schema/Feature.json&#34; &#34;/app/internal/stacmodel/schemas/geojson-feature.json&#34; &#34;--schema-map&#34; &#34;https://geojson.org/schema/Geometry.json&#34; &#34;/app/internal/stacmodel/schemas/geojson-geometry.json&#34; &#34;--schema-map&#34; &#34;https://geojson.org/schema/GeometryCollection.json&#34; &#34;/app/internal/stacmodel/schemas/geojson-geometry-collection.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/collection-spec/json-schema/collection.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-collection.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/basics.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-basics.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/datetime.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-datetime.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/instrument.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-instrument.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-item.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/licensing.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-licensing.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/provider.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.0.0-provider.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/collection-spec/json-schema/collection.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-collection.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/bands.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-bands.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/basics.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-basics.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/common.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-common.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/data-values.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-data-values.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/datetime.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-datetime.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/instrument.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-instrument.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/licensing.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-licensing.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/provider.json&#34; &#34;/app/internal/stacmodel/schemas/stac-1.1.0-provider.json&#34; &#34;--schema-map&#34; &#34;https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json&#34; &#34;/app/testing/stac/schemas/stac-1.1.0-catalog.json&#34; &#34;--item-collection&#34; </pre></details>
+<h2>Original tool output</h2><details><summary>stac-validator.log</summary><pre>/usr/local/bin/stac-validator:5: DeprecationWarning: The &#39;stac_validator&#39; package has been deprecated and will no longer receive updates. Please migrate to &#39;stac_valid&#39; (v4.2.0&#43;) using: pip install stac_valid
+  from stac_validator.stac_validator import cli
+⚠️  DEPRECATION WARNING: &#39;stac_validator&#39; is deprecated and will no longer receive updates. Please migrate to &#39;stac_valid&#39; (v4.2.0&#43;) using: pip install stac_valid
+
+Thanks for using STAC version 1.1.0!
+
+[
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/testing/stac/schemas/stac-1.1.0-catalog.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;CATALOG&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    }
+]
+
+Validation completed in 20.05ms
+
+/usr/local/bin/stac-validator:5: DeprecationWarning: The &#39;stac_validator&#39; package has been deprecated and will no longer receive updates. Please migrate to &#39;stac_valid&#39; (v4.2.0&#43;) using: pip install stac_valid
+  from stac_validator.stac_validator import cli
+⚠️  DEPRECATION WARNING: &#39;stac_validator&#39; is deprecated and will no longer receive updates. Please migrate to &#39;stac_valid&#39; (v4.2.0&#43;) using: pip install stac_valid
+
+Thanks for using STAC version 1.1.0!
+
+[
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/collections&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-collection.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;COLLECTION&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    }
+]
+
+-- Collections Summary:
+  Collections passed: 1/1 (100.0%)
+
+Validation completed in 16.13ms
+
+/usr/local/bin/stac-validator:5: DeprecationWarning: The &#39;stac_validator&#39; package has been deprecated and will no longer receive updates. Please migrate to &#39;stac_valid&#39; (v4.2.0&#43;) using: pip install stac_valid
+  from stac_validator.stac_validator import cli
+⚠️  DEPRECATION WARNING: &#39;stac_validator&#39; is deprecated and will no longer receive updates. Please migrate to &#39;stac_valid&#39; (v4.2.0&#43;) using: pip install stac_valid
+processing page 1
+Validating Items:   0%|          | 0/300 [00:00&lt;?, ?item/s]Validating Items:   3%|▎         | 8/300 [00:00&lt;00:03, 77.43item/s]Validating Items:   6%|▌         | 17/300 [00:00&lt;00:03, 79.18item/s]Validating Items:   9%|▊         | 26/300 [00:00&lt;00:03, 79.92item/s]Validating Items:  12%|█▏        | 35/300 [00:00&lt;00:03, 80.62item/s]Validating Items:  15%|█▍        | 44/300 [00:00&lt;00:03, 80.97item/s]Validating Items:  18%|█▊        | 53/300 [00:00&lt;00:03, 81.14item/s]Validating Items:  21%|██        | 62/300 [00:00&lt;00:02, 80.21item/s]Validating Items:  24%|██▎       | 71/300 [00:00&lt;00:03, 73.86item/s]Validating Items:  27%|██▋       | 80/300 [00:01&lt;00:02, 76.01item/s]Validating Items:  30%|██▉       | 89/300 [00:01&lt;00:02, 77.52item/s]Validating Items:  33%|███▎      | 98/300 [00:01&lt;00:02, 78.57item/s]Validating Items:  36%|███▌      | 107/300 [00:01&lt;00:02, 79.44item/s]Validating Items:  39%|███▊      | 116/300 [00:01&lt;00:02, 80.16item/s]Validating Items:  42%|████▏     | 125/300 [00:01&lt;00:02, 80.42item/s]Validating Items:  45%|████▍     | 134/300 [00:01&lt;00:02, 80.68item/s]Validating Items:  48%|████▊     | 143/300 [00:01&lt;00:01, 81.01item/s]Validating Items:  51%|█████     | 152/300 [00:01&lt;00:01, 80.20item/s]Validating Items:  54%|█████▎    | 161/300 [00:02&lt;00:01, 78.88item/s]Validating Items:  57%|█████▋    | 170/300 [00:02&lt;00:01, 79.33item/s]Validating Items:  60%|█████▉    | 179/300 [00:02&lt;00:01, 79.85item/s]Validating Items:  63%|██████▎   | 188/300 [00:02&lt;00:01, 80.23item/s]Validating Items:  66%|██████▌   | 197/300 [00:02&lt;00:01, 80.44item/s]Validating Items:  69%|██████▊   | 206/300 [00:02&lt;00:01, 80.63item/s]Validating Items:  72%|███████▏  | 215/300 [00:02&lt;00:01, 80.88item/s]Validating Items:  75%|███████▍  | 224/300 [00:02&lt;00:00, 81.13item/s]Validating Items:  78%|███████▊  | 233/300 [00:02&lt;00:00, 80.01item/s]Validating Items:  81%|████████  | 242/300 [00:03&lt;00:00, 71.01item/s]Validating Items:  84%|████████▎ | 251/300 [00:03&lt;00:00, 73.66item/s]Validating Items:  87%|████████▋ | 260/300 [00:03&lt;00:00, 75.97item/s]Validating Items:  90%|████████▉ | 269/300 [00:03&lt;00:00, 77.66item/s]Validating Items:  93%|█████████▎| 278/300 [00:03&lt;00:00, 78.74item/s]Validating Items:  96%|█████████▌| 287/300 [00:03&lt;00:00, 79.78item/s]Validating Items:  99%|█████████▊| 296/300 [00:03&lt;00:00, 80.40item/s]Validating Items: 100%|██████████| 300/300 [00:03&lt;00:00, 79.03item/s]
+
+Thanks for using STAC version 1.1.0!
+
+[
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0000&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0001&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0002&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0003&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0004&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0005&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0006&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0007&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0008&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0009&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0010&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0011&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0012&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0013&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0014&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0015&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0016&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0017&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0018&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0019&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0020&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0021&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0022&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0023&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0024&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0025&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0026&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0027&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0028&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0029&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0030&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0031&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0032&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0033&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0034&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0035&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0036&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0037&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0038&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0039&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0040&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0041&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0042&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0043&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0044&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0045&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0046&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0047&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0048&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0049&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0050&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0051&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0052&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0053&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0054&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0055&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0056&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0057&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0058&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0059&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0060&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0061&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0062&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0063&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0064&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0065&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0066&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0067&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0068&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0069&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0070&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0071&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0072&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0073&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0074&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0075&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0076&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0077&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0078&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0079&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0080&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0081&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0082&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0083&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0084&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0085&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0086&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0087&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0088&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0089&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0090&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0091&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0092&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0093&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0094&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0095&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0096&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0097&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0098&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0099&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0100&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0101&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0102&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0103&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0104&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0105&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0106&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0107&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0108&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0109&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0110&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0111&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0112&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0113&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0114&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0115&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0116&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0117&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0118&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0119&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0120&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0121&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0122&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0123&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0124&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0125&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0126&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0127&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0128&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0129&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0130&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0131&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0132&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0133&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0134&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0135&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0136&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0137&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0138&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0139&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0140&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0141&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0142&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0143&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0144&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0145&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0146&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0147&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0148&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0149&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0150&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0151&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0152&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0153&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0154&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0155&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0156&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0157&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0158&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0159&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0160&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0161&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0162&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0163&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0164&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0165&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0166&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0167&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0168&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0169&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0170&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0171&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0172&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0173&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0174&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0175&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0176&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0177&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0178&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0179&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0180&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0181&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0182&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0183&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0184&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0185&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0186&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0187&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0188&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0189&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0190&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0191&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0192&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0193&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0194&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0195&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0196&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0197&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0198&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0199&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0200&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0201&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0202&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0203&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0204&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0205&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0206&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0207&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0208&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0209&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0210&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0211&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0212&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0213&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0214&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0215&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0216&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0217&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0218&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0219&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0220&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0221&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0222&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0223&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0224&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0225&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0226&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0227&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0228&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0229&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0230&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0231&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0232&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0233&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0234&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0235&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0236&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0237&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0238&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0239&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0240&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0241&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0242&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0243&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0244&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0245&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0246&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0247&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0248&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0249&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0250&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0251&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0252&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0253&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0254&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0255&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0256&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0257&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0258&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0259&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0260&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0261&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0262&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0263&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0264&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0265&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0266&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0267&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0268&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0269&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0270&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0271&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0272&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0273&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0274&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0275&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0276&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0277&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0278&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0279&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0280&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0281&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0282&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0283&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0284&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0285&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0286&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0287&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0288&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0289&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0290&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0291&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0292&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0293&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0294&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0295&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0296&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0297&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0298&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    },
+    {
+        &#34;version&#34;: &#34;1.1.0&#34;,
+        &#34;path&#34;: &#34;http://server:9000/workspaces/demo/stac/search/scene-0299&#34;,
+        &#34;schema&#34;: [
+            &#34;/app/internal/stacmodel/schemas/stac-1.1.0-item.json&#34;
+        ],
+        &#34;valid_stac&#34;: true,
+        &#34;asset_type&#34;: &#34;ITEM&#34;,
+        &#34;validation_method&#34;: &#34;core&#34;
+    }
+]
+
+-- Item Collection Summary:
+  Items passed: 300/300 (100.0%)
+
+Validation completed in 3.85s
+
+</pre></details>
+
+
+</main><footer><span>neoserver · Conformance evidence</span><span>Official suites, community validators and client checks are identified separately.</span></footer></body></html>
